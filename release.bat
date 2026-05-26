@@ -30,7 +30,7 @@ if not exist "%CSPROJ%" (
 )
 
 echo.
-echo === [1/3] Patching %CSPROJ% ^<Version^> -^> %VERSION% ===
+echo === [1/5] Patching %CSPROJ% ^<Version^> -^> %VERSION% ===
 REM In-place rewrite via .NET APIs to preserve UTF-8 / no-BOM encoding that
 REM dotnet expects on csproj. Using Set-Content would risk inserting a BOM
 REM under Windows PowerShell 5.1.
@@ -43,7 +43,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo === [2/4] dotnet test ===
+echo === [2/5] dotnet test ===
 dotnet test .\Tests\Kiriha.Tests\Kiriha.Tests.csproj --configuration Release
 if errorlevel 1 (
     echo ERROR: tests failed.
@@ -52,7 +52,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo === [3/4] dotnet publish ===
+echo === [3/5] dotnet publish ===
 if exist publish rmdir /s /q publish
 dotnet publish -c Release --runtime win-x64 --self-contained true -p:PublishReadyToRun=true -o ./publish
 if errorlevel 1 (
@@ -62,7 +62,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo === [4/4] vpk pack ===
+echo === [4/5] vpk pack ===
 vpk pack --packId Kiriha --packVersion %VERSION% --packDir ./publish --mainExe Kiriha.exe --icon ./Assets/kiriha.ico
 if errorlevel 1 (
     echo ERROR: vpk pack failed.
@@ -71,8 +71,19 @@ if errorlevel 1 (
 )
 
 echo.
+echo === [5/5] Git commit ^& push ===
+git add .
+git commit -m "Release %VERSION%"
+git tag -a v%VERSION% -m "Release %VERSION%"
+git push origin main
+git push origin v%VERSION%
+if errorlevel 1 (
+    echo WARNING: Git push failed. Please push manually.
+)
+
+echo.
 echo ============================================================================
-echo  DONE: Kiriha %VERSION% packaged.
+echo  DONE: Kiriha %VERSION% packaged and pushed to GitHub.
 echo  Output: .\Releases\
 echo ============================================================================
 pause
