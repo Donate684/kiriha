@@ -1,0 +1,11 @@
+{
+  "placeholder": "Search anime...",
+  "status": {
+    "searching": "Searching...",
+    "translating": "Translating title...",
+    "searching_mal": "Searching MyAnimeList...",
+    "found": "Found {0} results",
+    "not_found": "Nothing found",
+    "error": "Search failed"
+  }
+}

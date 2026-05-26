@@ -1,0 +1,714 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:models="clr-namespace:Kiriha.Models"
+             xmlns:material="using:Material.Icons.Avalonia"
+             xmlns:controls="using:Kiriha.Views.Controls"
+             xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+             xmlns:conv="using:Kiriha.Converters"
+             xmlns:u="using:Kiriha.Utils"
+             x:Class="Kiriha.Views.Controls.Variants.NowPlayingCompact"
+             x:Name="Root"
+             x:DataType="vm:NowPlayingViewModel">
+
+    <UserControl.Resources>
+        <conv:LocConverter x:Key="LocConverter"/>
+        <conv:IntToBooleanConverter x:Key="IntToBoolConverter"/>
+        <conv:FilePathToBitmapConverter x:Key="FilePathToBitmapConverter"/>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.Label">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Opacity" Value="0.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
+        </Style>
+        <Style Selector="TextBlock.Value">
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style Selector="Border.Section">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillDefault}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefault}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="18"/>
+        </Style>
+        <Style Selector="TextBlock.SectionHead">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+
+        <!-- Underline-style tabs integrated into the card header -->
+        <Style Selector="RadioButton.Tab">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid RowDefinitions="*,2">
+                        <ContentPresenter Grid.Row="0"
+                                          Name="PART_Content"
+                                          Content="{TemplateBinding Content}"
+                                          Margin="0,0,0,10"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                        <Rectangle Grid.Row="1" Name="PART_Indicator"
+                                   Height="2" Fill="Transparent"
+                                   RadiusX="1" RadiusY="1"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Opacity" Value="0.55"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,24,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.Tab:pointerover">
+            <Setter Property="Opacity" Value="0.85"/>
+        </Style>
+        <Style Selector="RadioButton.Tab:checked">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="RadioButton.Tab:checked /template/ Rectangle#PART_Indicator">
+            <Setter Property="Fill" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        
+        <!-- ═══ Share Flyout Presenter (Ghost host) ═══ -->
+        <Style Selector="FlyoutPresenter.ShareFlyout">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="240"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <!-- Disabling system shadow and chrome which might induce composition transparency -->
+        </Style>
+
+        <!-- ═══ Share Row Button (Cloned 1:1 from FilterToggle in SeasonalView) ═══ -->
+        <Style Selector="Button.ShareRow">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiary}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.ShareRow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Button.ShareRow:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <!-- Empty -->
+        <controls:DetectionStatusView Margin="32,24,32,32" IsVisible="{Binding !IsMediaDetected}"/>
+
+        <!-- Detected -->
+        <Grid IsVisible="{Binding IsMediaDetected}" RowDefinitions="Auto,*" Margin="0,12,0,0">
+
+                <!-- ═══════ PLAYER BAR (sticky, styled like AnimeDetails hero) ═══════ -->
+                <Border Grid.Row="0" Margin="32,0,24,0" CornerRadius="14" Padding="18,14" ClipToBounds="True">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="{DynamicResource SystemAccentColor}" Offset="0"/>
+                            <GradientStop Color="{DynamicResource SystemAccentColorDark1}" Offset="0.6"/>
+                            <GradientStop Color="{DynamicResource SystemAccentColorDark2}" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                        <!-- Poster -->
+                        <Border Grid.Column="0" Width="100" Height="140" CornerRadius="8" ClipToBounds="True"
+                                BoxShadow="0 4 20 0 #60000000">
+                            <Panel>
+                                <asyncImageLoader:AdvancedImage Source="{Binding MatchedAnime.MainPictureUrl}"
+                                                                 Stretch="UniformToFill"
+                                                                 IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                <Border Background="#22000000"
+                                        IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNull}}">
+                                    <material:MaterialIcon Kind="ImageOutline" Width="32" Height="32" Opacity="0.3"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </Panel>
+                        </Border>
+
+                        <!-- Title / meta -->
+                        <StackPanel Grid.Column="1" Margin="18,0,0,0" VerticalAlignment="Center" Spacing="3">
+                            <!-- Top line: live status -->
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,2">
+                                <Border CornerRadius="10" Padding="8,3" VerticalAlignment="Center"
+                                        Background="#20FFFFFF">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <material:MaterialIcon Width="11" Height="11" Foreground="White"
+                                                               Kind="Play" IsVisible="{Binding !IsPaused}"/>
+                                        <material:MaterialIcon Width="11" Height="11" Foreground="White"
+                                                               Kind="Pause" IsVisible="{Binding IsPaused}"/>
+                                        <TextBlock Text="{Binding DisplayStatus}" FontSize="10" FontWeight="Bold"
+                                                   Foreground="White"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Main title -->
+                            <TextBlock Text="{Binding MatchedAnime.Title}" FontSize="24" FontWeight="Bold"
+                                       Foreground="White" TextWrapping="Wrap" LineHeight="30"
+                                       IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                            <TextBlock Text="{Binding CurrentMedia.AnimeTitle}" FontSize="22" FontWeight="Bold"
+                                       Foreground="White" TextWrapping="Wrap" LineHeight="28"
+                                       IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNull}}"/>
+
+                            <!-- Russian title (optional) -->
+                            <TextBlock Text="{Binding MatchedAnime.RussianTitle}" FontSize="13" Foreground="#90FFFFFF"
+                                       TextWrapping="Wrap">
+                                <TextBlock.IsVisible>
+                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding Path="Settings.Current.UI.UseRussianTitles"/>
+                                        <Binding Path="MatchedAnime.RussianTitle" Converter="{x:Static StringConverters.IsNotNullOrEmpty}"/>
+                                    </MultiBinding>
+                                </TextBlock.IsVisible>
+                            </TextBlock>
+
+                            <!-- Metadata row with dividers (AnimeDetails hero style) -->
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,5,0,0">
+                                <!-- Episode -->
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <material:MaterialIcon Kind="PlayCircleOutline" Width="12" Height="12"
+                                                           Foreground="#B0FFFFFF" VerticalAlignment="Center"/>
+                                    <TextBlock FontSize="11" Foreground="#D0FFFFFF" VerticalAlignment="Center">
+                                        <Run Text="{DynamicResource l.anime.labels.episode}"/>
+                                        <Run Text=" "/>
+                                        <Run FontWeight="Bold" Foreground="White" Text="{Binding CurrentMedia.Episode}"/>
+                                        <Run Text="{DynamicResource l.anime.labels.of}"/>
+                                        <Run Text="{Binding MatchedAnime.TotalEpisodes}"/>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <!-- Type -->
+                                <Border Width="1" Height="12" Background="#40FFFFFF" VerticalAlignment="Center"
+                                        IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4"
+                                            IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                    <material:MaterialIcon Kind="Television" Width="12" Height="12"
+                                                           Foreground="#80FFFFFF" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding MatchedAnime.Type, Converter={StaticResource LocConverter}}"
+                                               FontSize="11" Foreground="#B0FFFFFF" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- Score -->
+                                <Border Width="1" Height="12" Background="#40FFFFFF" VerticalAlignment="Center"
+                                        IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4"
+                                            IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                    <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="Gold"
+                                                           VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding MatchedAnime.MeanScore}" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="White" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Action chips (AnimeDetails style) -->
+                            <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,6,0,0"
+                                        IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <Border Background="#20FFFFFF" CornerRadius="6" Width="28" Height="28"
+                                        ToolTip.Tip="{DynamicResource l.anime.links.mal}">
+                                    <Border.Styles>
+                                        <Style Selector="Border:pointerover"><Setter Property="Background" Value="#35FFFFFF"/></Style>
+                                    </Border.Styles>
+                                    <Button Background="Transparent" Padding="0" CornerRadius="6"
+                                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                            Command="{Binding OpenMalLinkCommand}">
+                                        <Image Source="/Assets/myanimelist_white.png" Width="16" Height="16" Opacity="0.9"/>
+                                    </Button>
+                                </Border>
+                                <Border Background="#20FFFFFF" CornerRadius="6" Width="28" Height="28"
+                                        ToolTip.Tip="{DynamicResource l.anime.links.shiki}">
+                                    <Border.Styles>
+                                        <Style Selector="Border:pointerover"><Setter Property="Background" Value="#35FFFFFF"/></Style>
+                                    </Border.Styles>
+                                    <Button Background="Transparent" Padding="0" CornerRadius="6"
+                                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                            Command="{Binding OpenShikiLinkCommand}">
+                                        <Image Source="/Assets/shikimori_white.png" Width="16" Height="16" Opacity="0.9"/>
+                                    </Button>
+                                </Border>
+                                <!-- User-defined share buttons. -->
+                                <ItemsControl ItemsSource="{Binding CustomShareLinks}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:CustomShareLinkRuntime">
+                                            <Border Background="#20FFFFFF" CornerRadius="6" Width="28" Height="28" ToolTip.Tip="{Binding Name}">
+                                                <Border.Styles><Style Selector="Border:pointerover"><Setter Property="Background" Value="#35FFFFFF"/></Style></Border.Styles>
+                                                <Button Background="Transparent" Padding="0" CornerRadius="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Command="{Binding OpenCommand}">
+                                                    <Panel>
+                                                        <material:MaterialIcon Kind="{Binding IconKind}" Width="16" Height="16" Foreground="#CCFFFFFF"
+                                                                               IsVisible="{Binding UseIconKind}"/>
+                                                        <Image Source="{Binding IconPath, Converter={StaticResource FilePathToBitmapConverter}}"
+                                                               Width="18" Height="18" Stretch="UniformToFill"
+                                                               IsVisible="{Binding HasIconImage}"/>
+                                                    </Panel>
+                                                </Button>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Border Background="#20FFFFFF" CornerRadius="6" Width="28" Height="28"
+                                        ToolTip.Tip="{DynamicResource l.common.actions.share}" Margin="5,0,0,0">
+                                    <Border.Styles>
+                                        <Style Selector="Border:pointerover"><Setter Property="Background" Value="#35FFFFFF"/></Style>
+                                    </Border.Styles>
+                                    <Button x:Name="ShareMainButton" Background="Transparent" Padding="0" CornerRadius="6"
+                                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                        <material:MaterialIcon Kind="ShareVariant" Width="16" Height="16" Foreground="#CCFFFFFF"/>
+                                        <Button.Flyout>
+                                            <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="ShareFlyout">
+                                                <!-- Hardcoded impenetrable opaque container -->
+                                                <Border Background="{DynamicResource ModalBackgroundFill}"
+                                                        BorderBrush="{DynamicResource CardStrokeColorDefault}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="12"
+                                                        BoxShadow="0 8 32 0 #30000000">
+                                                    <StackPanel Spacing="4" Margin="10">
+                                                        <!-- Static items -->
+                                                        <Button Classes="ShareRow" Command="{Binding CopyMalLinkCommand}" Click="ShareRow_Click">
+                                                            <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                                                                <Border Grid.Column="0" Width="24" Height="24" CornerRadius="6"
+                                                                        Background="{DynamicResource SystemAccentColor}" VerticalAlignment="Center">
+                                                                    <Image Source="/Assets/myanimelist_white.png" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Border>
+                                                                <TextBlock Grid.Column="1" Text="{DynamicResource l.anime.links.mal}" Margin="10,0,0,0" FontSize="12" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                            </Grid>
+                                                        </Button>
+
+                                                        <Button Classes="ShareRow" Command="{Binding CopyShikiLinkCommand}" Click="ShareRow_Click">
+                                                            <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                                                                <Border Grid.Column="0" Width="24" Height="24" CornerRadius="6"
+                                                                        Background="{DynamicResource SystemAccentColor}" VerticalAlignment="Center">
+                                                                    <Image Source="/Assets/shikimori_white.png" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Border>
+                                                                <TextBlock Grid.Column="1" Text="{DynamicResource l.anime.links.shiki}" Margin="10,0,0,0" FontSize="12" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                            </Grid>
+                                                        </Button>
+                                                        
+                                                        <!-- Line -->
+                                                        <Border Height="1" Margin="0,4" Background="{DynamicResource DividerStrokeColorDefault}"
+                                                                IsVisible="{Binding CustomShareLinks.Count, Converter={StaticResource IntToBoolConverter}}"/>
+                                                        
+                                                        <!-- Custom links -->
+                                                        <ItemsControl ItemsSource="{Binding CustomShareLinks}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate><StackPanel Spacing="4"/></ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="vm:CustomShareLinkRuntime">
+                                                                    <Button Classes="ShareRow" Command="{Binding CopyCommand}" Click="ShareRow_Click">
+                                                                        <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                                                                            <Border Grid.Column="0" Width="24" Height="24" CornerRadius="6"
+                                                                                    Background="{DynamicResource SystemAccentColor}" VerticalAlignment="Center">
+                                                                                <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                                    <material:MaterialIcon Kind="{Binding IconKind}" Width="14" Height="14" Foreground="White"
+                                                                                                           IsVisible="{Binding UseIconKind}"/>
+                                                                                    <Image Source="{Binding IconPath, Converter={StaticResource FilePathToBitmapConverter}}"
+                                                                                           Width="14" Height="14" Stretch="UniformToFill"
+                                                                                           IsVisible="{Binding HasIconImage}"/>
+                                                                                </Panel>
+                                                                            </Border>
+                                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="10,0,0,0" FontSize="12" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                                        </Grid>
+                                                                    </Button>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Flyout>
+                                        </Button.Flyout>
+                                    </Button>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ═══════ SCROLLABLE CONTENT ═══════ -->
+                <ScrollViewer Grid.Row="1" Margin="0,18,0,0"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              u:SmoothScroll.IsEnabled="True">
+                    <StackPanel Margin="32,0,24,40" Spacing="18">
+
+                <!-- Add to list -->
+                <Border Padding="14,10" Background="#20f1c40f" CornerRadius="10"
+                        BorderBrush="#60f1c40f" BorderThickness="1"
+                        IsVisible="{Binding IsNotInList}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <material:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Foreground="#f1c40f"
+                                               Width="20" Height="20" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{DynamicResource l.anime.list_actions.not_in_my_list}"
+                                   VerticalAlignment="Center" FontSize="13" Margin="12,0"/>
+                        <Button Grid.Column="2" Command="{Binding AddToWatchingCommand}"
+                                Padding="14,6" CornerRadius="6" BorderThickness="0"
+                                Background="{DynamicResource SystemAccentColor}" Foreground="White">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <material:MaterialIcon Kind="Play" Width="14" Height="14"/>
+                                <TextBlock Text="{DynamicResource l.anime.status.watching}" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- ═══════ Manual match: collapsed CTA ═══════ -->
+                <Border Classes="Section" Padding="20,18">
+                    <Border.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="MatchedAnime" Converter="{x:Static ObjectConverters.IsNull}"/>
+                            <Binding Path="!IsSearchPanelOpen"/>
+                        </MultiBinding>
+                    </Border.IsVisible>
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                        <!-- Icon badge -->
+                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22"
+                                Background="{DynamicResource SubtleFillColorSecondary}"
+                                VerticalAlignment="Center">
+                            <material:MaterialIcon Kind="HelpCircleOutline" Width="22" Height="22"
+                                                   Foreground="{DynamicResource SystemAccentColor}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Text -->
+                        <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{DynamicResource l.scrobbler.matching.not_matched_title}"
+                                       FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text="{DynamicResource l.scrobbler.matching.not_matched_desc}"
+                                       FontSize="12" Opacity="0.65" TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- Action button -->
+                        <Button Grid.Column="2" Command="{Binding OpenSearchPanelCommand}"
+                                Padding="16,9" CornerRadius="8" BorderThickness="0" Cursor="Hand"
+                                Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <material:MaterialIcon Kind="Magnify" Width="16" Height="16"/>
+                                <TextBlock Text="{DynamicResource l.scrobbler.matching.find_manually}"
+                                           FontSize="13" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- ═══════ Manual match: expanded search panel ═══════ -->
+                <Border Classes="Section">
+                    <Border.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="MatchedAnime" Converter="{x:Static ObjectConverters.IsNull}"/>
+                            <Binding Path="IsSearchPanelOpen"/>
+                        </MultiBinding>
+                    </Border.IsVisible>
+                    <StackPanel Spacing="14">
+                        <!-- Header with close button -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{DynamicResource l.scrobbler.matching.maybe_watching}"
+                                       Classes="SectionHead" Margin="0" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Command="{Binding CloseSearchPanelCommand}"
+                                    Background="Transparent" BorderThickness="0" Padding="6" CornerRadius="6"
+                                    ToolTip.Tip="{DynamicResource l.scrobbler.matching.close}" Cursor="Hand">
+                                <material:MaterialIcon Kind="Close" Width="16" Height="16" Opacity="0.65"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- Search box -->
+                        <Border Padding="4,2" Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="10"
+                                BorderBrush="{DynamicResource CardStrokeColorDefault}" BorderThickness="1">
+                            <TextBox Text="{Binding SearchQuery}"
+                                     PlaceholderText="{DynamicResource l.scrobbler.matching.search_placeholder}"
+                                     Background="Transparent" BorderThickness="0"
+                                     VerticalContentAlignment="Center" Height="40" FontSize="13" Padding="12,0">
+                                <TextBox.KeyBindings>
+                                    <KeyBinding Gesture="Enter" Command="{Binding SearchSuggestionsCommand}"/>
+                                </TextBox.KeyBindings>
+                                <TextBox.InnerRightContent>
+                                    <Button Command="{Binding SearchSuggestionsCommand}"
+                                            Background="Transparent" BorderThickness="0" Padding="8,0">
+                                        <material:MaterialIcon Kind="Magnify" Width="20" Height="20"
+                                                               Foreground="{DynamicResource SystemAccentColor}"/>
+                                    </Button>
+                                </TextBox.InnerRightContent>
+                            </TextBox>
+                        </Border>
+
+                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsSearching}" Height="2"/>
+
+                        <!-- Empty state -->
+                        <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="0,18,0,18">
+                            <StackPanel.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                    <Binding Path="!HasSuggestions"/>
+                                    <Binding Path="!IsSearching"/>
+                                </MultiBinding>
+                            </StackPanel.IsVisible>
+                            <material:MaterialIcon Kind="MagnifyScan" Width="32" Height="32" Opacity="0.3"
+                                                   HorizontalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource l.scrobbler.matching.no_suggestions}"
+                                       FontSize="12" Opacity="0.55" HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Suggestions grid -->
+                        <ItemsControl ItemsSource="{Binding Suggestions}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.Styles>
+                                <Style Selector="Button.Card">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Setter Property="RenderTransform" Value="scale(1.0)"/>
+                                    <Setter Property="Transitions">
+                                        <Transitions>
+                                            <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18"/>
+                                        </Transitions>
+                                    </Setter>
+                                </Style>
+                                <Style Selector="Button.Card:pointerover">
+                                    <Setter Property="RenderTransform" Value="scale(1.04)"/>
+                                </Style>
+                                <Style Selector="Button.Card /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                                <Style Selector="Button.Card:pointerover /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                                <Style Selector="Button.Card:pressed /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                            </ItemsControl.Styles>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:AnimeItem">
+                                    <Button Classes="Card"
+                                            Command="{Binding #Root.((vm:NowPlayingViewModel)DataContext).SelectSuggestionCommand}"
+                                            CommandParameter="{Binding}"
+                                            Margin="0,0,10,10" Width="380">
+                                        <Border CornerRadius="10" Padding="10"
+                                                Background="{DynamicResource CardBackgroundFillDefault}"
+                                                BorderBrush="{DynamicResource CardStrokeColorDefault}"
+                                                BorderThickness="1">
+                                            <Grid ColumnDefinitions="80,*" Height="110">
+                                                <!-- Poster -->
+                                                <Border Grid.Column="0" CornerRadius="6" ClipToBounds="True"
+                                                        Width="75" Height="110" Background="#222222"
+                                                        HorizontalAlignment="Left" VerticalAlignment="Top">
+                                                    <asyncImageLoader:AdvancedImage Source="{Binding MainPictureUrl}"
+                                                                                     Stretch="UniformToFill"/>
+                                                </Border>
+
+                                                <!-- Content -->
+                                                <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="4"
+                                                            VerticalAlignment="Top">
+                                                    <!-- Title + score -->
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Title}"
+                                                                   FontSize="13" FontWeight="SemiBold"
+                                                                   TextWrapping="Wrap" MaxLines="2"
+                                                                   TextTrimming="CharacterEllipsis" LineHeight="17"/>
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                                    Spacing="3" Margin="8,2,0,0" VerticalAlignment="Top">
+                                                            <material:MaterialIcon Kind="Star" Width="11" Height="11"
+                                                                                   Foreground="Gold" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding MeanScore}" FontSize="11"
+                                                                       FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Grid>
+
+                                                    <!-- English alt title -->
+                                                    <TextBlock Text="{Binding EnglishTitle}" FontSize="11"
+                                                               Opacity="0.55" FontStyle="Italic"
+                                                               TextTrimming="CharacterEllipsis" MaxLines="1"
+                                                               IsVisible="{Binding EnglishTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                                                    <!-- Meta row: year · type · episodes -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                                                        <StackPanel Orientation="Horizontal" Spacing="4"
+                                                                    IsVisible="{Binding StartYear, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                            <material:MaterialIcon Kind="CalendarBlankOutline" Width="11" Height="11"
+                                                                                   Opacity="0.55" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding StartYear}" FontSize="11"
+                                                                       FontWeight="SemiBold" Opacity="0.8" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                        <TextBlock Text="·" FontSize="11" Opacity="0.35" VerticalAlignment="Center"
+                                                                   IsVisible="{Binding StartYear, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                                        <TextBlock Text="{Binding Type, Converter={StaticResource LocConverter}}"
+                                                                   FontSize="11" Opacity="0.8" VerticalAlignment="Center"/>
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center"
+                                                                    IsVisible="{Binding TotalEpisodes, Converter={StaticResource IntToBoolConverter}}">
+                                                            <TextBlock Text="·" FontSize="11" Opacity="0.35"/>
+                                                            <TextBlock Text="{Binding TotalEpisodes}" FontSize="11"
+                                                                       FontWeight="SemiBold" Opacity="0.8"/>
+                                                            <TextBlock Text="{DynamicResource l.anime.labels.ep_abbr}"
+                                                                       FontSize="11" Opacity="0.55"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+
+                                                    <!-- Genre chips -->
+                                                    <ItemsControl ItemsSource="{Binding TopGenres}" Margin="0,4,0,0">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <WrapPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{DynamicResource SubtleFillColorSecondary}"
+                                                                        BorderBrush="{DynamicResource CardStrokeColorDefault}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="4" Padding="6,1"
+                                                                        Margin="0,0,4,4">
+                                                                    <TextBlock Text="{Binding Converter={StaticResource LocConverter}}"
+                                                                               FontSize="10" Opacity="0.85"/>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Info card with tab switcher: Details / Synopsis / Alt titles -->
+                <Border Classes="Section" Padding="0"
+                        IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel>
+                        <!-- Tabs header (flush with card top) -->
+                        <Border BorderBrush="{DynamicResource CardStrokeColorDefault}"
+                                BorderThickness="0,0,0,1"
+                                Padding="18,12,18,0">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="TabDetails" Classes="Tab" GroupName="NpInfoTab"
+                                             IsChecked="True"
+                                             Content="{DynamicResource l.common.actions.details}"/>
+                                <RadioButton x:Name="TabSynopsis" Classes="Tab" GroupName="NpInfoTab"
+                                             Content="{DynamicResource l.anime.labels.synopsis}"/>
+                                <RadioButton x:Name="TabAltTitles" Classes="Tab" GroupName="NpInfoTab"
+                                             Content="{DynamicResource l.anime.labels.alternative_titles}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Panel Margin="18,18,18,18">
+
+                        <!-- Details -->
+                        <Grid IsVisible="{Binding #TabDetails.IsChecked}"
+                              ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource l.anime.labels.type}" Classes="Label"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MatchedAnime.Type, Converter={StaticResource LocConverter}}" Classes="Value"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource l.anime.labels.episodes}" Classes="Label"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MatchedAnime.TotalEpisodes}" Classes="Value"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource l.anime.labels.status}" Classes="Label"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MatchedAnime.DisplayAiringStatus}" Classes="Value"/>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource l.anime.labels.season}" Classes="Label"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MatchedAnime.Season, Converter={StaticResource LocConverter}}" Classes="Value"/>
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource l.anime.labels.genres}" Classes="Label"/>
+                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MatchedAnime.Genres, Converter={StaticResource LocConverter}}"
+                                       Classes="Value" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource l.anime.labels.studios}" Classes="Label"/>
+                            <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MatchedAnime.Studios, Converter={StaticResource LocConverter}}"
+                                       Classes="Value" TextWrapping="Wrap"/>
+                        </Grid>
+
+                        <!-- Synopsis -->
+                        <TextBlock IsVisible="{Binding #TabSynopsis.IsChecked}"
+                                   Text="{Binding MatchedAnime.DisplaySynopsis}" FontSize="13"
+                                   TextWrapping="Wrap" Opacity="0.85" LineHeight="20"/>
+
+                        <!-- Alt titles -->
+                        <StackPanel IsVisible="{Binding #TabAltTitles.IsChecked}">
+                            <ItemsControl ItemsSource="{Binding AllAlternativeTitles}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="6"
+                                                Padding="10,4" Margin="0,0,6,6">
+                                            <TextBlock Text="{Binding}" FontSize="12"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{DynamicResource l.anime.labels.no_alternative_titles}" FontSize="12" Opacity="0.5"
+                                       IsVisible="{Binding !HasAlternativeTitles}"/>
+                        </StackPanel>
+
+                        </Panel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Detection raw info -->
+                <Border Classes="Section">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{DynamicResource l.scrobbler.status.detection_info}" Classes="SectionHead"/>
+                        <TextBlock Text="{Binding CurrentMedia.OriginalTitle}" FontSize="11"
+                                   FontStyle="Italic" Opacity="0.6" TextWrapping="Wrap"/>
+                        <!-- Player + mapping info -->
+                        <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,6,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6"
+                                        IsVisible="{Binding CurrentMedia.ProcessName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <material:MaterialIcon Kind="Monitor" Width="12" Height="12" Opacity="0.4" VerticalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource l.scrobbler.status.player}" FontSize="10" Opacity="0.4" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding CurrentMedia.ProcessName}" FontSize="10" Opacity="0.6" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="4"
+                                        IsVisible="{Binding MatchedAnime, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <TextBlock Text="{DynamicResource l.scrobbler.status.mapped_by}" FontSize="10" Opacity="0.4" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding !IsManuallyMapped}">
+                                    <TextBlock Text="{DynamicResource l.scrobbler.status.mapped_auto}" FontSize="10" Opacity="0.5" VerticalAlignment="Center"/>
+                                    <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                            Command="{Binding UnlinkMatchCommand}" Foreground="{DynamicResource SystemAccentColor}">
+                                        <TextBlock Text="{DynamicResource l.scrobbler.status.delete_mapping}" FontSize="10" TextDecorations="Underline"/>
+                                    </Button>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsManuallyMapped}">
+                                    <TextBlock Text="{DynamicResource l.scrobbler.status.mapped_manual}" FontSize="10" Opacity="0.6" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                            Command="{Binding UnlinkMatchCommand}" Foreground="{DynamicResource SystemAccentColor}">
+                                        <TextBlock Text="{DynamicResource l.scrobbler.status.delete_mapping}" FontSize="10" TextDecorations="Underline"/>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                    </StackPanel>
+                </ScrollViewer>
+        </Grid>
+    </Panel>
+</UserControl>

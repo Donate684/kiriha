@@ -1,0 +1,28 @@
+{
+  "title": "История просмотров",
+  "subtitle": "Последние действия и обновления",
+  "no_history": "История пока пуста",
+  "no_results": "Ничего не найдено",
+  "unit_ep": "эп.",
+  "episode_range": "эп. {0}–{1}",
+  "episode_single": "эп. {0}",
+  "search_placeholder": "Поиск...",
+  "period": {
+    "all": "Все",
+    "today": "Сегодня",
+    "week": "Неделя",
+    "month": "Месяц"
+  },
+  "actions": {
+    "all": "Все",
+    "watched": "Просмотрено",
+    "reverted": "Откачено",
+    "scrobbled": "Отмечено (скробблер)",
+    "score_set": "Изменена оценка на",
+    "score_set_filter": "Изменение оценки",
+    "sync_failed": "Ошибка синхронизации",
+    "completed": "Завершено",
+    "dropped": "Брошено"
+  },
+  "already_scrobbled": "Уже отмечено"
+}

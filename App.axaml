@@ -1,0 +1,305 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:conv="using:Kiriha.Converters"
+             xmlns:core="using:Kiriha.Core"
+             x:Class="Kiriha.App"
+             RequestedThemeVariant="Default">
+
+    <TrayIcon.Icons>
+        <TrayIcons>
+            <TrayIcon Icon="/Assets/kiriha.ico" 
+                      Clicked="TrayRestore_Click">
+                <TrayIcon.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Click="TrayRestore_Click" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Click="TrayExit_Click" />
+                    </NativeMenu>
+                </TrayIcon.Menu>
+            </TrayIcon>
+        </TrayIcons>
+    </TrayIcon.Icons>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <!-- ═══ Windows 11 Layered Surface System ═══ -->
+                    <SolidColorBrush x:Key="LayerFillColorDefault" Color="#66F9F9F9"/>
+                    <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#E4000000"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillDefault" Color="#B3FFFFFF"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillSecondary" Color="#80F6F6F6"/>
+                    <SolidColorBrush x:Key="SubtleFillColorSecondary" Color="#09000000"/>
+                    <SolidColorBrush x:Key="SubtleFillColorTertiary" Color="#04000000"/>
+                    <SolidColorBrush x:Key="DividerStrokeColorDefault" Color="#0C000000"/>
+                    <SolidColorBrush x:Key="CardStrokeColorDefault" Color="#0F000000"/>
+                    <SolidColorBrush x:Key="CardHoverFillColor" Color="#12000000"/>
+                    <SolidColorBrush x:Key="NavItemHoverColor" Color="#0A000000"/>
+                    <SolidColorBrush x:Key="ContentSurfaceFill" Color="#4CFFFFFF"/>
+                    <SolidColorBrush x:Key="ToastBackground" Color="#F0F5F5F5"/>
+                    <!-- Modal (opaque) -->
+                    <SolidColorBrush x:Key="ModalBackgroundFill" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="ModalSidebarFill" Color="#FFF3F3F3"/>
+                    <SolidColorBrush x:Key="SystemControlBackgroundAltHighBrush" Color="Transparent"/>
+                    <!-- Scrollbar -->
+                    <SolidColorBrush x:Key="ScrollBarTrackFill" Color="#08000000"/>
+                    <SolidColorBrush x:Key="ScrollBarTrackFillHover" Color="#10000000"/>
+                    <SolidColorBrush x:Key="ScrollBarThumbFill" Color="#66787878"/>
+                    <SolidColorBrush x:Key="ScrollBarThumbFillHover" Color="#99585858"/>
+                    <SolidColorBrush x:Key="ScrollBarThumbFillPressed" Color="#CC484848"/>
+                    <!-- ═══ Leaf Logo (theme-aware) ═══ -->
+                    <SolidColorBrush x:Key="LeafVeinBrush"   Color="#FFFFFF" Opacity="0.55"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <!-- ═══ Windows 11 Layered Surface System ═══ -->
+                    <SolidColorBrush x:Key="LayerFillColorDefault" Color="#333A3A3A"/>
+                    <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillDefault" Color="#0DFFFFFF"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillSecondary" Color="#08FFFFFF"/>
+                    <SolidColorBrush x:Key="SubtleFillColorSecondary" Color="#0FFFFFFF"/>
+                    <SolidColorBrush x:Key="SubtleFillColorTertiary" Color="#06FFFFFF"/>
+                    <SolidColorBrush x:Key="DividerStrokeColorDefault" Color="#15FFFFFF"/>
+                    <SolidColorBrush x:Key="CardStrokeColorDefault" Color="#19FFFFFF"/>
+                    <SolidColorBrush x:Key="CardHoverFillColor" Color="#15FFFFFF"/>
+                    <SolidColorBrush x:Key="NavItemHoverColor" Color="#15FFFFFF"/>
+                    <SolidColorBrush x:Key="ContentSurfaceFill" Color="#26202020"/>
+                    <SolidColorBrush x:Key="ToastBackground" Color="#E6212121"/>
+                    <!-- Modal (opaque) -->
+                    <SolidColorBrush x:Key="ModalBackgroundFill" Color="#FF1F1F1F"/>
+                    <SolidColorBrush x:Key="ModalSidebarFill" Color="#FF171717"/>
+                    <SolidColorBrush x:Key="SystemControlBackgroundAltHighBrush" Color="Transparent"/>
+                    <!-- Scrollbar -->
+                    <SolidColorBrush x:Key="ScrollBarTrackFill" Color="#0AFFFFFF"/>
+                    <SolidColorBrush x:Key="ScrollBarTrackFillHover" Color="#14FFFFFF"/>
+                    <SolidColorBrush x:Key="ScrollBarThumbFill" Color="#50AAAAAA"/>
+                    <SolidColorBrush x:Key="ScrollBarThumbFillHover" Color="#80B0B0B0"/>
+                    <SolidColorBrush x:Key="ScrollBarThumbFillPressed" Color="#A0C0C0C0"/>
+                    <!-- ═══ Leaf Logo (theme-aware) ═══ -->
+                    <SolidColorBrush x:Key="LeafVeinBrush"   Color="#FFFFFF" Opacity="0.75"/>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+        <conv:StarKindConverter x:Key="StarKindConverter"/>
+        <conv:StarColorConverter x:Key="StarColorConverter"/>
+        <conv:LocConverter x:Key="LocConverter"/>
+    </Application.Resources>
+
+    <Application.DataTemplates>
+        <core:ViewLocator/>
+    </Application.DataTemplates>
+  
+    <Application.Styles>
+        <FluentTheme />
+        <materialIcons:MaterialIconStyles />
+
+        <!-- ═══ Global Pill RadioButton (reusable across views) ═══ -->
+        <Style Selector="RadioButton.Pill">
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.Pill">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Opacity" Value="0.55"/>
+        </Style>
+        <Style Selector="RadioButton.Pill:pointerover">
+            <Setter Property="Opacity" Value="0.75"/>
+            <Setter Property="Background" Value="#08808080"/>
+        </Style>
+        <Style Selector="RadioButton.Pill:checked">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <!-- ═══ Window Transparency Fix (Avalonia 12) ═══ -->
+        <Style Selector="Window">
+            <Setter Property="TransparencyBackgroundFallback" Value="Transparent"/>
+        </Style>
+
+        <!-- ═══ Window Controls Alignment Fix (Avalonia 12) ═══ -->
+        <Style Selector="WindowDrawnDecorations Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
+
+        <!-- ═══ Hide Fullscreen Button (Avalonia 12) ═══ -->
+        <Style Selector="Button#PART_FullScreenButton">
+            <Setter Property="IsVisible" Value="False" />
+            <Setter Property="Width" Value="0" />
+            <Setter Property="Height" Value="0" />
+        </Style>
+
+        <!-- ═══ Windows 11 Fluent ScrollBar — Full Template Override ═══ -->
+        <Style Selector="ScrollBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="AllowAutoHide" Value="False"/>
+        </Style>
+
+        <!-- ── Vertical ScrollBar Template ── -->
+        <Style Selector="ScrollBar:vertical">
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="MinWidth" Value="14"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid Background="Transparent">
+                        <!-- Subtle track pill -->
+                        <Border x:Name="TrackBg"
+                                Background="{DynamicResource ScrollBarTrackFill}"
+                                CornerRadius="100"
+                                Width="4"
+                                HorizontalAlignment="Center"
+                                Margin="0,4"/>
+                        <!-- Functional track -->
+                        <Track x:Name="PART_Track"
+                               IsDirectionReversed="True"
+                               Orientation="Vertical"
+                               Minimum="{TemplateBinding Minimum}"
+                               Maximum="{TemplateBinding Maximum}"
+                               Value="{TemplateBinding Value, Mode=TwoWay}"
+                               ViewportSize="{TemplateBinding ViewportSize}"
+                               Margin="0,4">
+                            <Track.Thumb>
+                                <Thumb x:Name="thumb"/>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- Vertical track bg expand on hover -->
+        <Style Selector="ScrollBar:vertical /template/ Border#TrackBg">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Width" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ScrollBar:vertical:pointerover /template/ Border#TrackBg">
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="Background" Value="{DynamicResource ScrollBarTrackFillHover}"/>
+        </Style>
+
+        <!-- ── Horizontal ScrollBar Template ── -->
+        <Style Selector="ScrollBar:horizontal">
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="MinHeight" Value="14"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid Background="Transparent">
+                        <!-- Subtle track pill -->
+                        <Border x:Name="TrackBg"
+                                Background="{DynamicResource ScrollBarTrackFill}"
+                                CornerRadius="100"
+                                Height="4"
+                                VerticalAlignment="Center"
+                                Margin="4,0"/>
+                        <!-- Functional track -->
+                        <Track x:Name="PART_Track"
+                               Orientation="Horizontal"
+                               Minimum="{TemplateBinding Minimum}"
+                               Maximum="{TemplateBinding Maximum}"
+                               Value="{TemplateBinding Value, Mode=TwoWay}"
+                               ViewportSize="{TemplateBinding ViewportSize}"
+                               Margin="4,0">
+                            <Track.Thumb>
+                                <Thumb x:Name="thumb"/>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- Horizontal track bg expand on hover -->
+        <Style Selector="ScrollBar:horizontal /template/ Border#TrackBg">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Height" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ScrollBar:horizontal:pointerover /template/ Border#TrackBg">
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="Background" Value="{DynamicResource ScrollBarTrackFillHover}"/>
+        </Style>
+
+        <!-- ── Thumb visual (shared via custom template) ── -->
+        <Style Selector="ScrollBar Thumb">
+            <Setter Property="Background" Value="{DynamicResource ScrollBarThumbFill}"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="100"/>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <!-- Vertical thumb sizing -->
+        <Style Selector="ScrollBar:vertical Thumb">
+            <Setter Property="Width" Value="4"/>
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Width" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ScrollBar:vertical:pointerover Thumb">
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="Background" Value="{DynamicResource ScrollBarThumbFillHover}"/>
+        </Style>
+        <Style Selector="ScrollBar:vertical Thumb:pressed">
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="Background" Value="{DynamicResource ScrollBarThumbFillPressed}"/>
+        </Style>
+
+        <!-- Horizontal thumb sizing -->
+        <Style Selector="ScrollBar:horizontal Thumb">
+            <Setter Property="Height" Value="4"/>
+            <Setter Property="MinWidth" Value="30"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Height" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ScrollBar:horizontal:pointerover Thumb">
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="Background" Value="{DynamicResource ScrollBarThumbFillHover}"/>
+        </Style>
+        <Style Selector="ScrollBar:horizontal Thumb:pressed">
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="Background" Value="{DynamicResource ScrollBarThumbFillPressed}"/>
+        </Style>
+    </Application.Styles>
+</Application>

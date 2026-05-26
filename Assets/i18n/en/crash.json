@@ -1,0 +1,16 @@
+{
+  "title": "Kiriha — crash report",
+  "heading": "Kiriha closed unexpectedly",
+  "subtitle": "Below is a snapshot of the crash and the last log lines. Copy this text and send it to the developer (Telegram / Discord / email), or open the folder to attach the file.",
+  "button": {
+    "copy": "Copy to clipboard",
+    "open_folder": "Open logs folder",
+    "close": "Close"
+  },
+  "status": {
+    "copied": "Copied to clipboard.",
+    "copy_failed": "Failed to copy to clipboard.",
+    "copy_unavailable": "Clipboard is unavailable.",
+    "open_failed": "Couldn't open the folder."
+  }
+}

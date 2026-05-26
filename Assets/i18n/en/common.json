@@ -1,0 +1,51 @@
+{
+  "app_name": "Kiriha",
+  "version_prefix": "Version",
+  "built_with": "Kiriha · Built with Avalonia UI",
+  "actions": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "OK",
+    "save": "Save",
+    "refresh": "Refresh",
+    "search": "Search",
+    "reset": "Reset",
+    "collapse": "Collapse",
+    "add": "Add",
+    "remove": "Remove",
+    "yes": "Yes",
+    "no": "No",
+    "select_all": "Select All",
+    "deselect_all": "Deselect All",
+    "save_and_close": "Save & Close",
+    "share": "Share",
+    "update": "Update",
+    "details": "Details",
+    "hide": "Hide",
+    "login": "Login",
+    "logout": "Logout",
+    "connect": "Connect"
+  },
+  "errors": {
+    "generic": "Error",
+    "network": "Network error",
+    "search": "Error during search",
+    "add": "Failed to add to list"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "date": "Date",
+    "date_time": "Date and Time",
+    "day_abbr": "d",
+    "hour_abbr": "h",
+    "min_abbr": "m"
+  },
+  "status": {
+    "on": "On",
+    "off": "Off",
+    "active": "Active",
+    "system": "System",
+    "no_results": "No results"
+  }
+}

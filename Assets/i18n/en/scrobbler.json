@@ -1,0 +1,67 @@
+{
+  "title": "Auto-Scrobbler",
+  "enable": {
+    "title": "Enable scrobbler",
+    "subtitle": "Automatically detect anime titles and episodes when a player is running"
+  },
+  "delay": {
+    "title": "Update delay (seconds)",
+    "subtitle": "Time to watch an episode before marking it as watched on MyAnimeList"
+  },
+  "processes": {
+    "title": "App Tracking",
+    "tracked_apps": "Tracked Applications",
+    "tracked_apps_sub": "Choose which players and browsers should be automatically detected",
+    "video_players": "Video Players",
+    "web_browsers": "Web Browsers",
+    "search_placeholder": "Search applications..."
+  },
+  "status": {
+    "detected": "Detected",
+    "matched": "Matched",
+    "matching": "Matching...",
+    "detection_info": "Detection Info",
+    "wait_player": "Waiting for player...",
+    "list_empty": "Detection list is empty.",
+    "disabled_hint": "If the list is empty, tracking is disabled.",
+    "tracking_disabled": "Tracking disabled",
+    "enable_hint": "Enable the scrobbler in settings to detect media.",
+    "player": "Player:",
+    "mapped_by": "Matched:",
+    "mapped_auto": "Automatically",
+    "mapped_manual": "Manually",
+    "delete_mapping": "(unlink)",
+    "paused": "Paused",
+    "active": "Active",
+    "ready": "Ready",
+    "already_scrobbled": "Already updated",
+    "updated": "Updated",
+    "episode_skipped": "Skipped (not updated)"
+  },
+  "matching": {
+    "is_correct": "Is this the correct anime?",
+    "maybe_watching": "Maybe you are watching:",
+    "select_manual": "Select manually...",
+    "rejected": "Rejected",
+    "search_placeholder": "Search anime...",
+    "no_suggestions": "No suggestions found",
+    "active_sources": "Detected Sources",
+    "sources_tip": "TIP: If you open a player with something playing, it will appear here automatically",
+    "multiple_matches": "Multiple matches found",
+    "select_correct": "Please select the correct anime from the list:",
+    "select_anime": "Select Anime",
+    "not_matched_title": "Title not recognized",
+    "not_matched_desc": "We couldn't auto-match this anime. You can look it up manually.",
+    "find_manually": "Find manually",
+    "close": "Close"
+  },
+  "rules": {
+    "active_count": "Active rules: {0}",
+    "applied_prompt": "Changes are applied immediately after saving."
+  },
+  "skip_notify": {
+    "title": "Skip-ahead protection",
+    "subtitle": "If the playing episode is ahead of your progress by more than one episode, send a notification instead of updating",
+    "body": "Episode {0} detected, but next expected is Ep {1} — progress not updated"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "header": "NAVIGATION",
+  "now_playing": "NOW PLAYING",
+  "anime_list": "My List",
+  "profile": "My Profile",
+  "seasonal": "Seasons",
+  "history": "History",
+  "torrents": "Torrents",
+  "sync": "Sync",
+  "search": "Search",
+  "settings": "Settings",
+  "tray": {
+    "restore": "Restore",
+    "exit": "Exit"
+  }
+}

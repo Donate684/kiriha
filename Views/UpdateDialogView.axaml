@@ -1,0 +1,162 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:material="using:Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="280"
+             x:Class="Kiriha.Views.UpdateDialogView"
+             x:DataType="vm:UpdateDialogViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.Title">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+        <Style Selector="TextBlock.Sub">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Opacity" Value="0.55"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Button.Primary">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="16,9"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="MinWidth" Value="128"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.Secondary">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,9"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="MinWidth" Value="96"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.Success">
+            <Setter Property="Background" Value="#2ecc71"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="16,9"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="MinWidth" Value="180"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- ═══ Content ═══ -->
+        <Grid Grid.Row="0" Margin="28,24,28,20" VerticalAlignment="Stretch">
+
+            <!-- Prompt: version row like Settings -->
+            <StackPanel IsVisible="{Binding !IsDownloadingOrFinished}" VerticalAlignment="Center">
+                <Grid MinHeight="56" ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Classes="Sub"
+                               Text="{Binding VersionText}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,16,0"/>
+                    <Border Grid.Column="1" Padding="10,5"
+                            Background="{DynamicResource SubtleFillColorSecondary}"
+                            CornerRadius="4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding NewVersionLabel}"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SystemAccentColor}"/>
+                    </Border>
+                </Grid>
+            </StackPanel>
+
+            <!-- Downloading -->
+            <StackPanel IsVisible="{Binding IsDownloading}" Spacing="14" VerticalAlignment="Center">
+                <StackPanel Spacing="2">
+                    <TextBlock Classes="Title" Text="{DynamicResource l.updates.downloading_text}"/>
+                    <TextBlock Classes="Sub" Text="{Binding ProgressText}"/>
+                </StackPanel>
+                <ProgressBar Value="{Binding Progress}" Maximum="100"
+                             Height="6" CornerRadius="3"
+                             Foreground="{DynamicResource SystemAccentColor}"
+                             Background="{DynamicResource SubtleFillColorSecondary}"
+                             BorderThickness="0"/>
+            </StackPanel>
+
+            <!-- Downloaded -->
+            <StackPanel IsVisible="{Binding IsDownloaded}" Spacing="12"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border Width="56" Height="56" CornerRadius="28"
+                        Background="#152ecc71" HorizontalAlignment="Center">
+                    <material:MaterialIcon Kind="CheckCircle" Width="32" Height="32"
+                                           Foreground="#2ecc71"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock Text="{DynamicResource l.updates.downloaded}"
+                           FontSize="13" TextWrapping="Wrap"
+                           HorizontalAlignment="Center" TextAlignment="Center"
+                           Opacity="0.8" MaxWidth="360"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══ Actions ═══ -->
+        <Border Grid.Row="1" Padding="20,14"
+                Background="{DynamicResource ModalSidebarFill}"
+                BorderBrush="{DynamicResource DividerStrokeColorDefault}"
+                BorderThickness="0,1,0,0">
+            <Grid>
+                <!-- Before download finished -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
+                            IsVisible="{Binding !IsDownloaded}">
+                    <Button Classes="Secondary"
+                            Content="{DynamicResource l.common.actions.cancel}"
+                            Command="{Binding CloseDialogCommand}"
+                            IsEnabled="{Binding !IsDownloading}"/>
+
+                    <!-- Update (ready) -->
+                    <Button Classes="Primary"
+                            Command="{Binding StartUpdateCommand}"
+                            IsVisible="{Binding !IsDownloading}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <material:MaterialIcon Kind="Download" Width="14" Height="14"/>
+                            <TextBlock Text="{DynamicResource l.updates.download}"
+                                       FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Downloading — progress inside button -->
+                    <Button IsVisible="{Binding IsDownloading}" IsEnabled="False"
+                            Padding="16,9" CornerRadius="6"
+                            Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                            MinWidth="160" ClipToBounds="True">
+                        <Grid>
+                            <ProgressBar Value="{Binding Progress}" Maximum="100"
+                                         Background="Transparent" Foreground="#40FFFFFF"
+                                         BorderThickness="0" Height="34" CornerRadius="4"
+                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                         Margin="-16,-9"/>
+                            <TextBlock Text="{Binding ProgressText}"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="White"/>
+                        </Grid>
+                    </Button>
+                </StackPanel>
+
+                <!-- After download: single Restart button -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
+                            IsVisible="{Binding IsDownloaded}">
+                    <Button Classes="Success" Command="{Binding RestartAppCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <material:MaterialIcon Kind="Restart" Width="14" Height="14"/>
+                            <TextBlock Text="{DynamicResource l.updates.install_and_restart}"
+                                       FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

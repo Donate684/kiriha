@@ -1,0 +1,57 @@
+{
+  "search": {
+    "placeholder": "Search torrents by title...",
+    "only_crunchyroll": "Crunchyroll",
+    "netflix": "Netflix",
+    "amazon": "Amazon",
+    "hidive": "HIDIVE",
+    "filters_button": "Filters",
+    "sort_label": "Sort",
+    "clear_filters": "Clear",
+    "filters": {
+      "varyg": "VARYG",
+      "erai_raws": "Erai-raws",
+      "toonshub": "ToonsHub",
+      "p1080": "1080p",
+      "hevc": "HEVC",
+      "crunchyroll": "CR"
+    },
+    "per_title_toggle": "Per-title filters",
+    "per_title_hint": "Filters are remembered separately for each anime",
+    "filter_sections": {
+      "release_groups": "Release groups",
+      "quality": "Quality",
+      "source": "Source"
+    }
+  },
+  "sort": {
+    "newest": "Newest",
+    "matched": "Matches",
+    "releasegroup": "By group"
+  },
+  "sidebar": {
+    "watching_now": "Watching now",
+    "hide_button": "Hide",
+    "hide_done": "Done",
+    "hide_menu_title": "Hide titles",
+    "hide_menu_hint": "Checked anime won't appear in the sidebar",
+    "empty": "List is empty",
+    "new_episodes_tooltip": "New episodes available"
+  },
+  "results": {
+    "title": "Found torrents",
+    "in_list": "NEW EPISODE",
+    "new_badge": "NEW",
+    "episode_prefix": "Ep. {0}",
+    "group_count": "{0} releases",
+    "untitled_group": "Untitled",
+    "empty": {
+      "title": "Select an anime or enter a query",
+      "subtitle": "Search results will appear here"
+    },
+    "actions": {
+      "download_file": "Download .torrent",
+      "download_magnet": "Magnet link"
+    }
+  }
+}

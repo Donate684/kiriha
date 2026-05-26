@@ -1,0 +1,414 @@
+# This file includes media player data for Anisthesia. It is used to detect
+# running players and retrieve information about current media.
+#
+# Please read before editing this file:
+# - Indentation is significant. You must use tabs rather than spaces.
+# - Regular expressions begin with a '^' character. ECMAScript grammar is used.
+#
+# The latest version of this file can be found at:
+# <https://github.com/erengy/anisthesia>
+#
+# This file is in the public domain.
+
+Kiriha
+	executables:
+		Kiriha
+	strategies:
+		window_title:
+			^\[KirihaPlayer\]\s+(.+)
+
+5KPlayer
+	windows:
+		Qt5QWindowIcon
+	executables:
+		5KPlayer
+	strategies:
+		open_files
+
+Ace Player HD
+	windows:
+		QWidget
+	executables:
+		ace_player
+	strategies:
+		# Must be enabled from: Advanced Preferences -> Interface -> Main
+		# interfaces -> Qt -> Show playing item name in window title
+		#
+		# We use the last alternative to avoid detecting other windows such as
+		# Preferences dialog, which has the same generic class name.
+		window_title:
+			^Ace Player HD.*|(.+) - Ace Player HD.*|.+
+
+ALLPlayer
+	windows:
+		TApplication
+	executables:
+		ALLPlayer
+	strategies:
+		open_files
+
+Baka MPlayer
+	windows:
+		Qt5QWindowIcon
+	executables:
+		Baka MPlayer
+	strategies:
+		open_files
+		# We cannot avoid detecting other windows such as Preferences dialog, which
+		# has the same generic class name.
+		window_title:
+			^Baka MPlayer|(.+)
+
+BESTplayer
+	windows:
+		TBESTplayerApp.UnicodeClass
+	executables:
+		BESTplayer
+	strategies:
+		open_files
+		window_title:
+			^BESTplayer.*|(.+) - BESTplayer.*
+
+bomi
+	windows:
+		Qt5QWindowGLOwnDCIcon
+	executables:
+		bomi
+	strategies:
+		open_files
+		window_title:
+			^bomi|(.+) - bomi
+
+BS.Player
+	windows:
+		BSPlayer
+	executables:
+		bsplayer
+	strategies:
+		open_files
+
+DivX Player
+	windows:
+		Qt5QWindowIcon
+		QWidget
+	executables:
+		DivX Player
+		DivX Plus Player
+	strategies:
+		open_files
+
+GOM Player
+	windows:
+		GomPlayer1.x
+		GomPlayerPlus32_2.x
+		GomPlayerPlus64_2.x
+	executables:
+		GOM
+		GOM64
+	strategies:
+		open_files
+		window_title:
+			^GOM Player(?: Plus)|(.+)(?:\[Subtitle\]) - GOM Player(?: Plus)
+
+Kantaris
+	windows:
+		^WindowsForms10\.Window\.20008\.app\..+
+	executables:
+		Kantaris
+		KantarisMain
+	strategies:
+		open_files
+		window_title:
+			^Kantaris.*|(.+) \d{2}:\d{2}:\d{2} - \d{2}:\d{2}:\d{2}
+
+KMPlayer
+	windows:
+		KMPlayer 64X
+		TApplication
+	executables:
+		KMPlayer
+		KMPlayer64
+	strategies:
+		open_files
+		window_title:
+			^(?:The )?KMPlayer|(?:\[\d+/\d+\] )?(.+) - (?:The )?KMPlayer|(.+)
+
+Kodi
+	windows:
+		Kodi
+		XBMC
+	executables:
+		kodi
+		XBMC
+	strategies:
+		open_files
+
+Light Alloy
+	windows:
+		TApplication
+	executables:
+		LA
+	strategies:
+		open_files
+		window_title:
+			^Light Alloy.*|(.+) - Light Alloy.*
+
+Media Player Classic
+	windows:
+		MediaPlayerClassicW
+	executables:
+		mplayerc
+		mplayerc64
+	strategies:
+		open_files
+		# Depends on: Options -> Player -> Title bar
+		window_title:
+			^Media Player Classic|(.+) - Media Player Classic
+
+Media Player Classic Qute Theater
+	windows:
+		^Qt.+QWindowIcon
+	executables:
+		mpc-qt
+	strategies:
+		open_files
+		# Depends on: Options -> Player -> Title bar
+		#
+		# We use the last alternative to avoid detecting other windows such as
+		# Options dialog, which has the same generic class name.
+		window_title:
+			^Media Player Classic Qute Theater|Media Player Classic Qute Theater - (.+)|.+
+
+Memento
+	windows:
+		^Qt.+QWindow(OwnDC)?Icon
+	executables:
+		memento
+	strategies:
+		open_files
+		window_title:
+			^Memento|(.+) - Memento
+
+Miro
+	windows:
+		gdkWindowToplevel
+	executables:
+		Miro
+	strategies:
+		open_files
+
+MPC-BE
+	windows:
+		MediaPlayerClassicW
+		MPC-BE
+	executables:
+		mpc-be
+		mpc-be64
+	strategies:
+		open_files
+		# Depends on: Options -> Player -> Title bar
+		window_title:
+			^MPC-BE.*|(.+) - MPC-BE.*
+
+MPC-HC
+	windows:
+		MediaPlayerClassicW
+	executables:
+		mpc-hc
+		mpc-hc64
+		# Some codec installers append "_nvo" to the filename, if NVIDIA Optimus
+		# is present on the system. Similarly, various guides recommend
+		# appending "-gpu", etc. in order to fix some GPU-related issues.
+		^mpc-hc.+
+		# LAV Filters Megamix
+		iris
+		shoukaku
+	strategies:
+		open_files
+		# Depends on: Options -> Player -> Title bar
+		window_title:
+			^Media Player Classic Home Cinema|MPC-HC|(.+)
+
+MPCSTAR
+	windows:
+		^wxWindow@.*
+		wxWindowClassNR
+	executables:
+		mpcstar
+	strategies:
+		open_files
+		window_title:
+			^MPCSTAR.*|(.+) - MPCSTAR.*
+
+MPDN
+	windows:
+		^WindowsForms10\.Window\.8\.app\..+
+	executables:
+		MediaPlayerDotNet
+	strategies:
+		open_files
+		window_title:
+			^MPDN - Media Player .NET \((?:32|64)-bit Edition\)|(.*) - MPDN \((?:32|64)-bit Edition\)
+
+mpv
+	windows:
+		mpv
+	executables:
+		mpv
+	strategies:
+		open_files
+		# May be in an unexpected format if "--title" option is used. Ideally, it
+		# should return only "${filename}", "${path}" or "${media-title}".
+		window_title:
+			^No file - mpv|(.+) - mpv|mpv - (.+)
+
+mpv.net
+	windows:
+		^WindowsForms10\.Window\.8\.app\..+
+	executables:
+		mpvnet
+	strategies:
+		open_files
+		window_title:
+			^mpv\.net.*|(.+) - mpv\.net.*
+
+MV2Player
+	windows:
+		TApplication
+	executables:
+		Mv2Player
+		Mv2PlayerPlus
+	strategies:
+		open_files
+		# Depends on: Options -> Player -> Constant app. title
+		window_title:
+			^MV2 Player|(.+)
+
+PotPlayer
+	windows:
+		PotPlayer
+		PotPlayer64
+	executables:
+		PotPlayer
+		PotPlayer64
+		PotPlayerMini
+		PotPlayerMini64
+		# LAV Filters Megamix
+		sumire
+		zuikaku
+	strategies:
+		open_files
+		window_title:
+			^PotPlayer|(.+) - PotPlayer
+
+SMPlayer
+	windows:
+		# Qt5QWindowIcon, Qt5152QWindowIcon, etc.
+		^Qt.+QWindowIcon
+		# Older versions
+		QWidget
+	executables:
+		smplayer
+		smplayer2
+	strategies:
+		# "open_files" strategy does not work here, because files are loaded by
+		# a child process of SMPlayer (mplayer or mpv, depending on the selected
+		# multimedia engine).
+		#
+		# We use the last alternative to avoid detecting other windows such as
+		# Preferences dialog, which has the same generic class name.
+		window_title:
+			^SMPlayer|(.+) - SMPlayer|.+
+
+Splash
+	windows:
+		DX_DISPLAY0
+	executables:
+		Splash
+		SplashLite
+	strategies:
+		open_files
+
+SPlayer
+	windows:
+		MediaPlayerClassicW
+	executables:
+		splayer
+	strategies:
+		open_files
+		# Does not work in theater mode.
+		window_title:
+			^SPlayer|(?:\[(?:GPU Accel\+)?EVR\] )?(.+) - SPlayer
+
+UMPlayer
+	windows:
+		QWidget
+	executables:
+		umplayer
+	strategies:
+		# "open_files" strategy does not work here, because files are loaded by
+		# a child process of UMPlayer (mplayer).
+		#
+		# We use the last alternative to avoid detecting other windows such as
+		# Preferences dialog, which has the same generic class name.
+		window_title:
+			^UMPlayer|(.+) - UMPlayer|.+
+
+VLC media player
+	windows:
+		# Qt5QWindowIcon, Qt5151QWindowIcon, etc.
+		^Qt.+QWindowIcon
+		# Older versions
+		QWidget
+		# Skinnable interface
+		SkinWindowClass
+	executables:
+		vlc
+	strategies:
+		open_files
+		# Must be enabled from: Advanced Preferences -> Interface -> Main
+		# interfaces -> Qt -> Show playing item name in window title
+		#
+		# We use the last alternative to avoid detecting other windows such as
+		# Preferences dialog, which has the same generic class name.
+		window_title:
+			^VLC media player|(.+) - VLC media player|.+
+
+WebTorrent Desktop
+	windows:
+		Chrome_WidgetWin_1
+	executables:
+		WebTorrent
+	strategies:
+		window_title:
+			^WebTorrent(?: \(BETA\))?|Main Window|Preferences|About WebTorrent.*|(.+)
+
+Winamp
+	windows:
+		Winamp v1.x
+	executables:
+		winamp
+	strategies:
+		open_files
+		window_title:
+			^Winamp [\d.]+ Build \d+|\d+\. (.+) - Winamp(?: \[.+\])?
+
+Windows Media Player
+	windows:
+		WMPlayerApp
+		WMP Skin Host
+	executables:
+		wmplayer
+	strategies:
+		open_files
+
+Zoom Player
+	windows:
+		TApplication
+	executables:
+		zplayer
+	strategies:
+		open_files
+		window_title:
+			^Zoom Player|(.+) - Zoom Player (?:FREE|MAX)
+

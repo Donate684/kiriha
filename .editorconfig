@@ -1,0 +1,108 @@
+; Top-level config — IDE search stops here.
+root = true
+
+#####################################
+# Whitespace / line endings (all)
+#####################################
+[*]
+indent_style = space
+indent_size = 4
+charset = utf-8
+end_of_line = crlf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{json,js,ts,yml,yaml}]
+indent_size = 2
+
+[*.{xml,axaml,csproj,props,targets}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false  ; markdown uses trailing 2-space for line breaks
+
+#####################################
+# C# style — kept advisory (severity=suggestion).
+# Tighten to "warning" once `dotnet format` has been run on the codebase.
+#####################################
+[*.cs]
+# var preferences — codebase mixes both, so don't auto-rewrite either way.
+csharp_style_var_for_built_in_types = false:silent
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:silent
+
+# Modern C# features the codebase already leans on.
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_prefer_primary_constructors = false:silent
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_inlined_variable_declaration = true:suggestion
+csharp_style_throw_expression = true:suggestion
+csharp_style_conditional_delegate_call = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+csharp_style_prefer_index_operator = true:suggestion
+csharp_style_prefer_range_operator = true:suggestion
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_prefer_static_local_function = true:suggestion
+
+# Expression-bodied members — codebase uses both forms; leave to author judgment.
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+csharp_style_expression_bodied_constructors = false:silent
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+csharp_style_expression_bodied_lambdas = true:suggestion
+
+# Using directives.
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace:suggestion
+
+# Nullable
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+
+# Naming — minimal: private fields _camelCase, constants UPPER_CASE optional.
+dotnet_naming_rule.private_fields_should_be_camel_case_with_underscore.severity = suggestion
+dotnet_naming_rule.private_fields_should_be_camel_case_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_camel_case_with_underscore.style = underscore_camel_case
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+
+# New-line rules
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+
+# Spaces — match dotnet defaults
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_between_parentheses = false
+csharp_space_around_binary_operators = before_and_after
+
+#####################################
+# Analyzer overrides (advisory only)
+#####################################
+# IDE0058: Expression value is never used. Codebase has many fire-and-forget calls that
+# legitimately ignore the returned Task; turn this off so the build doesn't get noisy.
+dotnet_diagnostic.IDE0058.severity = none
+
+# IDE0028 / IDE0090: collection expression / target-typed new — suggestions only.
+dotnet_diagnostic.IDE0028.severity = suggestion
+dotnet_diagnostic.IDE0090.severity = suggestion
+
+# IDE0007: prefer var. Off because of the mixed style above.
+dotnet_diagnostic.IDE0007.severity = none
+
+# IDE0008: prefer explicit type — same.
+dotnet_diagnostic.IDE0008.severity = none
+
+# CA1416: platform compatibility (Windows-only build target).
+# Project pins net10.0-windows, so all CA1416 noise is by design.
+dotnet_diagnostic.CA1416.severity = none

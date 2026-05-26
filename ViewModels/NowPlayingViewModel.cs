@@ -1,0 +1,455 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input.Platform;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Kiriha.Core;
+using Kiriha.Models;
+using Kiriha.Models.Api;
+using Kiriha.Models.Entities;
+using Kiriha.Services.Api;
+using Kiriha.Services.Auth;
+using Kiriha.Services.Data;
+using Kiriha.Services.Tracking;
+using Kiriha.Utils;
+using Serilog;
+
+namespace Kiriha.ViewModels;
+
+public partial class NowPlayingViewModel : ViewModelBase, IDisposable
+{
+    private readonly TrackingService _trackingService;
+    // Tracks the anime id of an in-flight manual selection. Until the background
+    // TrackingService fires AnimeMatched with this id (or null on a media change),
+    // we ignore intermediate null/other matches so they don't clobber the UI choice.
+    // 0 means "no manual selection pending".
+    private int _pendingManualMatchId;
+    private readonly SettingsService _settingsService;
+    private readonly MappingService _mappingService;
+    private readonly AnimeService _animeService;
+    private readonly SyncManager _syncManager;
+    private readonly ShikiMetadataService _shikiMetadataService;
+    private readonly Services.Api.MalApiService _malApi;
+
+    [ObservableProperty] private ParsedMedia? _currentMedia;
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(IsNotInList))]
+    [NotifyPropertyChangedFor(nameof(AllAlternativeTitles))]
+    [NotifyPropertyChangedFor(nameof(HasAlternativeTitles))]
+    private AnimeItem? _matchedAnime;
+    [ObservableProperty] private AnimeItem? _pendingMatch;
+
+    /// <summary>
+    /// Resolved user-defined share buttons for the currently matched anime.
+    /// Refreshed via <see cref="OnMatchedAnimeChanged"/>.
+    /// </summary>
+    public System.Collections.ObjectModel.ObservableCollection<CustomShareLinkRuntime> CustomShareLinks { get; } = new();
+
+    partial void OnMatchedAnimeChanged(AnimeItem? value)
+    {
+        CustomShareLinks.Clear();
+        if (value == null) return;
+        foreach (var link in _settingsService.Current.CustomLinks)
+        {
+            if (string.IsNullOrWhiteSpace(link.UrlTemplate)) continue;
+            var url = Kiriha.Core.CustomLinkResolver.Resolve(link.UrlTemplate, value);
+            CustomShareLinks.Add(new CustomShareLinkRuntime(link.Name, link.IconKind, url, link.IconPath));
+        }
+    }
+
+    [ObservableProperty] private string _searchQuery = string.Empty;
+    [ObservableProperty] private bool _isSearching;
+
+    [ObservableProperty] private bool _isManuallyMapped;
+
+    public bool IsNotInList => MatchedAnime != null && MatchedAnime.Status == UserAnimeStatus.None;
+    
+    public System.Collections.Generic.IEnumerable<string> AllAlternativeTitles
+    {
+        get
+        {
+            var list = new System.Collections.Generic.List<string>();
+            if (MatchedAnime == null) return list;
+
+            if (!string.IsNullOrEmpty(MatchedAnime.EnglishTitle) && MatchedAnime.EnglishTitle != MatchedAnime.Title) 
+                list.Add(MatchedAnime.EnglishTitle);
+            if (!string.IsNullOrEmpty(MatchedAnime.JapaneseTitle) && MatchedAnime.JapaneseTitle != MatchedAnime.Title) 
+                list.Add(MatchedAnime.JapaneseTitle);
+            
+            foreach (var syn in MatchedAnime.AlternativeTitles)
+            {
+                if (syn != MatchedAnime.Title && !list.Contains(syn))
+                    list.Add(syn);
+            }
+            return list;
+        }
+    }
+
+    public bool HasAlternativeTitles => AllAlternativeTitles.Any();
+    
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(DisplayStatus))]
+    private bool _isMediaDetected;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayStatus))]
+    private bool _isPaused;
+
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(DisplayStatus))]
+    private string _countdownStatus = string.Empty;
+
+    public string DisplayStatus => !IsMediaDetected ? UIUtils.GetLoc("scrobbler.status.ready") : 
+                                   (IsPaused ? UIUtils.GetLoc("scrobbler.status.paused") : 
+                                   (string.IsNullOrEmpty(CountdownStatus) ? UIUtils.GetLoc("scrobbler.status.active") : CountdownStatus));
+
+    public SettingsService Settings => _settingsService;
+    public bool IsScrobblerEnabled => _settingsService.Current.System.Scrobbler.Enabled;
+
+    public ObservableCollection<string> DetectionLogs { get; } = new();
+    public ObservableCollection<AnimeItem> Suggestions { get; } = new();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSuggestions))]
+    private bool _showSuggestions;
+
+    public bool HasSuggestions => ShowSuggestions && Suggestions.Count > 0;
+
+    [ObservableProperty] private bool _isSearchPanelOpen;
+
+    public NowPlayingViewModel(
+        TrackingService trackingService, 
+        SettingsService settingsService, 
+        MappingService mappingService, 
+        AnimeService animeService, 
+        SyncManager syncManager,
+        ShikiMetadataService shikiMetadataService,
+        Services.Api.MalApiService malApi)
+    {
+        _trackingService = trackingService;
+        _settingsService = settingsService;
+        _mappingService = mappingService;
+        _animeService = animeService;
+        _syncManager = syncManager;
+        _shikiMetadataService = shikiMetadataService;
+        _malApi = malApi;
+        
+        _trackingService.MediaChanged += OnMediaChanged;
+        _trackingService.AnimeMatched += OnAnimeMatched;
+        _trackingService.CountdownUpdated += OnCountdownUpdated;
+        _trackingService.StatusUpdated += OnStatusUpdated;
+
+        // Sync initial state if any
+        CurrentMedia = _trackingService.CurrentMedia;
+        MatchedAnime = _trackingService.MatchedAnime;
+        IsMediaDetected = CurrentMedia != null;
+    }
+
+    [RelayCommand]
+    private async Task AddToWatching()
+    {
+        if (MatchedAnime == null) return;
+
+        try
+        {
+            if (await _animeService.UpdateProgressAsync(MatchedAnime, MatchedAnime.Progress, UserAnimeStatus.Watching))
+            {
+                await _animeService.AddOrUpdateAnimeAsync(MatchedAnime);
+                WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
+            }
+
+            OnPropertyChanged(nameof(IsNotInList));
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to add anime to watching");
+        }
+    }
+
+    [RelayCommand]
+    private async Task SelectSuggestion(object parameter)
+    {
+        if (parameter is not AnimeItem suggestion) return;
+
+        Log.Information("Selecting anime suggestion: {Title} (ID: {Id})", suggestion.Title, suggestion.Id);
+        LogDetection(CurrentMedia ?? new ParsedMedia { AnimeTitle = suggestion.Title }, UIUtils.GetLoc("scrobbler.status.mapped_by") + " " + suggestion.DisplayTitle);
+
+        _pendingManualMatchId = suggestion.Id;
+        ShowSuggestions = false;
+        Suggestions.Clear();
+        OnPropertyChanged(nameof(HasSuggestions));
+
+        try
+        {
+            MatchedAnime = suggestion;
+            IsManuallyMapped = true;
+            await _trackingService.ManualMapAsync(suggestion.Id);
+            // Ensure it stays set Ã¢â‚¬â€ background AnimeMatched will eventually arrive
+            // with the same id and clear _pendingManualMatchId from OnAnimeMatched.
+            MatchedAnime = suggestion;
+            IsManuallyMapped = true;
+        }
+        catch
+        {
+            // On error, drop the pending guard so the UI isn't permanently stuck.
+            _pendingManualMatchId = 0;
+            throw;
+        }
+    }
+
+    [RelayCommand]
+    private void DismissSuggestions()
+    {
+        ShowSuggestions = false;
+        Suggestions.Clear();
+        OnPropertyChanged(nameof(HasSuggestions));
+    }
+
+    [RelayCommand]
+    private async Task SearchSuggestions()
+    {
+        if (string.IsNullOrWhiteSpace(SearchQuery)) return;
+
+        IsSearching = true;
+        try
+        {
+            var results = await _malApi.SearchAnimeAsync(SearchQuery);
+            Suggestions.Clear();
+
+            foreach (var r in results)
+            {
+                Suggestions.Add(r);
+            }
+
+            ShowSuggestions = Suggestions.Count > 0;
+            OnPropertyChanged(nameof(HasSuggestions));
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to search anime inline");
+        }
+        finally
+        {
+            IsSearching = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ManualMatch()
+    {
+        if (CurrentMedia == null) return;
+        
+        SearchQuery = CurrentMedia.AnimeTitle;
+        await SearchSuggestions();
+    }
+
+    [RelayCommand]
+    private async Task OpenSearchPanel()
+    {
+        IsSearchPanelOpen = true;
+        if (string.IsNullOrWhiteSpace(SearchQuery) && CurrentMedia != null)
+            SearchQuery = CurrentMedia.AnimeTitle;
+        if (Suggestions.Count == 0 && !string.IsNullOrWhiteSpace(SearchQuery))
+            await SearchSuggestions();
+    }
+
+    [RelayCommand]
+    private void CloseSearchPanel()
+    {
+        IsSearchPanelOpen = false;
+    }
+
+    private void OnStatusUpdated(object? sender, string status)
+    {
+    }
+
+    private void OnCountdownUpdated(object? sender, string countdown)
+    {
+        Dispatcher.UIThread.Post(() => CountdownStatus = countdown);
+    }
+
+    private void OnAnimeMatched(object? sender, AnimeItem? anime)
+    {
+        // Suppress intermediate events while a manual selection is in flight.
+        // - null: a transient "clearing previous match" event before MappingService re-resolves
+        // - different id: stale background match for a previous media Ã¢â‚¬â€ would clobber UI choice
+        // We let through the matching id so we can clear the pending guard below.
+        var pending = _pendingManualMatchId;
+        if (pending != 0 && (anime == null || anime.Id != pending)) return;
+        if (pending != 0 && anime != null && anime.Id == pending)
+        {
+            _pendingManualMatchId = 0;
+        }
+
+        Dispatcher.UIThread.Post(async () => {
+            MatchedAnime = anime;
+            if (anime != null)
+            {
+                IsManuallyMapped = _trackingService.IsManuallyMapped();
+                LogDetection(CurrentMedia ?? new ParsedMedia { AnimeTitle = anime.Title }, UIUtils.GetLoc("scrobbler.status.matched"));
+
+                // Force fetch + apply Russian metadata if enabled and missing.
+                // EnsureLocalizedAsync handles the cache-miss Ã¢â€ â€™ API fetch path
+                // AND copies meta.Russian/Description into the AnimeItem; the
+                // previous code only called RefreshMetadata() which raises
+                // PropertyChanged but never wrote the fetched values, so the
+                // UI stayed empty whenever the DB had no Shiki row yet.
+                try
+                {
+                    await _shikiMetadataService.EnsureLocalizedAsync(anime);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug(ex, "NowPlaying: EnsureLocalizedAsync failed for {Id}", anime.Id);
+                }
+            }
+            else
+            {
+                IsManuallyMapped = false;
+            }
+        });
+    }
+
+    private void OnMediaChanged(object? sender, ParsedMedia? media)
+    {
+        // Drop the manual-selection guard only when the media actually changes
+        // (different file or playback stopped). ManualMapAsync re-runs
+        // MatchMediaAsync with the *same* media to force a re-match, which
+        // re-fires MediaChanged; clearing the guard there would let the
+        // intermediate AnimeMatched(null) event clobber the user's choice.
+        var prev = CurrentMedia;
+        bool sameFile = media != null && prev != null
+            && string.Equals(prev.OriginalTitle, media.OriginalTitle, StringComparison.Ordinal);
+        if (!sameFile) _pendingManualMatchId = 0;
+
+        Dispatcher.UIThread.Post(() => {
+            CurrentMedia = media;
+            IsMediaDetected = media != null;
+            Suggestions.Clear();
+            ShowSuggestions = false;
+            SearchQuery = string.Empty;
+            IsSearchPanelOpen = false;
+            OnPropertyChanged(nameof(HasSuggestions));
+            if (media != null)
+            {
+                IsPaused = !media.IsPlaying;
+                LogDetection(media, UIUtils.GetLoc("scrobbler.status.detected"));
+            }
+            else
+            {
+                MatchedAnime = null;
+                IsManuallyMapped = false;
+                CountdownStatus = string.Empty;
+            }
+        });
+    }
+
+    [RelayCommand]
+    private async Task RemoveMapping()
+    {
+        await _trackingService.RemoveManualMappingAsync();
+    }
+
+    [RelayCommand]
+    private async Task UnlinkMatch()
+    {
+        if (IsManuallyMapped)
+        {
+            // Remove persisted manual mapping; tracking service will re-match.
+            await _trackingService.RemoveManualMappingAsync();
+        }
+        else
+        {
+            // Auto-match: persist a negative mapping so future sessions won't auto-match either.
+            await _trackingService.AddNegativeMappingAsync();
+            MatchedAnime = null;
+            IsManuallyMapped = false;
+            if (CurrentMedia != null) SearchQuery = CurrentMedia.AnimeTitle;
+            await OpenSearchPanel();
+        }
+    }
+
+    [RelayCommand]
+    private void GoToSettings()
+    {
+        WeakReferenceMessenger.Default.Send(new NavigationMessage(NavigationPage.Settings));
+    }
+
+    [RelayCommand]
+    private void ConfirmMatch()
+    {
+        if (PendingMatch == null) return;
+        MatchedAnime = PendingMatch;
+        PendingMatch = null;
+    }
+
+    [RelayCommand]
+    private void RejectMatch()
+    {
+        PendingMatch = null;
+    }
+
+    [RelayCommand]
+    private async Task CopyMalLink()
+    {
+        if (MatchedAnime == null) return;
+        string url = $"{Constants.Api.Mal.WebsiteUrl}{MatchedAnime.Id}";
+        await CopyToClipboard(url);
+    }
+
+    [RelayCommand]
+    private async Task CopyShikiLink()
+    {
+        if (MatchedAnime == null) return;
+        string url = $"{ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{MatchedAnime.Id}";
+        await CopyToClipboard(url);
+    }
+
+    [RelayCommand]
+    private void OpenMalLink()
+    {
+        if (MatchedAnime == null) return;
+        ShellLauncher.OpenUrl($"{Constants.Api.Mal.WebsiteUrl}{MatchedAnime.Id}");
+    }
+
+    [RelayCommand]
+    private void OpenShikiLink()
+    {
+        if (MatchedAnime == null) return;
+        ShellLauncher.OpenUrl($"{ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{MatchedAnime.Id}");
+    }
+
+    private static async Task CopyToClipboard(string text)
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow?.Clipboard != null)
+        {
+            await desktop.MainWindow.Clipboard.SetTextAsync(text);
+        }
+    }
+
+    private void LogDetection(ParsedMedia media, string status)
+    {
+        string extras = string.Join(" ",
+            new[] { media.VideoResolution, media.Source, media.AnimeType }
+            .Where(s => !string.IsNullOrEmpty(s)));
+        string extraInfo = !string.IsNullOrEmpty(extras) ? $" [{extras}]" : "";
+        string epInfo = !string.IsNullOrEmpty(media.Episode) ? $" ({UIUtils.GetLoc("anime.labels.episode")} {media.Episode})" : "";
+        string logEntry = $"[{DateTime.Now:HH:mm:ss}] {status}: {media.AnimeTitle}{epInfo}{extraInfo}";
+        DetectionLogs.Insert(0, logEntry);
+        if (DetectionLogs.Count > 50) DetectionLogs.RemoveAt(50);
+    }
+
+    public void Dispose()
+    {
+        _trackingService.MediaChanged -= OnMediaChanged;
+        _trackingService.AnimeMatched -= OnAnimeMatched;
+        _trackingService.CountdownUpdated -= OnCountdownUpdated;
+        _trackingService.StatusUpdated -= OnStatusUpdated;
+    }
+}

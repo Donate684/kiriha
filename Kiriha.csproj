@@ -1,0 +1,89 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <!-- Nullable warnings (CS8600..CS8625) become errors. The build is currently clean,
+         and we want it to stay clean: silent regressions in null-safety are a top
+         source of NREs that bubble up as user-visible crashes. -->
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <AssemblyName>Kiriha</AssemblyName>
+    <RootNamespace>Kiriha</RootNamespace>
+    <Title>Kiriha</Title>
+    <ApplicationIcon>Assets\kiriha.ico</ApplicationIcon>
+    <Version>1.1.6</Version>
+
+    <!-- Single source of truth for the core Avalonia stack. Bump this property to update
+         every core Avalonia.* package below in lock-step.
+         NOTE: Avalonia.Controls.ItemsRepeater publishes on a slower cadence and lags
+         the core (12.0.0 is the latest available on NuGet at the time of this writing).
+         It uses a separate property so bumping the core version doesn't break restore,
+         and a future maintainer is forced to consciously verify the sub-package
+         availability before lifting it. -->
+    <AvaloniaVersion>12.0.3</AvaloniaVersion>
+    <AvaloniaSubpackagesVersion>12.0.0</AvaloniaSubpackagesVersion>
+
+    <!-- Optimization: Ahead-of-time compilation for faster startup -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <TieredCompilation>true</TieredCompilation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Tests\**" />
+    <EmbeddedResource Remove="Tests\**" />
+    <None Remove="Tests\**" />
+  </ItemGroup>
+
+  <!-- Package versions live in Directory.Packages.props (CPM). -->
+  <ItemGroup>
+    <PackageReference Include="AsyncImageLoader.Avalonia" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Controls.ItemsRepeater" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="DiscordRichPresence" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Material.Icons.Avalonia" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <PackageReference Include="System.Threading.RateLimiting" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="Velopack" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="apikeys.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="mpv\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="DownloadMpv" BeforeTargets="BeforeBuild;AssignTargetPaths">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)download-mpv.ps1&quot;" 
+          Condition="!Exists('$(ProjectDir)mpv\libmpv-2.dll')" />
+    <ItemGroup>
+      <Content Include="mpv\**">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  </Target>
+</Project>

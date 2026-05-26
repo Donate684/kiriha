@@ -1,0 +1,229 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:material="using:Material.Icons.Avalonia"
+             xmlns:controls="using:Kiriha.Views.Controls"
+             x:Class="Kiriha.Views.FirstStartupView"
+             x:DataType="vm:FirstStartupViewModel">
+
+    <Grid Background="Transparent" Margin="40">
+        <Border Background="{DynamicResource SystemRegionBrush}" 
+                Width="450"
+                CornerRadius="24" BoxShadow="0 10 40 0 #40000000" Padding="32">
+            <StackPanel Spacing="24">
+                <!-- Header / Drag Area -->
+                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                    <controls:LeafLogo Width="64" Height="64"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource l.wizard.welcome}" FontSize="24" FontWeight="Bold"/>
+                        <TextBlock Text="{DynamicResource l.wizard.subtitle}" Opacity="0.5" FontSize="12"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <Separator Background="{DynamicResource DividerStrokeColorDefault}"/>
+
+                <!-- Content Area -->
+                <StackPanel Spacing="20">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                         <material:MaterialIcon Kind="{Binding CurrentStep.IconKind}" Width="64" Height="64" Foreground="{DynamicResource SystemAccentColor}" HorizontalAlignment="Center"/>
+                         <TextBlock Text="{Binding CurrentStep.TitleKey, Converter={StaticResource LocConverter}}" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                         <TextBlock Text="{Binding CurrentStep.SubtitleKey, Converter={StaticResource LocConverter}}" FontSize="13" Opacity="0.6" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="300"/>
+                    </StackPanel>
+
+                    <!-- Step 1: Language Selection -->
+                    <StackPanel IsVisible="{Binding IsLanguageStep}" Spacing="8">
+                        <ListBox ItemsSource="{Binding SettingsVm.AvailableLanguages}" 
+                                 SelectedItem="{Binding SettingsVm.SelectedLanguage}"
+                                 Background="Transparent" BorderThickness="0">
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="Padding" Value="16,10"/>
+                                    <Setter Property="CornerRadius" Value="12"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+
+                    <!-- Step 2: Theme Selection -->
+                    <StackPanel IsVisible="{Binding IsThemeStep}" Spacing="8">
+                         <ListBox ItemsSource="{Binding SettingsVm.AvailableThemes}" 
+                                 SelectedItem="{Binding SettingsVm.SelectedTheme}"
+                                 Background="Transparent" BorderThickness="0">
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="Padding" Value="16,10"/>
+                                    <Setter Property="CornerRadius" Value="12"/>
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                                        <material:MaterialIcon Kind="{Binding Value, Converter={StaticResource LocConverter}, ConverterParameter='theme_icon'}" Width="20" Height="20" Foreground="{DynamicResource SystemAccentColor}"/>
+                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+
+                    <!-- Step 3: MAL Login -->
+                    <StackPanel IsVisible="{Binding IsMalStep}" Spacing="16">
+                        <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" BorderBrush="{DynamicResource SystemAccentColor}" BorderThickness="1" CornerRadius="16" Padding="20">
+                            <StackPanel Spacing="16">
+                                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                                    <material:MaterialIcon Kind="Account" Width="32" Height="32" Foreground="{DynamicResource SystemAccentColor}"/>
+                                    <TextBlock Text="{DynamicResource l.anime.links.mal}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                
+                                <Separator Background="{DynamicResource DividerStrokeColorDefault}"/>
+
+                                <StackPanel Spacing="12">
+                                    <TextBlock IsVisible="{Binding SettingsVm.IsLoggedIn}" 
+                                               Text="{DynamicResource l.settings.mal.connected}" 
+                                               Foreground="#4CAF50" 
+                                               HorizontalAlignment="Center"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock IsVisible="{Binding !SettingsVm.IsLoggedIn}" 
+                                               Text="{DynamicResource l.settings.mal.disconnected}" 
+                                               Opacity="0.5" 
+                                               HorizontalAlignment="Center"/>
+                                    
+                                    <Button Command="{Binding SettingsVm.MalLoginCommand}" 
+                                            IsVisible="{Binding !SettingsVm.IsLoggedIn}"
+                                            Background="{DynamicResource SystemAccentColor}"
+                                            Foreground="White"
+                                            HorizontalAlignment="Center"
+                                            Padding="32,10" CornerRadius="10">
+                                        <TextBlock Text="{DynamicResource l.common.actions.login}" FontWeight="Bold"/>
+                                    </Button>
+                                    <Button Command="{Binding SettingsVm.MalLogoutCommand}" 
+                                            IsVisible="{Binding SettingsVm.IsLoggedIn}"
+                                            HorizontalAlignment="Center"
+                                            Padding="32,10" CornerRadius="10">
+                                        <TextBlock Text="{DynamicResource l.common.actions.logout}"/>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Step 4: Scrobbler Settings -->
+                    <StackPanel IsVisible="{Binding IsScrobblerStep}" Spacing="16">
+                        <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="16" Padding="20,12">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{DynamicResource l.scrobbler.enable.title}" FontSize="14" FontWeight="Medium"/>
+                                        <TextBlock Text="{DynamicResource l.scrobbler.enable.subtitle}" FontSize="11" Opacity="0.5" TextWrapping="Wrap" MaxWidth="320"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.EnableScrobbler}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Separator Background="{DynamicResource DividerStrokeColorDefault}" Margin="0,4"/>
+
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{DynamicResource l.scrobbler.processes.tracked_apps}" FontSize="14" FontWeight="Medium"/>
+                                    <Button Command="{Binding SettingsVm.ManagePlayersCommand}" 
+                                            HorizontalAlignment="Stretch"
+                                            Padding="16,12" CornerRadius="12" Background="{DynamicResource SubtleFillColorSecondary}">
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <material:MaterialIcon Kind="CogOutline" Width="20" Height="20" Opacity="0.7"/>
+                                                <TextBlock Text="{DynamicResource l.scrobbler.processes.tracked_apps}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding SettingsVm.EnabledPlayersCount, Converter={StaticResource LocConverter}, ConverterParameter='format:l.scrobbler.rules.active_count'}" FontSize="12" Opacity="0.5" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        
+                        <!-- Block hint -->
+                        <Border Background="#15ff5555" CornerRadius="10" Padding="12,8" IsVisible="{Binding !CanGoNext}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <material:MaterialIcon Kind="AlertCircleOutline" Foreground="#ff5555" Width="16" Height="16"/>
+                                <TextBlock Text="{DynamicResource l.wizard.tracking.blocked_hint}" Foreground="#ff5555" FontSize="11" FontWeight="Medium" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Step 5: System Settings -->
+                    <StackPanel IsVisible="{Binding IsSystemStep}" Spacing="12">
+                        <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="16" Padding="20,12">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="{DynamicResource l.settings.tray.close_to_tray}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"/>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.CloseToTray}" OnContent="" OffContent="" MinWidth="0"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="{DynamicResource l.settings.tray.minimize_to_tray}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"/>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.MinimizeToTray}" OnContent="" OffContent="" MinWidth="0"/>
+                                </Grid>
+                                
+                                <Separator Background="{DynamicResource DividerStrokeColorDefault}" Margin="0,4"/>
+                                
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="{DynamicResource l.settings.auto_launch.title}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"/>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.AutoLaunch}" OnContent="" OffContent="" MinWidth="0"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="{DynamicResource l.settings.launch_minimized.title}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"/>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.LaunchMinimized}" OnContent="" OffContent="" MinWidth="0"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Step 6: Advanced Localization -->
+                    <StackPanel IsVisible="{Binding IsAdvancedStep}" Spacing="12">
+                        <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="16" Padding="20,12">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{DynamicResource l.settings.shikimori.russian_titles}" FontSize="14" FontWeight="Medium"/>
+                                        <TextBlock Text="{DynamicResource l.settings.shikimori.russian_titles_sub}" FontSize="11" Opacity="0.5" TextWrapping="Wrap" MaxWidth="320"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.UseRussianTitles}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Separator Background="{DynamicResource DividerStrokeColorDefault}" Margin="0,4"/>
+
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{DynamicResource l.settings.shikimori.russian_descriptions}" FontSize="14" FontWeight="Medium"/>
+                                        <TextBlock Text="{DynamicResource l.settings.shikimori.russian_descriptions_sub}" FontSize="11" Opacity="0.5" TextWrapping="Wrap" MaxWidth="320"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.UseRussianDescriptions}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <Separator Background="{DynamicResource DividerStrokeColorDefault}"/>
+
+                <!-- Footer -->
+                <Grid ColumnDefinitions="Auto, *, Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding ProgressText}" VerticalAlignment="Center" Opacity="0.4" FontSize="13" FontWeight="Medium"/>
+                    
+                    <Button Grid.Column="2" 
+                            Command="{Binding NextStepCommand}"
+                            Background="{DynamicResource SystemAccentColor}" 
+                            Foreground="White"
+                            Padding="28,12" CornerRadius="12">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="{Binding IsLastStep, Converter={StaticResource LocConverter}, ConverterParameter='btn_text'}" FontSize="14" FontWeight="Bold"/>
+                            <material:MaterialIcon Kind="ArrowRight" Width="18" Height="18" IsVisible="{Binding IsLastStep, Converter={StaticResource LocConverter}, ConverterParameter='show_arrow'}"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

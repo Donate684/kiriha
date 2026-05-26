@@ -1,0 +1,164 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kiriha.ViewModels"
+        xmlns:async="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="600"
+        x:Class="Kiriha.Views.AmbiguousMatchView"
+        x:DataType="vm:AmbiguousMatchViewModel"
+        Title="{DynamicResource l.scrobbler.matching.select_anime}"
+        Width="650" Height="650"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="{DynamicResource SystemChromeLowColor}"
+        TransparencyLevelHint="Mica"
+        ExtendClientAreaToDecorationsHint="True">
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="25">
+        <!-- Header -->
+        <StackPanel Spacing="8" Margin="0,15,0,15">
+            <TextBlock Text="{DynamicResource l.scrobbler.matching.multiple_matches}" 
+                       FontSize="24" 
+                       FontWeight="Bold" 
+                       Foreground="{DynamicResource SystemAccentColor}"/>
+            <TextBlock Text="{Binding FileName}" 
+                       FontSize="13" 
+                       Opacity="0.5" 
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*">
+            <!-- Search Bar -->
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,15">
+                <TextBox Text="{Binding SearchQuery}" 
+                         PlaceholderText="{DynamicResource l.scrobbler.matching.search_placeholder}"
+                         VerticalAlignment="Center"
+                         Classes="clear"
+                         Height="40"
+                         CornerRadius="8"
+                         BorderThickness="1">
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter" Command="{Binding SearchCommand}"/>
+                    </TextBox.KeyBindings>
+                </TextBox>
+                <Button Grid.Column="1" 
+                        Content="{DynamicResource l.common.actions.search}" 
+                        Command="{Binding SearchCommand}" 
+                        Margin="10,0,0,0"
+                        Height="40"
+                        Width="100"
+                        CornerRadius="8"
+                        Classes="accent"/>
+            </Grid>
+            
+            <ProgressBar Grid.Row="1" 
+                         IsIndeterminate="True" 
+                         IsVisible="{Binding IsSearching}" 
+                         Margin="0,-5,0,15" 
+                         Height="3"
+                         Foreground="{DynamicResource SystemAccentColor}"/>
+            
+            <!-- Styled ListBox -->
+            <ListBox x:Name="CandidatesList" 
+                     Grid.Row="2" 
+                     ItemsSource="{Binding Candidates}" 
+                     SelectedItem="{Binding SelectedAnime}"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     CornerRadius="12">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="Padding" Value="10"/>
+                        <Setter Property="Margin" Value="0,0,0,8"/>
+                        <Setter Property="CornerRadius" Value="10"/>
+                        <Setter Property="Background" Value="{DynamicResource SystemChromeMediumColor}"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Transitions">
+                            <Transitions>
+                                <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+                                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2"/>
+                            </Transitions>
+                        </Setter>
+                    </Style>
+                    <Style Selector="ListBoxItem:pointerover">
+                        <Setter Property="Background" Value="{DynamicResource SystemListLowColor}"/>
+                        <Setter Property="RenderTransform" Value="scale(1.02)"/>
+                    </Style>
+                    <Style Selector="ListBoxItem:selected">
+                        <Setter Property="Background" Value="{DynamicResource SystemAccentColorDark1}"/>
+                    </Style>
+                </ListBox.Styles>
+                
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="Auto,*" Height="100">
+                            <!-- Poster Container -->
+                            <Border Grid.Column="0" 
+                                    Width="70" 
+                                    Height="100" 
+                                    CornerRadius="6" 
+                                    ClipToBounds="True"
+                                    Background="{DynamicResource SystemChromeLowColor}">
+                                <Image async:ImageLoader.Source="{Binding ImageUrl}" 
+                                       Stretch="UniformToFill"/>
+                            </Border>
+
+                            <!-- Info Container -->
+                            <StackPanel Grid.Column="1" Margin="15,5,10,5" VerticalAlignment="Center" Spacing="4">
+                                <TextBlock Text="{Binding Title}" 
+                                           FontSize="16" 
+                                           FontWeight="SemiBold"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"/>
+                                
+                                <StackPanel Orientation="Horizontal" Spacing="12" Opacity="0.7">
+                                    <Border Background="{DynamicResource SystemListLowColor}" 
+                                            Padding="6,2" 
+                                            CornerRadius="4">
+                                        <TextBlock Text="{Binding Type, Converter={StaticResource LocConverter}}" FontSize="11" FontWeight="Medium"/>
+                                    </Border>
+                                    
+                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Year}" FontSize="12"/>
+                                        <TextBlock Text="•" Opacity="0.5"/>
+                                        <TextBlock Text="{Binding Season, Converter={StaticResource LocConverter}}" FontSize="12"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="{Binding TotalEpisodes}" FontSize="11" Opacity="0.5"/>
+                                    <TextBlock Text="{DynamicResource l.history.unit_ep}" FontSize="11" Opacity="0.5"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right" 
+                    Spacing="12" 
+                    Margin="0,10,0,0">
+            <Button Content="{DynamicResource l.common.actions.cancel}" 
+                    Command="{Binding CancelCommand}" 
+                    CommandParameter="{Binding $parent[Window]}"
+                    Height="36"
+                    Width="100"
+                    CornerRadius="6"
+                    Theme="{DynamicResource ButtonLowTheme}"/>
+            <Button Content="{DynamicResource l.common.actions.confirm}" 
+                    Classes="accent" 
+                    Command="{Binding ConfirmCommand}" 
+                    CommandParameter="{Binding $parent[Window]}"
+                    Height="36"
+                    Width="120"
+                    CornerRadius="6"
+                    FontWeight="SemiBold"/>
+        </StackPanel>
+    </Grid>
+</Window>

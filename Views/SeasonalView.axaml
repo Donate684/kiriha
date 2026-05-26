@@ -1,0 +1,646 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+             xmlns:material="using:Material.Icons.Avalonia"
+             xmlns:models="using:Kiriha.Models"
+             xmlns:core="using:Kiriha.Core"
+             xmlns:conv="using:Kiriha.Converters"
+             xmlns:u="using:Kiriha.Utils"
+             x:Class="Kiriha.Views.SeasonalView"
+             x:DataType="vm:SeasonalViewModel"
+             x:CompileBindings="True">
+
+    <UserControl.Resources>
+        <conv:StatusToColorConverter x:Key="StatusToColorConverter"/>
+        <conv:StatusNotNoneConverter x:Key="StatusNotNoneConverter"/>
+        <conv:StatusNoneConverter x:Key="StatusNoneConverter"/>
+        <conv:RatingConverter x:Key="RatingConverter"/>
+        <conv:LocConverter x:Key="LocConverter"/>
+
+        <ControlTemplate x:Key="PosterLoadingTemplate">
+            <Panel Background="{DynamicResource SubtleFillColorSecondary}">
+                <material:MaterialIcon Kind="ImageOutline" Width="32" Height="32" Opacity="0.1" 
+                                      VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            </Panel>
+        </ControlTemplate>
+
+        <!-- ═══ Card Template ═══ -->
+        <DataTemplate x:Key="AnimeGridItemTemplate" x:DataType="models:AnimeItem">
+            <Border Classes="AnimeCard revealItem" Margin="4" Width="155" ClipToBounds="True">
+                <Grid RowDefinitions="210, *">
+                    <Panel Grid.Row="0" Background="Transparent" DoubleTapped="Poster_DoubleTapped">
+                        <!-- Loading Placeholder (visible behind the image) -->
+                        <TemplatedControl Template="{DynamicResource PosterLoadingTemplate}"/>
+
+                        <!-- Actual Image -->
+                        <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill" />
+
+                        <!-- Top gradient for badge readability (soft) -->
+                        <Border VerticalAlignment="Top" Height="52" IsHitTestVisible="False">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                    <GradientStop Color="#66000000" Offset="0"/>
+                                    <GradientStop Color="#00000000" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+
+                        <!-- Status badge (Left) -->
+                        <Border Classes="Badge" VerticalAlignment="Top" HorizontalAlignment="Left"
+                                Margin="8"
+                                IsVisible="{Binding Status, Converter={StaticResource StatusNotNoneConverter}}"
+                                Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}">
+                            <TextBlock Text="{Binding Status, Converter={StaticResource LocConverter}}"
+                                     FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                        </Border>
+
+                        <!-- Popularity badge (Right) -->
+                        <Border Classes="Badge" VerticalAlignment="Top" HorizontalAlignment="Right"
+                                Margin="8" Background="#CC000000">
+                            <TextBlock Text="{Binding Popularity, StringFormat='#{0}'}"
+                                     FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                        </Border>
+
+                        <!-- Hide / Un-hide (client-only "not interested").
+                             Visible only for titles NOT in the user's list, or for already-hidden ones
+                             (so the user can un-hide them while "Show hidden" is on).
+                             Double-click toggles the state - single clicks must NOT fire to avoid
+                             accidental hides. -->
+                        <Border Classes="HideBtn" Classes.confirming="{Binding IsHideConfirming}"
+                                VerticalAlignment="Top" HorizontalAlignment="Left"
+                                Margin="6" Tapped="HideBtn_Tapped"
+                                ToolTip.Tip="{DynamicResource l.filters.options.hide_tooltip}">
+                            <Border.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                    <Binding Path="Status" Converter="{StaticResource StatusNoneConverter}"/>
+                                    <Binding Path="IsHiddenInSeasons"/>
+                                </MultiBinding>
+                            </Border.IsVisible>
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <material:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" Foreground="White"
+                                                       IsVisible="{Binding !IsHiddenInSeasons}"/>
+                                <material:MaterialIcon Kind="EyeOutline" Width="14" Height="14" Foreground="White"
+                                                       IsVisible="{Binding IsHiddenInSeasons}"/>
+                                <TextBlock IsVisible="{Binding IsHideConfirming}"
+                                           FontSize="10" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{x:Static conv:HideConfirmTextConverter.Instance}">
+                                            <Binding Path="IsHiddenInSeasons"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </Panel>
+
+                    <!-- Info block -->
+                    <Grid Grid.Row="1" RowDefinitions="*, Auto" Margin="10,8,10,8">
+                        <StackPanel Grid.Row="0" Spacing="1" Height="57" VerticalAlignment="Top" ClipToBounds="True">
+                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                       MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       LineHeight="15"
+                                       Foreground="{DynamicResource SystemBaseHighColor}"/>
+                            <TextBlock Text="{Binding RussianTitle}" FontSize="10"
+                                       MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       LineHeight="13"
+                                       Foreground="{DynamicResource SystemAccentColor}" Opacity="0.85"
+                                       IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+
+                        <Grid Grid.Row="1" ColumnDefinitions="*, Auto" Margin="0,6,0,0" VerticalAlignment="Center">
+                            <TextBlock Grid.Column="0" Text="{Binding Type, Converter={StaticResource LocConverter}}"
+                                       FontSize="10" Opacity="0.6" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource SystemBaseHighColor}"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                                <!-- 5 Stars -->
+                                <StackPanel Orientation="Horizontal" Spacing="1"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding $parent[UserControl].DataContext.UseFiveStarRating}">
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=1:Seasons}"/>
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=2:Seasons}"/>
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=3:Seasons}"/>
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=4:Seasons}"/>
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=5:Seasons}"/>
+                                </StackPanel>
+
+                                <!-- 10-point -->
+                                <StackPanel Orientation="Horizontal" Spacing="3"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding !$parent[UserControl].DataContext.UseFiveStarRating}">
+                                    <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource SystemBaseHighColor}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- ═══ Card shell: soft, shadowed, with smooth hover lift (match AnimeListView) ═══ -->
+        <Style Selector="Border.AnimeCard">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillDefault}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BoxShadow" Value="0 2 8 0 #18000000"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.18"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.AnimeCard:pointerover">
+            <Setter Property="BoxShadow" Value="0 6 18 0 #2A000000"/>
+        </Style>
+
+        <!-- ═══ Reveal-on-scroll ═══ -->
+        <Style Selector="Border.revealItem">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform" Value="translate(0,20px)"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.45" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.45" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.revealItem.shown">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="RenderTransform" Value="translate(0,0)"/>
+        </Style>
+
+        <!-- ═══ Glass pill badges over poster ═══ -->
+        <Style Selector="Border.Badge">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BoxShadow" Value="0 2 8 0 #66000000"/>
+        </Style>
+
+        <!-- ═══ Hide / Un-hide button (revealed on card hover) ═══ -->
+        <Style Selector="Border.HideBtn">
+            <Setter Property="Background" Value="#CC000000"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="BoxShadow" Value="0 2 8 0 #66000000"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- Reveal on card hover. Always visible while in confirming state so the
+             user can see the prompt even after pulling the cursor off briefly. -->
+        <Style Selector="Border.AnimeCard:pointerover Border.HideBtn">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+        <Style Selector="Border.HideBtn.confirming">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Background" Value="#E53935"/>
+        </Style>
+        <Style Selector="Border.HideBtn:pointerover">
+            <Setter Property="Background" Value="#FFE53935"/>
+        </Style>
+
+        <!-- ═══ Sort list inside flyout ═══ -->
+        <Style Selector="ListBox.SortList">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:selected:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:selected:focus /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+
+        <!-- ═══ Filter flyout presenter ═══ -->
+        <Style Selector="FlyoutPresenter.FilterFlyout">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="240"/>
+            <Setter Property="MaxWidth" Value="280"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource FlyoutPresenterBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefault}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- ═══ Filter toggle row ═══ -->
+        <Style Selector="ToggleButton.FilterToggle">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiary}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorSecondary}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+
+        <!-- Switch indicator inside toggle -->
+        <Style Selector="ToggleButton.FilterToggle Border.SwitchTrack">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="CornerRadius" Value="9"/>
+            <Setter Property="Background" Value="#55808080"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.18"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked Border.SwitchTrack">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle Ellipse.SwitchThumb">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Fill" Value="White"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="3,0,0,0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <ThicknessTransition Property="Margin" Duration="0:0:0.18" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked Ellipse.SwitchThumb">
+            <Setter Property="Margin" Value="17,0,0,0"/>
+        </Style>
+
+        <!-- Reset button inside flyout -->
+        <Style Selector="Button.FilterReset">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="0,7"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Opacity" Value="0.85"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.FilterReset:pointerover">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+        <Style Selector="Button.FilterReset:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, Auto, Auto, *" Margin="0">
+
+        <!-- ═══ Top Bar ═══ -->
+        <Border Grid.Row="0" Margin="20,4,20,12" Padding="8,6" Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="10"
+                BorderBrush="{DynamicResource CardStrokeColorDefault}" BorderThickness="1">
+            <Grid ColumnDefinitions="*, Auto, Auto, Auto">
+                <!-- Search -->
+                <TextBox Grid.Column="0" PlaceholderText="{DynamicResource l.common.actions.search}"
+                         Text="{Binding SearchQuery}"
+                         VerticalAlignment="Center" Height="34"
+                         Background="Transparent" BorderThickness="0"
+                         VerticalContentAlignment="Center"
+                         FontSize="13" Padding="8,0">
+                    <TextBox.InnerRightContent>
+                        <material:MaterialIcon Kind="Magnify" Width="18" Height="18" Margin="0,0,8,0" Opacity="0.3"/>
+                    </TextBox.InnerRightContent>
+                </TextBox>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0" VerticalAlignment="Center">
+                    <Border Width="1" Height="20" Background="{DynamicResource DividerStrokeColorDefault}" Margin="4,0"/>
+
+                    <!-- Season nav -->
+                    <Button Command="{Binding PreviousSeasonCommand}" Background="Transparent" VerticalAlignment="Center"
+                            BorderThickness="0" Padding="6" CornerRadius="4">
+                        <material:MaterialIcon Kind="ChevronLeft" Width="18" Height="18" Opacity="0.6"/>
+                    </Button>
+
+                    <Button Background="Transparent" BorderThickness="0" Padding="2" CornerRadius="4" VerticalAlignment="Center" Height="34">
+                        <StackPanel VerticalAlignment="Center" Width="90" Height="30">
+                            <TextBlock Text="{Binding DisplaySeason}" TextAlignment="Center"
+                                       FontWeight="SemiBold" FontSize="12"
+                                       Foreground="{DynamicResource SystemAccentColor}"/>
+                            <TextBlock Text="{Binding CurrentYear}" TextAlignment="Center"
+                                      FontSize="10" Opacity="0.4"/>
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout>
+                                <StackPanel Spacing="8" Width="140">
+                                    <NumericUpDown Value="{Binding CurrentYear}" Minimum="1917" Maximum="2100" FormatString="0" />
+                                    <ListBox ItemsSource="{Binding Seasons}" SelectedItem="{Binding CurrentSeason}"
+                                             Background="Transparent" BorderThickness="0">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding, Converter={StaticResource LocConverter}}" Padding="8,4" FontSize="12"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+
+                    <Button Command="{Binding NextSeasonCommand}" Background="Transparent" VerticalAlignment="Center"
+                            BorderThickness="0" Padding="6" CornerRadius="4">
+                        <material:MaterialIcon Kind="ChevronRight" Width="18" Height="18" Opacity="0.6"/>
+                    </Button>
+
+                    <Border Width="1" Height="20" Background="{DynamicResource DividerStrokeColorDefault}" Margin="4,0"/>
+
+                    <!-- Sort -->
+                    <Button Background="Transparent" BorderThickness="0" Padding="8,6" CornerRadius="6" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <material:MaterialIcon Kind="SortVariant" Width="16" Height="16" Opacity="0.6"/>
+                            <TextBlock Text="{Binding DisplaySortBy}" FontSize="12" Opacity="0.6" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="FilterFlyout">
+                                <ListBox Classes="SortList" Margin="6"
+                                         ItemsSource="{Binding SortOptions}"
+                                         SelectedItem="{Binding SortBy}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <Grid ColumnDefinitions="14,*" VerticalAlignment="Center">
+                                                <material:MaterialIcon Grid.Column="0" Kind="Check" Width="13" Height="13"
+                                                                      VerticalAlignment="Center"
+                                                                      Foreground="{DynamicResource SystemAccentColor}"
+                                                                      IsVisible="{Binding $parent[ListBoxItem].IsSelected}"/>
+                                                <TextBlock Grid.Column="1" Margin="8,0,0,0"
+                                                           Text="{Binding Converter={StaticResource LocConverter}}"
+                                                           FontSize="12" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+
+                    <!-- Filters -->
+                    <Button Classes.active="{Binding IsFilterActive}" Background="Transparent" VerticalAlignment="Center"
+                            BorderThickness="0" Padding="8,6" CornerRadius="6">
+                        <Button.Styles>
+                            <Style Selector="Button">
+                                <Setter Property="Opacity" Value="0.6"/>
+                            </Style>
+                            <Style Selector="Button.active">
+                                <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+                                <Setter Property="Opacity" Value="1"/>
+                            </Style>
+                            <Style Selector="Button.active TextBlock">
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Style>
+                        </Button.Styles>
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <material:MaterialIcon Kind="FilterVariant" Width="16" Height="16"
+                                                  Foreground="{Binding $parent[Button].Foreground}"/>
+                            <TextBlock Text="{DynamicResource l.filters.header}" VerticalAlignment="Center" FontSize="12"
+                                       Foreground="{Binding $parent[Button].Foreground}"/>
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="FilterFlyout">
+                                <StackPanel Spacing="4" Margin="10">
+                                    <ToggleButton Classes="FilterToggle" IsChecked="{Binding FilterNotInList}">
+                                        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="0" Text="{DynamicResource l.filters.options.not_in_list}"
+                                                       FontSize="12" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <Border Grid.Column="1" Classes="SwitchTrack" VerticalAlignment="Center">
+                                                <Ellipse Classes="SwitchThumb"/>
+                                            </Border>
+                                        </Grid>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="FilterToggle" IsChecked="{Binding FilterWatching}">
+                                        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="0" Text="{DynamicResource l.anime.status.watching}"
+                                                       FontSize="12" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <Border Grid.Column="1" Classes="SwitchTrack" VerticalAlignment="Center">
+                                                <Ellipse Classes="SwitchThumb"/>
+                                            </Border>
+                                        </Grid>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="FilterToggle" IsChecked="{Binding FilterCompleted}">
+                                        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="0" Text="{DynamicResource l.anime.status.completed}"
+                                                       FontSize="12" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <Border Grid.Column="1" Classes="SwitchTrack" VerticalAlignment="Center">
+                                                <Ellipse Classes="SwitchThumb"/>
+                                            </Border>
+                                        </Grid>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="FilterToggle" IsChecked="{Binding FilterOnHold}">
+                                        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="0" Text="{DynamicResource l.anime.status.on_hold}"
+                                                       FontSize="12" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <Border Grid.Column="1" Classes="SwitchTrack" VerticalAlignment="Center">
+                                                <Ellipse Classes="SwitchThumb"/>
+                                            </Border>
+                                        </Grid>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="FilterToggle" IsChecked="{Binding FilterPlanToWatch}">
+                                        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="0" Text="{DynamicResource l.anime.status.plan_to_watch}"
+                                                       FontSize="12" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <Border Grid.Column="1" Classes="SwitchTrack" VerticalAlignment="Center">
+                                                <Ellipse Classes="SwitchThumb"/>
+                                            </Border>
+                                        </Grid>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="FilterToggle" IsChecked="{Binding FilterDropped}">
+                                        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="0" Text="{DynamicResource l.anime.status.dropped}"
+                                                       FontSize="12" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <Border Grid.Column="1" Classes="SwitchTrack" VerticalAlignment="Center">
+                                                <Ellipse Classes="SwitchThumb"/>
+                                            </Border>
+                                        </Grid>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="FilterToggle" IsChecked="{Binding ShowHidden}">
+                                        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="0" Text="{DynamicResource l.filters.options.show_hidden}"
+                                                       FontSize="12" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <Border Grid.Column="1" Classes="SwitchTrack" VerticalAlignment="Center">
+                                                <Ellipse Classes="SwitchThumb"/>
+                                            </Border>
+                                        </Grid>
+                                    </ToggleButton>
+
+                                    <Border Height="1" Background="{DynamicResource DividerStrokeColorDefault}" Margin="2,4"/>
+
+                                    <ToggleButton Classes="FilterToggle" IsChecked="{Binding FilterNsfw}">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                            <Border Grid.Column="0" Width="22" Height="22" CornerRadius="6"
+                                                    Background="#1FF44336" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                <material:MaterialIcon Kind="AlertOctagonOutline" Width="13" Height="13"
+                                                                      Foreground="#FFF44336"
+                                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="{DynamicResource l.filters.adult.only}"
+                                                       FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <Border Grid.Column="2" Classes="SwitchTrack" VerticalAlignment="Center">
+                                                <Ellipse Classes="SwitchThumb"/>
+                                            </Border>
+                                        </Grid>
+                                    </ToggleButton>
+
+                                    <Button Classes="FilterReset" Command="{Binding ClearFiltersCommand}" Margin="0,4,0,0"
+                                            Content="{DynamicResource l.common.actions.reset}"/>
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+
+                <!-- Refresh -->
+                <Button Grid.Column="3" Command="{Binding LoadSeasonalAnimeCommand}"
+                        IsVisible="False"
+                        Padding="12,0" Height="34"
+                        CornerRadius="8" FontSize="12" FontWeight="SemiBold"
+                        Background="{DynamicResource SystemAccentColor}" Foreground="White">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <material:MaterialIcon Kind="Refresh" Width="16" Height="16"/>
+                        <TextBlock Text="{DynamicResource l.common.actions.refresh}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Category Tabs ═══ -->
+        <Border Grid.Row="1" Margin="20,0,20,12" Padding="4"
+                Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="8"
+                HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="2">
+                <RadioButton Content="{Binding NewHeader}" 
+                             Command="{Binding SelectCategoryCommand}" CommandParameter="New"
+                             IsChecked="{Binding IsNewSelected, Mode=OneWay}" Classes="Pill"/>
+                <RadioButton Content="{Binding ContinuingHeader}" 
+                             Command="{Binding SelectCategoryCommand}" CommandParameter="Continuing"
+                             IsChecked="{Binding IsContinuingSelected, Mode=OneWay}" Classes="Pill"/>
+                <RadioButton Content="{Binding MoviesHeader}" 
+                             Command="{Binding SelectCategoryCommand}" CommandParameter="Movies"
+                             IsChecked="{Binding IsMoviesSelected, Mode=OneWay}" Classes="Pill"/>
+                <RadioButton Content="{Binding OnaHeader}" 
+                             Command="{Binding SelectCategoryCommand}" CommandParameter="ONA"
+                             IsChecked="{Binding IsOnaSelected, Mode=OneWay}" Classes="Pill"/>
+                <RadioButton Content="{Binding OvaHeader}" 
+                             Command="{Binding SelectCategoryCommand}" CommandParameter="OVA"
+                             IsChecked="{Binding IsOvaSelected, Mode=OneWay}" Classes="Pill"/>
+                <RadioButton Content="{Binding SpecialsHeader}" 
+                             Command="{Binding SelectCategoryCommand}" CommandParameter="Specials"
+                             IsChecked="{Binding IsSpecialsSelected, Mode=OneWay}" Classes="Pill"/>
+                <RadioButton Content="{Binding OtherHeader}" 
+                             Command="{Binding SelectCategoryCommand}" CommandParameter="Other"
+                             IsChecked="{Binding IsOtherSelected, Mode=OneWay}" Classes="Pill"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- ═══ GRID VIEW (Virtualized ItemsRepeater) ═══ -->
+        <!-- ═══════════════════════════════════════ -->
+        <Panel Grid.Row="3">
+            <ScrollViewer x:Name="ContentScrollViewer"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto"
+                          u:SmoothScroll.IsEnabled="True">
+                <ItemsRepeater x:Name="SeasonalItemsRepeater" 
+                               ItemsSource="{Binding DisplayItems}"
+                               Margin="20,0,20,16">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout MinItemWidth="163" 
+                                          MinItemHeight="310"
+                                          MinColumnSpacing="0"
+                                          MinRowSpacing="0"
+                                          ItemsJustification="Start"/>
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <StaticResource ResourceKey="AnimeGridItemTemplate"/>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </ScrollViewer>
+
+            <!-- No Results -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10" IsHitTestVisible="False">
+                <StackPanel.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="!DisplayItems.Count"/>
+                        <Binding Path="!IsLoading"/>
+                    </MultiBinding>
+                </StackPanel.IsVisible>
+                <material:MaterialIcon Kind="FilterVariant" Width="48" Height="48" Opacity="0.1"/>
+                <TextBlock Text="{DynamicResource l.common.status.no_results}" Opacity="0.3" FontSize="14"/>
+            </StackPanel>
+
+        </Panel>
+    </Grid>
+</UserControl>

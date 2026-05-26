@@ -1,0 +1,9 @@
+{
+  "open_button": "About",
+  "title": "About",
+  "description": "Indispensable tool for those who care more about meticulously tracking \"Chinese cartoons\" on MyAnimeList than actually watching them. Maniacally parses schedules and auto-inflates the watch counter. Delegate your degeneracy to technology!",
+  "data_sources": "DATA SOURCES",
+  "inspirations": "INSPIRATION",
+  "libraries": "LIBRARIES USED",
+  "license_note": "Provided as-is, without warranty of any kind, express or implied.\nAll trademarks are property of their respective owners."
+}

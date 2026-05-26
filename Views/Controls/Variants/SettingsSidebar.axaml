@@ -1,0 +1,884 @@
+<!--
+════════════════════════════════════════════════════════════════════════════════
+  SettingsSidebar.axaml — окно настроек (модалка с сайдбаром слева + контент)
+════════════════════════════════════════════════════════════════════════════════
+
+  ⚠️  ВАЖНО: СКРОЛЛ ПРАВОЙ ЧАСТИ — КАК ОНО РАБОТАЕТ И ЧТО НЕ ТРОГАТЬ  ⚠️
+  ──────────────────────────────────────────────────────────────────────────────
+
+  Правая часть настроек обёрнута в ОДИН внешний <ScrollViewer>, внутри которого
+  <Panel> с 5 пачками <StackPanel> (страниц). Активная страница переключается
+  через `IsVisible` + `IntEqualsConverter` по `Nav.SelectedIndex` (сайдбар
+  слева). `Panel` здесь вместо `Carousel` намеренно — `Carousel` в Avalonia
+  не ограничивал высоту дочернего ScrollViewer корректно, из-за чего скролл
+  не активировался.
+
+  ──────────────────────────────────────────────────────────────────────────────
+  ПОЧЕМУ В КОНЦЕ КАЖДОЙ СТРАНИЦЫ СТОИТ <Border Height="110" IsHitTestVisible="False"/>
+  ──────────────────────────────────────────────────────────────────────────────
+
+  Это НЕВИДИМЫЙ СПЕЙСЕР. Он нужен потому, что viewport ScrollViewer'а на
+  ~110–128px БОЛЬШЕ реально видимой области модалки. Avalonia считает окно
+  полноэкранным (ExtendClientAreaToDecorationsHint=True + RowSpan=2 overlay),
+  из-за чего модалка "думает" что у неё больше места, чем видит юзер.
+  Без спейсера при небольшом переполнении (1-2 пункта) скролл НЕ активировался:
+  контент визуально обрезался снизу, но ScrollViewer считал viewport > extent
+  и ничего не скроллил. Спейсер искусственно увеличивает extent и компенсирует
+  эту "мёртвую зону".
+
+  ──────────────────────────────────────────────────────────────────────────────
+  ПРАВИЛА ПРИ ДОБАВЛЕНИИ / РЕДАКТИРОВАНИИ СТРАНИЦ
+  ──────────────────────────────────────────────────────────────────────────────
+
+  1. Каждая страница — это <StackPanel MaxWidth="720" VerticalAlignment="Top"
+     IsVisible="{Binding ElementName=Nav, Path=SelectedIndex,
+                Converter={StaticResource IntEqualsConverter},
+                ConverterParameter=N}"> где N — индекс пункта в сайдбаре (0..4).
+
+  2. КАЖДАЯ новая страница ДОЛЖНА заканчиваться спейсером:
+         <Border Height="110" IsHitTestVisible="False"/>
+     Это последний элемент внутри </StackPanel>. Не удалять, не забывать.
+
+  3. При добавлении новой страницы:
+     - Добавить <ListBoxItem> в сайдбар (ниже) с иконкой + текстом.
+     - Добавить <StackPanel> с соответствующим ConverterParameter=(N+1).
+     - Не забыть про спейсер в конце страницы.
+
+  4. Если меняется высота окна/модалки или structure layout'а и скролл начинает
+     вести себя странно — ПЕРВЫМ ДЕЛОМ проверить спейсер:
+     - Если при небольшом переполнении скролл НЕ появляется — УВЕЛИЧИТЬ Height спейсера.
+     - Если снизу слишком много пустого пространства при прокрутке вниз — УМЕНЬШИТЬ Height.
+     - Нормальный диапазон: 100–140px.
+
+  5. НЕ трогать следующие вещи (проверено, так работает):
+     - `MaxHeight="{Binding #RootGrid.Bounds.Height}"` на внешнем ScrollViewer.
+     - `HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"`
+       на UserControl (иначе контент не растягивается и ScrollViewer
+       не получает ограничение по высоте).
+     - `Name="RootGrid"` на корневом <Grid>.
+     - `RowDefinitions="*"` на корневом <Grid>.
+     - Структуру: <ScrollViewer> > <Panel> > <StackPanel IsVisible=...>.
+       В частности, не оборачивать каждую страницу в отдельный ScrollViewer
+       и не использовать Carousel — проверено, ломается скролл.
+
+  6. Аналогичные настройки в `@Views/SettingsView.axaml` и
+     `@Views/MainWindow.axaml` (ContentControl с Stretch). Тоже не трогать.
+
+  ──────────────────────────────────────────────────────────────────────────────
+  TL;DR: ЕСЛИ ЧИНИШЬ/ДОБАВЛЯЕШЬ ПУНКТ В НАСТРОЙКИ — СКОПИРУЙ ЛЮБУЮ СУЩЕСТВУЮЩУЮ
+  СТРАНИЦУ ЦЕЛИКОМ (от <StackPanel IsVisible=...> до </StackPanel> ВКЛЮЧАЯ
+  СПЕЙСЕР В КОНЦЕ) И АДАПТИРУЙ.
+════════════════════════════════════════════════════════════════════════════════
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:models="using:Kiriha.Models"
+             xmlns:material="using:Material.Icons.Avalonia"
+             xmlns:conv="using:Kiriha.Converters"
+             xmlns:u="using:Kiriha.Utils"
+             x:Class="Kiriha.Views.Controls.Variants.SettingsSidebar"
+             x:DataType="vm:SettingsViewModel"
+             HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+
+    <UserControl.Resources>
+        <conv:LocConverter x:Key="LocConverter"/>
+        <conv:IntEqualsConverter x:Key="IntEqualsConverter"/>
+        <conv:FilePathToBitmapConverter x:Key="FilePathToBitmapConverter"/>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- ===== Sidebar nav list (unchanged) ===== -->
+        <Style Selector="ListBox.SideNav">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.SideNav ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="8,1"/>
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="CornerRadius" Value="5"/>
+        </Style>
+        <Style Selector="ListBox.SideNav ListBoxItem /template/ ContentPresenter">
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="10,7"/>
+        </Style>
+        <Style Selector="ListBox.SideNav ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+        </Style>
+        <Style Selector="ListBox.SideNav ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource CardHoverFillColor}"/>
+        </Style>
+        <Style Selector="ListBox.SideNav ListBoxItem:selected:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource CardHoverFillColor}"/>
+        </Style>
+        <Style Selector="ListBox.SideNav TextBlock.NavLabel">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Opacity" Value="0.8"/>
+        </Style>
+        <Style Selector="ListBox.SideNav ListBoxItem:selected TextBlock.NavLabel">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="ListBox.SideNav material|MaterialIcon.NavIcon">
+            <Setter Property="Opacity" Value="0.75"/>
+        </Style>
+        <Style Selector="ListBox.SideNav ListBoxItem:selected material|MaterialIcon.NavIcon">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="TextBlock.SectionHeader">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Opacity" Value="0.4"/>
+            <Setter Property="Margin" Value="18,14,12,6"/>
+        </Style>
+
+        <!-- ===== Right content: flat rows with dividers ===== -->
+        <Style Selector="TextBlock.PageTitle">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,24"/>
+        </Style>
+        <Style Selector="Grid.Row">
+            <Setter Property="MinHeight" Value="64"/>
+        </Style>
+        <Style Selector="TextBlock.Title">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+        <Style Selector="TextBlock.Sub">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Opacity" Value="0.55"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Border.Divider">
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource DividerStrokeColorDefault}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Name="RootGrid" ColumnDefinitions="232,*" RowDefinitions="*"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+        <!-- ══════════ LEFT SIDEBAR ══════════ -->
+        <Border Grid.Column="0" Background="{DynamicResource ModalSidebarFill}"
+                BorderBrush="{DynamicResource DividerStrokeColorDefault}" BorderThickness="0,0,1,0">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Top" Margin="18,20,18,10" Spacing="2">
+                    <TextBlock Text="{DynamicResource l.settings.header}" FontSize="15" FontWeight="SemiBold"/>
+                    <TextBlock Text="{DynamicResource l.settings.title}" FontSize="11" Opacity="0.5"/>
+                </StackPanel>
+
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" u:SmoothScroll.IsEnabled="True">
+                    <StackPanel>
+                        <TextBlock Classes="SectionHeader" Text="{DynamicResource l.common.status.system}"/>
+                        <ListBox Name="Nav" Classes="SideNav" SelectedIndex="0"
+                                 SelectionChanged="Nav_SelectionChanged">
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <material:MaterialIcon Classes="NavIcon" Kind="Monitor" Width="18" Height="18" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="NavLabel" Text="{DynamicResource l.common.status.system}"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <material:MaterialIcon Classes="NavIcon" Kind="Palette" Width="18" Height="18" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="NavLabel" Text="{DynamicResource l.settings.sections.appearance}"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <material:MaterialIcon Classes="NavIcon" Kind="BellOutline" Width="18" Height="18" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="NavLabel" Text="{DynamicResource l.settings.sections.notifications}"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <material:MaterialIcon Classes="NavIcon" Kind="AccountCircleOutline" Width="18" Height="18" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="NavLabel" Text="{DynamicResource l.settings.sections.accounts}"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <material:MaterialIcon Classes="NavIcon" Kind="AutoFix" Width="18" Height="18" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="NavLabel" Text="{DynamicResource l.scrobbler.title}"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <material:MaterialIcon Classes="NavIcon" Kind="Update" Width="18" Height="18" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="NavLabel" Text="{DynamicResource l.updates.title}"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <material:MaterialIcon Classes="NavIcon" Kind="Database" Width="18" Height="18" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="NavLabel" Text="{DynamicResource l.settings.cache.title}"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <material:MaterialIcon Classes="NavIcon" Kind="PlayCircleOutline" Width="18" Height="18" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="NavLabel" Text="Плеер"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                        </ListBox>
+
+                        <!-- ── Расширенная кастомизация ── separate ListBox so the
+                             section gets its own header. SelectionChanged in code-behind
+                             keeps the two ListBoxes mutually exclusive (Nav.SelectedIndex
+                             goes to -1 when something here is picked, and vice versa). -->
+                        <TextBlock Classes="SectionHeader" Text="{DynamicResource l.settings.sections.advanced}"/>
+                        <ListBox Name="NavCustom" Classes="SideNav" SelectedIndex="-1"
+                                 SelectionChanged="NavCustom_SelectionChanged">
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <material:MaterialIcon Classes="NavIcon" Kind="LinkVariant" Width="18" Height="18" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="NavLabel" Text="{DynamicResource l.settings.custom_links.title}"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- ══════════ RIGHT CONTENT ══════════ -->
+        <ScrollViewer Grid.Column="1" Padding="32,32,32,40" HorizontalScrollBarVisibility="Disabled"
+                      MaxHeight="{Binding #RootGrid.Bounds.Height}"
+                      u:SmoothScroll.IsEnabled="True">
+          <Panel>
+
+            <!-- ── System ── -->
+            <StackPanel MaxWidth="720" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding ElementName=Nav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=0}">
+                    <TextBlock Classes="PageTitle" Text="{DynamicResource l.common.status.system}"/>
+
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.language.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.language.subtitle}"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="1" VerticalAlignment="Center" ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}" Width="160" CornerRadius="6">
+                            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}"/></DataTemplate></ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.theme.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.theme.subtitle}"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="1" VerticalAlignment="Center" ItemsSource="{Binding AvailableThemes}" SelectedItem="{Binding SelectedTheme}" Width="160" CornerRadius="6">
+                            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}"/></DataTemplate></ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.tray.close_to_tray}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.tray.close_to_tray_sub}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding CloseToTray}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.tray.minimize_to_tray}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.tray.minimize_to_tray_sub}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding MinimizeToTray}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.auto_launch.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.auto_launch.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AutoLaunch}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.launch_minimized.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.launch_minimized.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding LaunchMinimized}" IsEnabled="{Binding AutoLaunch}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <!-- invisible spacer to compensate viewport/visible area mismatch -->
+                    <Border Height="110" IsHitTestVisible="False"/>
+            </StackPanel>
+
+            <!-- ── Appearance ── -->
+            <StackPanel MaxWidth="720" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding ElementName=Nav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=1}">
+                    <TextBlock Classes="PageTitle" Text="{DynamicResource l.settings.sections.appearance}"/>
+
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.filters.score.label}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.filters.score.simplified_sub}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding UseFiveStarRating}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider" IsVisible="{Binding IsMicaSupported}"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto" IsVisible="{Binding IsMicaSupported}">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.mica.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.mica.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding EnableMica}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.shikimori.russian_titles}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.shikimori.russian_titles_sub}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding UseRussianTitles}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.shikimori.russian_descriptions}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.shikimori.russian_descriptions_sub}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding UseRussianDescriptions}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.airing_info.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.airing_info.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding ShowAiringInfo}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Height="110" IsHitTestVisible="False"/>
+            </StackPanel>
+
+            <!-- ── Notifications ── -->
+            <StackPanel MaxWidth="720" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding ElementName=Nav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=2}">
+                    <TextBlock Classes="PageTitle" Text="{DynamicResource l.settings.sections.notifications}"/>
+
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.notifications.new_episodes.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.notifications.new_episodes.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding NotifyNewEpisodes}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto" IsEnabled="{Binding NotifyNewEpisodes}">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.notifications.delay.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.notifications.delay.subtitle}"/>
+                        </StackPanel>
+                        <NumericUpDown Grid.Column="1" VerticalAlignment="Center" Value="{Binding NewEpisodeNotificationDelayMinutes}" Minimum="0" Maximum="1440" Increment="1" Width="80" ShowButtonSpinner="False"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.notifications.app_update.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.notifications.app_update.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding NotifyAppUpdate}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Height="110" IsHitTestVisible="False"/>
+            </StackPanel>
+
+            <!-- ── Accounts ── -->
+            <StackPanel MaxWidth="720" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding ElementName=Nav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=3}">
+                    <TextBlock Classes="PageTitle" Text="{DynamicResource l.settings.sections.accounts}"/>
+
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.anime.links.mal}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.mal.subtitle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border IsVisible="{Binding IsLoggedIn}" Padding="10,6" Background="#152ecc71" CornerRadius="4" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <material:MaterialIcon Kind="CheckCircle" Width="12" Height="12" Foreground="#2ecc71"/>
+                                    <TextBlock Text="{DynamicResource l.settings.mal.connected}" Foreground="#2ecc71" FontSize="11" FontWeight="Medium"/>
+                                </StackPanel>
+                            </Border>
+                            <Button Content="{DynamicResource l.common.actions.login}" Command="{Binding MalLoginCommand}" IsVisible="{Binding !IsLoggedIn}" Padding="14,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Background="{DynamicResource SystemAccentColor}" Foreground="White"/>
+                            <Button Command="{Binding MalLogoutCommand}" IsVisible="{Binding IsLoggedIn}" Padding="8" CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondary}" BorderThickness="0">
+                                <material:MaterialIcon Kind="Logout" Width="14" Height="14" Foreground="#ff5555"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <!-- Mutual-exclusion notice: even though both Shikimori rows
+                         are visible, only one can be connected at a time (the
+                         buttons enforce this via CanExecute). The banner makes
+                         that constraint explicit so the user doesn't wonder why
+                         the other login button is greyed out. -->
+                    <Border Margin="0,8,0,4" Padding="12,10"
+                            Background="{DynamicResource SubtleFillColorTertiary}"
+                            CornerRadius="6">
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <material:MaterialIcon Kind="InformationOutline" Width="16" Height="16" Opacity="0.7"/>
+                            <TextBlock Text="{DynamicResource l.settings.shikimori.exclusive_notice}"
+                                       FontSize="12" Opacity="0.75" TextWrapping="Wrap"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <!-- Shikimori (shikimori.one) — the original/canonical site.
+                         The row below connects to the independent fan fork served
+                         from .rip / .net. Mutual exclusion handled by CanExecute. -->
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Classes="Title" Text="Shikimori"/>
+                                <Border Padding="6,1" Background="{DynamicResource SubtleFillColorTertiary}" CornerRadius="3" VerticalAlignment="Center">
+                                    <TextBlock Text="shikimori.one" FontSize="10" FontFamily="Consolas,monospace" Opacity="0.75"/>
+                                </Border>
+                                <Border Padding="6,1" Background="#152ecc71" CornerRadius="3" VerticalAlignment="Center"
+                                        ToolTip.Tip="{DynamicResource l.settings.shikimori.one_sub}">
+                                    <TextBlock Text="ORIGINAL" FontSize="10" FontWeight="SemiBold" Foreground="#2a9c5b"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.shikimori.one_sub}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border IsVisible="{Binding IsShikiOneConnected}" Padding="10,6" Background="#152ecc71" CornerRadius="4" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <material:MaterialIcon Kind="CheckCircle" Width="12" Height="12" Foreground="#2ecc71"/>
+                                    <TextBlock Text="{DynamicResource l.settings.mal.connected}" Foreground="#2ecc71" FontSize="11" FontWeight="Medium"/>
+                                </StackPanel>
+                            </Border>
+                            <Button Content="{DynamicResource l.common.actions.login}" Command="{Binding ShikiLoginOneCommand}" IsVisible="{Binding !IsShikiOneConnected}" Padding="14,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                    ToolTip.Tip="{DynamicResource l.settings.shikimori.other_mirror_active}"/>
+                            <Button Command="{Binding ShikiLogoutCommand}" IsVisible="{Binding IsShikiOneConnected}" Padding="8" CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondary}" BorderThickness="0">
+                                <material:MaterialIcon Kind="Logout" Width="14" Height="14" Foreground="#ff5555"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <!-- Shikimori fan fork (shikimori.rip / shikimori.net). Same fork
+                         is served from two domains for regional-blocking circumvention;
+                         the badge shows both. Independent OAuth realm from .one — its
+                         own tokens, its own client_id. -->
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Classes="Title" Text="Shikimori"/>
+                                <Border Padding="6,1" Background="{DynamicResource SubtleFillColorTertiary}" CornerRadius="3" VerticalAlignment="Center"
+                                        ToolTip.Tip="{DynamicResource l.settings.shikimori.fork_domains_tooltip}">
+                                    <TextBlock Text="shikimori.rip / .net / …" FontSize="10" FontFamily="Consolas,monospace" Opacity="0.75"/>
+                                </Border>
+                                <Border Padding="6,1" Background="#15ff9500" CornerRadius="3" VerticalAlignment="Center"
+                                        ToolTip.Tip="{DynamicResource l.settings.shikimori.net_sub}">
+                                    <TextBlock Text="FORK" FontSize="10" FontWeight="SemiBold" Foreground="#cc8400"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.shikimori.net_sub}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border IsVisible="{Binding IsShikiNetConnected}" Padding="10,6" Background="#152ecc71" CornerRadius="4" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <material:MaterialIcon Kind="CheckCircle" Width="12" Height="12" Foreground="#2ecc71"/>
+                                    <TextBlock Text="{DynamicResource l.settings.mal.connected}" Foreground="#2ecc71" FontSize="11" FontWeight="Medium"/>
+                                </StackPanel>
+                            </Border>
+                            <Button Content="{DynamicResource l.common.actions.login}" Command="{Binding ShikiLoginNetCommand}" IsVisible="{Binding !IsShikiNetConnected}" Padding="14,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                    ToolTip.Tip="{DynamicResource l.settings.shikimori.other_mirror_active}"/>
+                            <Button Command="{Binding ShikiLogoutCommand}" IsVisible="{Binding IsShikiNetConnected}" Padding="8" CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondary}" BorderThickness="0">
+                                <material:MaterialIcon Kind="Logout" Width="14" Height="14" Foreground="#ff5555"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <Border Height="110" IsHitTestVisible="False"/>
+            </StackPanel>
+
+            <!-- ── Scrobbler ── -->
+            <StackPanel MaxWidth="720" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding ElementName=Nav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=4}">
+                    <TextBlock Classes="PageTitle" Text="{DynamicResource l.scrobbler.title}"/>
+
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.scrobbler.enable.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.scrobbler.enable.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding EnableScrobbler}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.scrobbler.processes.tracked_apps}"/>
+                            <TextBlock Classes="Sub" Text="{Binding EnabledPlayersCount, Converter={StaticResource LocConverter}, ConverterParameter=scrobbler.rules.active_count}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" VerticalAlignment="Center" Command="{Binding ManagePlayersCommand}" Padding="14,6" CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondary}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <material:MaterialIcon Kind="CogOutline" Width="14" Height="14"/>
+                                <TextBlock Text="{DynamicResource l.scrobbler.processes.tracked_apps}" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto" IsEnabled="{Binding EnableScrobbler}">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.scrobbler.delay.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.scrobbler.delay.subtitle}"/>
+                        </StackPanel>
+                        <NumericUpDown Grid.Column="1" VerticalAlignment="Center" Value="{Binding ScrobbleDelaySeconds}" Minimum="10" Maximum="3600" Increment="10" Width="80" ShowButtonSpinner="False"/>
+                    </Grid>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto" IsEnabled="{Binding EnableScrobbler}">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.scrobbler.skip_notify.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.scrobbler.skip_notify.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding ScrobbleNotifyOnSkip}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.discord.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.discord.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding EnableDiscordRPC}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Height="110" IsHitTestVisible="False"/>
+            </StackPanel>
+
+            <!-- ── Updates ── -->
+            <StackPanel MaxWidth="720" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding ElementName=Nav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=5}">
+                    <TextBlock Classes="PageTitle" Text="{DynamicResource l.updates.title}"/>
+
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock IsVisible="{Binding !IsUpdateAvailable}" Classes="Title" Text="{DynamicResource l.updates.no_updates}"/>
+                            <TextBlock IsVisible="{Binding IsUpdateAvailable}" FontSize="14" FontWeight="Medium" Foreground="{DynamicResource SystemAccentColor}"
+                                       Text="{Binding NewVersion, Converter={StaticResource LocConverter}, ConverterParameter='format:l.updates.available'}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button Command="{Binding CheckForUpdatesCommand}" IsVisible="{Binding !IsUpdateAvailable}" IsEnabled="{Binding !IsCheckingUpdates}" Padding="12,6" CornerRadius="6">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <material:MaterialIcon Kind="Refresh" Width="14" Height="14"/>
+                                    <TextBlock Text="{DynamicResource l.updates.check}" FontSize="12"/>
+                                </StackPanel>
+                            </Button>
+                            <!-- Download (ready state) -->
+                            <Button Command="{Binding DownloadUpdateCommand}" IsVisible="{Binding IsDownloadReady}" Padding="12,6" CornerRadius="6" Background="{DynamicResource SystemAccentColor}" Foreground="White">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <material:MaterialIcon Kind="Download" Width="14" Height="14"/>
+                                    <TextBlock Text="{DynamicResource l.updates.download}" FontSize="12"/>
+                                </StackPanel>
+                            </Button>
+                            <!-- Download (in progress) -->
+                            <Button IsVisible="{Binding IsDownloading}" IsEnabled="False" Padding="12,6" CornerRadius="6" Background="{DynamicResource SystemAccentColor}" Foreground="White" MinWidth="160">
+                                <Grid>
+                                    <ProgressBar Value="{Binding UpdateProgress}" Maximum="100"
+                                                 Background="Transparent" Foreground="#40FFFFFF"
+                                                 BorderThickness="0" Height="28" CornerRadius="4"
+                                                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                 Margin="-12,-6"/>
+                                    <TextBlock Text="{Binding UpdateProgress, Converter={StaticResource LocConverter}, ConverterParameter='format:l.updates.downloading'}"
+                                               FontSize="12" FontWeight="SemiBold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="White"/>
+                                </Grid>
+                            </Button>
+                            <!-- Restart (after download) -->
+                            <Button Command="{Binding RestartAndApplyCommand}" IsVisible="{Binding IsUpdateDownloaded}" Padding="12,6" CornerRadius="6" Background="#2ecc71" Foreground="White">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <material:MaterialIcon Kind="Restart" Width="14" Height="14"/>
+                                    <TextBlock Text="{DynamicResource l.updates.install_and_restart}" FontSize="12"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.updates.check_on_launch}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.updates.check_on_launch_sub}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AutoCheckUpdates}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.updates.download_in_background}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.updates.download_in_background_sub}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AutoDownloadUpdates}" IsEnabled="{Binding AutoCheckUpdates}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <!-- Mirror of the same toggle in the Notifications page; both bind to NotifyAppUpdate
+                         so flipping one instantly reflects in the other. -->
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.settings.notifications.app_update.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.settings.notifications.app_update.subtitle}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding NotifyAppUpdate}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="{DynamicResource l.updates.manual_download.title}"/>
+                            <TextBlock Classes="Sub" Text="{DynamicResource l.updates.manual_download.subtitle}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" VerticalAlignment="Center" Command="{Binding OpenReleasesPageCommand}" Padding="12,6" CornerRadius="6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <material:MaterialIcon Kind="OpenInNew" Width="14" Height="14"/>
+                                <TextBlock Text="{DynamicResource l.updates.manual_download.button}" FontSize="12"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <Border Height="110" IsHitTestVisible="False"/>
+            </StackPanel>
+
+            <!-- ── Custom Links ── lives in the separate "Расширенная кастомизация"
+                 sidebar group, so visibility is driven by NavCustom.SelectedIndex
+                 instead of Nav.SelectedIndex. -->
+            <!-- Cache -->
+            <StackPanel MaxWidth="720" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding ElementName=Nav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=6}">
+                    <TextBlock Classes="PageTitle" Text="{DynamicResource l.settings.cache.title}"/>
+
+                    <Border Background="{DynamicResource SubtleFillColorTertiary}" CornerRadius="8" Padding="14,12" Margin="0,0,0,16">
+                        <TextBlock Text="{DynamicResource l.settings.cache.subtitle}" FontSize="12" Opacity="0.7" TextWrapping="Wrap"/>
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <TextBlock Text="{DynamicResource l.settings.cache.clear_data}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Command="{Binding RefreshCacheStatsCommand}" IsEnabled="{Binding !IsCacheBusy}"
+                                Padding="12,6" CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondary}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <material:MaterialIcon Kind="Refresh" Width="14" Height="14"/>
+                                <TextBlock Text="{DynamicResource l.common.actions.refresh}" FontSize="12"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <Border Background="{DynamicResource CardBackgroundFillDefault}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefault}"
+                            BorderThickness="1" CornerRadius="8" Padding="14,6">
+                        <ItemsControl ItemsSource="{Binding CacheItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CacheCleanupItem">
+                                    <Grid MinHeight="44" ColumnDefinitions="*,Auto">
+                                        <CheckBox Grid.Column="0"
+                                                  IsChecked="{Binding IsSelected}"
+                                                  VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding TitleKey, Converter={StaticResource LocConverter}}" FontSize="14"/>
+                                        </CheckBox>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding DisplayStats}"
+                                                   FontSize="13"
+                                                   Opacity="0.65"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+                        <TextBlock Grid.Column="0" Text="{Binding CacheStatus}" FontSize="12" Opacity="0.65" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Command="{Binding ClearSelectedCacheCommand}"
+                                IsEnabled="{Binding CanClearSelectedCache}"
+                                Padding="18,8" CornerRadius="6"
+                                Background="{DynamicResource SystemAccentColor}" Foreground="White">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <material:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14"/>
+                                <TextBlock Text="{DynamicResource l.settings.cache.clear}" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <Border Height="110" IsHitTestVisible="False"/>
+            </StackPanel>
+
+            <!-- ── Player ── -->
+            <StackPanel MaxWidth="720" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding ElementName=Nav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=7}">
+                    <TextBlock Classes="PageTitle" Text="Плеер"/>
+
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="Сделать Kiriha плеером по умолчанию"/>
+                            <TextBlock Classes="Sub" Text="Открывать поддерживаемые видеофайлы через это приложение"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border IsVisible="{Binding IsSystemPlayer}" Padding="10,6" Background="#152ecc71" CornerRadius="4" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <material:MaterialIcon Kind="CheckCircle" Width="12" Height="12" Foreground="#2ecc71"/>
+                                    <TextBlock Text="Интегрировано" Foreground="#2ecc71" FontSize="11" FontWeight="Medium"/>
+                                </StackPanel>
+                            </Border>
+                            <Button Content="Интегрировать" Command="{Binding RegisterSystemPlayerCommand}" IsVisible="{Binding !IsSystemPlayer}" Padding="14,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Background="{DynamicResource SystemAccentColor}" Foreground="White"/>
+                            <Button Command="{Binding UnregisterSystemPlayerCommand}" IsVisible="{Binding IsSystemPlayer}" Padding="8" CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondary}" BorderThickness="0" ToolTip.Tip="Удалить интеграцию">
+                                <material:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="#ff5555"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="Держать плеер в фоне"/>
+                            <TextBlock Classes="Sub" Text="Заранее запускать отдельный процесс плеера, чтобы видео открывалось быстрее"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding KeepPlayerProcessAlive}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="Одно окно плеера"/>
+                            <TextBlock Classes="Sub" Text="При открытии нового видео заменять файл в уже открытом окне"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding SinglePlayerWindow}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <TextBlock Classes="Title" Text="mpv video pipeline" Margin="0,18,0,4"/>
+                    <TextBlock Classes="Sub" Text="These values are passed to mpv before startup. Reopen the player window after changing vo, gpu-api, or gpu-context." Margin="0,0,0,8"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,180">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="hwdec"/>
+                            <TextBlock Classes="Sub" Text="Hardware video decoding: auto, auto-copy, d3d11va, nvdec, vulkan, no"/>
+                        </StackPanel>
+                        <TextBox Grid.Column="1" Text="{Binding MpvHwdec}" VerticalAlignment="Center" PlaceholderText="auto"/>
+                    </Grid>
+                    <Grid Classes="Row" ColumnDefinitions="*,180">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="vo"/>
+                            <TextBlock Classes="Sub" Text="Video output driver: gpu-next, gpu, d3d11, vulkan, opengl"/>
+                        </StackPanel>
+                        <TextBox Grid.Column="1" Text="{Binding MpvVideoOutput}" VerticalAlignment="Center" PlaceholderText="gpu-next"/>
+                    </Grid>
+                    <Grid Classes="Row" ColumnDefinitions="*,180">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="gpu-api"/>
+                            <TextBlock Classes="Sub" Text="Graphics API priority: auto, d3d11, vulkan, opengl"/>
+                        </StackPanel>
+                        <TextBox Grid.Column="1" Text="{Binding MpvGpuApi}" VerticalAlignment="Center" PlaceholderText="auto"/>
+                    </Grid>
+                    <Grid Classes="Row" ColumnDefinitions="*,180">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="gpu-context"/>
+                            <TextBlock Classes="Sub" Text="Windowing/GPU context: auto, d3d11, win, angle, x11, wayland, cocoa"/>
+                        </StackPanel>
+                        <TextBox Grid.Column="1" Text="{Binding MpvGpuContext}" VerticalAlignment="Center" PlaceholderText="auto"/>
+                    </Grid>
+                    <Border Height="110" IsHitTestVisible="False"/>
+            </StackPanel>
+
+            <StackPanel MaxWidth="720" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        IsVisible="{Binding ElementName=NavCustom, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=0}">
+                    <TextBlock Classes="PageTitle" Text="{DynamicResource l.settings.custom_links.title}"/>
+
+                    <!-- Help / placeholder cheat sheet + one-click examples. -->
+                    <Border Background="{DynamicResource SubtleFillColorTertiary}" CornerRadius="8" Padding="14,12" Margin="0,0,0,16">
+                        <StackPanel Spacing="6">
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Text="{DynamicResource l.settings.custom_links.help_title}"/>
+                            <TextBlock FontSize="11" Opacity="0.7" TextWrapping="Wrap" Text="{DynamicResource l.settings.custom_links.help_body}"/>
+                            <TextBlock FontSize="11" Opacity="0.55" FontFamily="Consolas,Menlo,monospace"
+                                       TextWrapping="Wrap"
+                                       Text="{}{title}, {english}, {russian}, {japanese}, {id}, {malId}, {shikiId}"/>
+
+                            <!-- Examples: one-click presets that drop a fully-formed
+                                 link into the list below. The favicon hook then
+                                 fills the icon automatically. WrapPanel so the
+                                 row collapses onto multiple lines on narrow widths. -->
+                            <WrapPanel Orientation="Horizontal" Margin="0,8,0,0" ItemSpacing="8" LineSpacing="6">
+                                <TextBlock FontSize="11" Opacity="0.7" VerticalAlignment="Center"
+                                           Text="{DynamicResource l.settings.custom_links.examples}"/>
+
+                                <Button Command="{Binding AddPresetLinkCommand}"
+                                        CommandParameter="RuTracker|https://rutracker.org/forum/tracker.php?nm={title}"
+                                        Padding="10,4" CornerRadius="6" FontSize="11"
+                                        Background="{DynamicResource SubtleFillColorSecondary}"
+                                        Content="RuTracker"
+                                        ToolTip.Tip="https://rutracker.org/forum/tracker.php?nm={}{title}"/>
+
+                                <Button Command="{Binding AddPresetLinkCommand}"
+                                        CommandParameter="NNM-Club|https://nnmclub.to/forum/tracker.php?nm={title}"
+                                        Padding="10,4" CornerRadius="6" FontSize="11"
+                                        Background="{DynamicResource SubtleFillColorSecondary}"
+                                        Content="NNM-Club"
+                                        ToolTip.Tip="https://nnmclub.to/forum/tracker.php?nm={}{title}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- List of custom links -->
+                    <ItemsControl ItemsSource="{Binding CustomLinks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Spacing="10"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:CustomShareLink">
+                                <Border Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="10" Padding="12">
+                                    <Grid ColumnDefinitions="Auto,8,*,8,2*,8,Auto">
+                                        <!-- Read-only icon preview. Shows the auto-fetched favicon for
+                                             the URL's host when available; otherwise the default globe.
+                                             No interaction — the icon is derived purely from the URL. -->
+                                        <Border Grid.Column="0"
+                                                Width="40" Height="40" CornerRadius="6"
+                                                Background="{DynamicResource SubtleFillColorTertiary}"
+                                                VerticalAlignment="Center">
+                                            <Panel>
+                                                <material:MaterialIcon Kind="Web" Width="20" Height="20"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       IsVisible="{Binding HasNoIconPath}"/>
+                                                <Image Source="{Binding IconPath, Converter={StaticResource FilePathToBitmapConverter}}"
+                                                       Width="28" Height="28" Stretch="UniformToFill"
+                                                       IsVisible="{Binding HasIconPath}"/>
+                                            </Panel>
+                                        </Border>
+                                        <!-- MinWidth=0 lets the TextBoxes shrink below their natural
+                                             content width so a long URL doesn't push the whole settings
+                                             page wider than the viewport (which would defeat TextWrapping
+                                             on the "How it works" help block). -->
+                                        <TextBox Grid.Column="2"
+                                                 PlaceholderText="{DynamicResource l.settings.custom_links.name_placeholder}"
+                                                 Text="{Binding Name}"
+                                                 MinWidth="0"
+                                                 VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="4"
+                                                 PlaceholderText="https://example.com/?q={title}"
+                                                 Text="{Binding UrlTemplate}"
+                                                 MinWidth="0"
+                                                 VerticalAlignment="Center"/>
+                                        <Button Grid.Column="6"
+                                                Padding="8" CornerRadius="6"
+                                                Background="{DynamicResource SubtleFillColorTertiary}" BorderThickness="0"
+                                                ToolTip.Tip="{DynamicResource l.common.actions.remove}"
+                                                Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).RemoveCustomLinkCommand}"
+                                                CommandParameter="{Binding}">
+                                            <material:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" Foreground="#ff5555"/>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Add button -->
+                    <Button Margin="0,14,0,0" HorizontalAlignment="Left"
+                            Command="{Binding AddCustomLinkCommand}"
+                            Padding="14,8" CornerRadius="6"
+                            Background="{DynamicResource SystemAccentColor}" Foreground="White">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <material:MaterialIcon Kind="Plus" Width="14" Height="14"/>
+                            <TextBlock Text="{DynamicResource l.settings.custom_links.add}" FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Border Height="110" IsHitTestVisible="False"/>
+            </StackPanel>
+          </Panel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

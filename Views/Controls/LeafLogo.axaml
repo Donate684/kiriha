@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Kiriha.Views.Controls.LeafLogo"
+             x:Name="Root"
+             IsHitTestVisible="False"
+             Focusable="False">
+
+    <!-- Растровый талисман Kiriha, с тема-зависимым хало и мягкой тенью.
+         Padding оставляет место для BlurEffect/DropShadow, чтобы их не клипало
+         внешним контейнером. -->
+    <Grid Margin="0" ClipToBounds="False">
+        <!-- Акцентный halo сзади (реагирует на тему через SystemAccentColor) -->
+        <Ellipse Margin="6"
+                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                 Opacity="0.35"
+                 IsVisible="{Binding #Root.ShowHalo}">
+            <Ellipse.Fill>
+                <RadialGradientBrush GradientOrigin="50%,50%" Center="50%,50%" RadiusX="0.55" RadiusY="0.55">
+                    <GradientStop Offset="0"   Color="{DynamicResource SystemAccentColorLight2}"/>
+                    <GradientStop Offset="0.6" Color="{DynamicResource SystemAccentColor}"/>
+                    <GradientStop Offset="1"   Color="#00000000"/>
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+            <Ellipse.Effect>
+                <BlurEffect Radius="18"/>
+            </Ellipse.Effect>
+        </Ellipse>
+
+        <!-- Талисман с мягкой тенью. Margin резервирует место под размытие. -->
+        <Image Source="avares://Kiriha/Assets/kiriha.png"
+               Margin="8"
+               Stretch="Uniform"
+               RenderOptions.BitmapInterpolationMode="HighQuality">
+            <Image.Effect>
+                <DropShadowEffect BlurRadius="10" OffsetX="0" OffsetY="2"
+                                  Color="Black" Opacity="0.22"/>
+            </Image.Effect>
+        </Image>
+    </Grid>
+</UserControl>

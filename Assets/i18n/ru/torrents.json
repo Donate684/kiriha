@@ -1,0 +1,57 @@
+{
+  "search": {
+    "placeholder": "Поиск...",
+    "only_crunchyroll": "Crunchyroll",
+    "netflix": "Netflix",
+    "amazon": "Amazon",
+    "hidive": "HIDIVE",
+    "filters_button": "Фильтры",
+    "sort_label": "Сортировка",
+    "clear_filters": "Сбросить",
+    "filters": {
+      "varyg": "VARYG",
+      "erai_raws": "Erai-raws",
+      "toonshub": "ToonsHub",
+      "p1080": "1080p",
+      "hevc": "HEVC",
+      "crunchyroll": "CR"
+    },
+    "per_title_toggle": "Отдельные фильтры для каждого тайтла",
+    "per_title_hint": "Фильтры будут запоминаться отдельно по каждому аниме",
+    "filter_sections": {
+      "release_groups": "Релизёры",
+      "quality": "Качество",
+      "source": "Источник"
+    }
+  },
+  "sort": {
+    "newest": "Новые",
+    "matched": "Совпадения",
+    "releasegroup": "По релизёру"
+  },
+  "sidebar": {
+    "watching_now": "Смотрю сейчас",
+    "hide_button": "Скрыть",
+    "hide_done": "Готово",
+    "hide_menu_title": "Скрыть тайтлы",
+    "hide_menu_hint": "Отмеченные аниме не будут показываться в списке слева",
+    "empty": "Список пуст",
+    "new_episodes_tooltip": "Доступны новые эпизоды"
+  },
+  "results": {
+    "title": "Найденные раздачи",
+    "in_list": "НОВЫЙ ЭПИЗОД",
+    "new_badge": "НОВОЕ",
+    "episode_prefix": "Эп. {0}",
+    "group_count": "{0} релизов",
+    "untitled_group": "Без названия",
+    "empty": {
+      "title": "Выберите аниме или введите запрос",
+      "subtitle": "Результаты поиска появятся здесь"
+    },
+    "actions": {
+      "download_file": "Скачать .torrent",
+      "download_magnet": "Магнит-ссылка"
+    }
+  }
+}

@@ -1,0 +1,737 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:models="using:Kiriha.Models"
+             xmlns:material="using:Material.Icons.Avalonia"
+             xmlns:conv="using:Kiriha.Converters"
+             xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+             xmlns:core="using:Kiriha.Core"
+             xmlns:u="using:Kiriha.Utils"
+             x:Class="Kiriha.Views.AnimeListView"
+             x:DataType="vm:AnimeListViewModel"
+             x:CompileBindings="True"
+             x:Name="animeListRoot">
+
+    <UserControl.Resources>
+        <conv:RatingConverter x:Key="RatingConverter"/>
+        <conv:LocConverter x:Key="LocConverter"/>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <Style Selector="FlyoutPresenter.ScoreFlyout, MenuFlyoutPresenter.ScoreFlyout">
+            <Setter Property="Background" Value="#F5101010"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#20FFFFFF"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MaxWidth" Value="250"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+        <Style Selector="MenuFlyoutPresenter.ScoreFlyout MenuItem" x:DataType="models:RatingOption">
+            <Setter Property="Header" Value="{Binding Display}"/>
+            <Setter Property="Command" Value="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).ApplyScoreFromMenuCommand}"/>
+            <Setter Property="CommandParameter" Value="{Binding}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="MenuFlyoutPresenter.ScoreFlyout MenuItem:pointerover /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="Background" Value="#15FFFFFF"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="MenuFlyoutPresenter.ScoreFlyout MenuItem:pressed /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="Background" Value="#30FFFFFF"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.ScoreBadgeButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#EE000000"/>
+        </Style>
+
+        <!-- â•â•â• Card shell: soft, shadowed, with smooth hover lift â•â•â• -->
+        <Style Selector="Border.AnimeCard">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillDefault}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BoxShadow" Value="0 2 8 0 #18000000"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.18"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.AnimeCard:pointerover">
+            <Setter Property="BoxShadow" Value="0 6 18 0 #2A000000"/>
+        </Style>
+
+        <!-- â•â•â• Reveal-on-scroll: ÐºÐ°Ñ€Ñ‚Ð¾Ñ‡ÐºÐ° fade+slide-up Ð¿Ñ€Ð¸ Ð¿Ð¾ÑÐ²Ð»ÐµÐ½Ð¸Ð¸ Ð² viewport â•â•â• -->
+        <Style Selector="Border.revealItem">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform" Value="translate(0,20px)"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.45" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.45" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.revealItem.shown">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="RenderTransform" Value="translate(0,0)"/>
+        </Style>
+
+        <!-- â•â•â• Glass pill badges over poster â•â•â• -->
+        <Style Selector="Border.Badge">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BoxShadow" Value="0 2 8 0 #66000000"/>
+        </Style>
+
+        <!-- â•â•â• Progress circle buttons â•â•â• -->
+        <Style Selector="Button.ProgressStep">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.ProgressStep:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#15FFFFFF"/>
+        </Style>
+
+        <!-- â•â•â• Sort list inside flyout â•â•â• -->
+        <Style Selector="ListBox.SortList">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:selected:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:selected:focus /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+
+        <!-- â•â•â• Filter flyout presenter â•â•â• -->
+        <Style Selector="FlyoutPresenter.FilterFlyout">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="232"/>
+            <Setter Property="MaxWidth" Value="260"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource FlyoutPresenterBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefault}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- â•â•â• Filter toggle row (clickable card with accent switch) â•â•â• -->
+        <Style Selector="ToggleButton.FilterToggle">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiary}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorSecondary}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+
+        <!-- Switch indicator inside toggle -->
+        <Style Selector="ToggleButton.FilterToggle Border.SwitchTrack">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="CornerRadius" Value="9"/>
+            <Setter Property="Background" Value="#55808080"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.18"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked Border.SwitchTrack">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle Ellipse.SwitchThumb">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Fill" Value="White"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="3,0,0,0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <ThicknessTransition Property="Margin" Duration="0:0:0.18" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked Ellipse.SwitchThumb">
+            <Setter Property="Margin" Value="17,0,0,0"/>
+        </Style>
+
+        <!-- Reset button inside flyout -->
+        <Style Selector="Button.FilterReset">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="0,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Opacity" Value="0.85"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.FilterReset:pointerover">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+        <Style Selector="Button.FilterReset:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentFillColorSelectedTextBackground}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, Auto, *, Auto" Margin="0">
+
+        <!-- â•â•â• Search Bar + Sorting + Filters + Sync â•â•â• -->
+        <Border Grid.Row="0" Margin="20,4,20,12" Padding="8,6" Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="10"
+                BorderBrush="{DynamicResource CardStrokeColorDefault}" BorderThickness="1">
+            <Grid ColumnDefinitions="*, Auto, Auto">
+                <!-- Search -->
+                <TextBox Grid.Column="0" PlaceholderText="{DynamicResource l.common.actions.search}"
+                         Text="{Binding SearchQuery}"
+                         VerticalAlignment="Center" Height="34"
+                         Background="Transparent" BorderThickness="0"
+                         VerticalContentAlignment="Center"
+                         FontSize="13" Padding="8,0">
+                    <TextBox.InnerRightContent>
+                        <material:MaterialIcon Kind="Magnify" Width="18" Height="18" Margin="0,0,8,0" Opacity="0.3"/>
+                    </TextBox.InnerRightContent>
+                </TextBox>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0">
+                    <Button x:Name="ReleaseMapButton"
+                            Background="Transparent" BorderThickness="0" Padding="8,6" CornerRadius="6"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            VerticalAlignment="Center" Click="ReleaseMapButton_Click"
+                            ToolTip.Tip="Расписание релизов">
+                        <Button.Styles>
+                            <Style Selector="Button.active /template/ ContentPresenter#PART_ContentPresenter">
+                                <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+                                <Setter Property="TextBlock.Foreground" Value="White"/>
+                            </Style>
+                            <Style Selector="Button.active TextBlock">
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Opacity" Value="1"/>
+                            </Style>
+                            <Style Selector="Button.active material|MaterialIcon">
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Opacity" Value="1"/>
+                            </Style>
+                        </Button.Styles>
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <material:MaterialIcon Kind="CalendarClock" Width="16" Height="16" Opacity="0.62"
+                                                   VerticalAlignment="Center"/>
+                            <TextBlock Text="Расписание" FontSize="12" Opacity="0.6" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Border Width="1" Height="20" Background="{DynamicResource DividerStrokeColorDefault}" Margin="4,0"/>
+
+                    <!-- Sort -->
+                    <Button Background="Transparent" BorderThickness="0" Padding="8,6" CornerRadius="6" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <material:MaterialIcon Kind="SortVariant" Width="16" Height="16" Opacity="0.6"/>
+                            <TextBlock Text="{Binding DisplaySortBy}" FontSize="12" Opacity="0.6" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="FilterFlyout">
+                                <ListBox Classes="SortList" Margin="6"
+                                         ItemsSource="{Binding SortOptions}"
+                                         SelectedItem="{Binding SortBy}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <Grid ColumnDefinitions="14,*" VerticalAlignment="Center">
+                                                <material:MaterialIcon Grid.Column="0" Kind="Check" Width="13" Height="13"
+                                                                      VerticalAlignment="Center"
+                                                                      Foreground="{DynamicResource SystemAccentColor}"
+                                                                      IsVisible="{Binding $parent[ListBoxItem].IsSelected}"/>
+                                                <TextBlock Grid.Column="1" Margin="8,0,0,0"
+                                                           Text="{Binding Converter={StaticResource LocConverter}}"
+                                                           FontSize="12" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+
+                    <!-- Filters -->
+                    <Button Classes.active="{Binding IsFilterActive}" Background="Transparent" VerticalAlignment="Center"
+                            BorderThickness="0" Padding="8,6" CornerRadius="6">
+                        <Button.Styles>
+                            <Style Selector="Button">
+                                <Setter Property="Opacity" Value="0.6"/>
+                            </Style>
+                            <Style Selector="Button.active">
+                                <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+                                <Setter Property="Opacity" Value="1"/>
+                            </Style>
+                            <Style Selector="Button.active TextBlock">
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Style>
+                        </Button.Styles>
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <material:MaterialIcon Kind="FilterVariant" Width="16" Height="16"
+                                                  Foreground="{Binding $parent[Button].Foreground}"/>
+                            <TextBlock Text="{DynamicResource l.filters.title}" VerticalAlignment="Center" FontSize="12"
+                                       Foreground="{Binding $parent[Button].Foreground}"/>
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="FilterFlyout">
+                                <StackPanel Spacing="6" Margin="10">
+                                            <!-- NSFW toggle row -->
+                                            <ToggleButton Classes="FilterToggle" IsChecked="{Binding FilterNsfw}">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                                <Border Grid.Column="0" Width="22" Height="22" CornerRadius="6"
+                                                        Background="#1FF44336" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                    <material:MaterialIcon Kind="AlertOctagonOutline" Width="13" Height="13"
+                                                                          Foreground="#FFF44336"
+                                                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="1" Text="{DynamicResource l.filters.visibility.adult_only}"
+                                                           FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <Border Grid.Column="2" Classes="SwitchTrack" VerticalAlignment="Center">
+                                                    <Ellipse Classes="SwitchThumb"/>
+                                                </Border>
+                                            </Grid>
+                                            </ToggleButton>
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+
+                <!-- Sync -->
+                <Button Grid.Column="2" Command="{Binding SyncMalCommand}"
+                        Padding="12,0" Height="34"
+                        CornerRadius="8" FontSize="12" FontWeight="SemiBold"
+                        Background="{DynamicResource SystemAccentColor}" Foreground="White">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <material:MaterialIcon Kind="Sync" Width="16" Height="16"/>
+                        <TextBlock Text="{DynamicResource l.sync.actions.sync_now}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- â•â•â• Status Tabs â•â•â• -->
+        <Border x:Name="StatusTabsPanel"
+                Grid.Row="1" Margin="20,0,20,12" Padding="4"
+                Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="8"
+                HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="2">
+                <RadioButton Content="{Binding WatchingHeader}" Command="{Binding FilterCommand}" CommandParameter="Watching"
+                             IsChecked="{Binding IsWatchingSelected, Mode=OneWay}" Classes="Pill" GroupName="StatusFilter"/>
+                <RadioButton Content="{Binding CompletedHeader}" Command="{Binding FilterCommand}" CommandParameter="Completed"
+                             IsChecked="{Binding IsCompletedSelected, Mode=OneWay}" Classes="Pill" GroupName="StatusFilter"/>
+                <RadioButton Content="{Binding OnHoldHeader}" Command="{Binding FilterCommand}" CommandParameter="OnHold"
+                             IsChecked="{Binding IsOnHoldSelected, Mode=OneWay}" Classes="Pill" GroupName="StatusFilter"/>
+                <RadioButton Content="{Binding DroppedHeader}" Command="{Binding FilterCommand}" CommandParameter="Dropped"
+                             IsChecked="{Binding IsDroppedSelected, Mode=OneWay}" Classes="Pill" GroupName="StatusFilter"/>
+                <RadioButton Content="{Binding PlanToWatchHeader}" Command="{Binding FilterCommand}" CommandParameter="PlanToWatch"
+                             IsChecked="{Binding IsPlanToWatchSelected, Mode=OneWay}" Classes="Pill" GroupName="StatusFilter"/>
+            </StackPanel>
+        </Border>
+
+        <!-- â•â•â• CONTENT: Grid â•â•â• -->
+        <ScrollViewer x:Name="AnimeListScrollViewer"
+                      Grid.Row="2"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto"
+                      u:SmoothScroll.IsEnabled="True">
+            <ItemsRepeater x:Name="AnimeGridRepeater"
+                           ItemsSource="{Binding FilteredItems}"
+                           Margin="20,0,20,16">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout MinItemWidth="163"
+                                          MinItemHeight="335"
+                                          MinColumnSpacing="0"
+                                          MinRowSpacing="0"
+                                          ItemsJustification="Start"/>
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="models:AnimeItem">
+                            <Border Classes="AnimeCard revealItem" Margin="4" Width="155" ClipToBounds="True">
+                                <Grid RowDefinitions="210, *">
+                                    <!-- Poster -->
+                                    <Panel Grid.Row="0" Background="Transparent" DoubleTapped="Poster_DoubleTapped">
+                                        <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill"/>
+
+                                        <!-- Top gradient for badge readability (soft) -->
+                                        <Border VerticalAlignment="Top" Height="52" IsHitTestVisible="False">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                                    <GradientStop Color="#66000000" Offset="0"/>
+                                                    <GradientStop Color="#00000000" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                        </Border>
+
+                                        <!-- Top-Left: airing + rewatching pills -->
+                                        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left"
+                                                    Margin="8" Orientation="Horizontal" Spacing="4">
+                                            <Border Classes="Badge" Background="{Binding AiringBadgeColor}"
+                                                    IsVisible="{Binding AiringBadgeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                <TextBlock Text="{Binding AiringBadgeText}"
+                                                           FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                                            </Border>
+                                            <Border Classes="Badge" Background="#2E7D32"
+                                                    IsVisible="{Binding IsRewatching}">
+                                                <TextBlock Text="{DynamicResource l.anime.status.rewatching}"
+                                                           FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- Top-Right: clickable score (stars without pill, shadow over image) -->
+                                        <Button VerticalAlignment="Top" HorizontalAlignment="Right"
+                                                Margin="8" Padding="2" Background="Transparent"
+                                                BorderThickness="0" CornerRadius="6"
+                                                Command="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).OpenScoreMenuCommand}"
+                                                CommandParameter="{Binding}"
+                                                IsVisible="{Binding Score, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                            <Button.Effect>
+                                                <DropShadowEffect BlurRadius="4" Color="#AA000000" OffsetX="0" OffsetY="1"/>
+                                            </Button.Effect>
+                                            <Button.Flyout>
+                                                <MenuFlyout ItemsSource="{Binding $parent[UserControl].DataContext.AvailableScores}"
+                                                            FlyoutPresenterClasses="ScoreFlyout"
+                                                            Opened="ScoreMenu_Opened"/>
+                                            </Button.Flyout>
+                                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                                <!-- 5 Stars -->
+                                                <StackPanel Orientation="Horizontal" Spacing="1"
+                                                            IsVisible="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
+                                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=1:MyList}"/>
+                                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=2:MyList}"/>
+                                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=3:MyList}"/>
+                                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=4:MyList}"/>
+                                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=5:MyList}"/>
+                                                </StackPanel>
+                                                <!-- 10-point fallback -->
+                                                <StackPanel Orientation="Horizontal" Spacing="3"
+                                                            IsVisible="{Binding !#animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
+                                                    <material:MaterialIcon Kind="Star" Width="13" Height="13" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Score}" FontSize="11" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Button>
+                                    </Panel>
+
+                                    <!-- Info block -->
+                                    <Grid Grid.Row="1" RowDefinitions="*, Auto, Auto" Margin="10,8,10,4">
+                                        <StackPanel Grid.Row="0" Spacing="1" Height="57" VerticalAlignment="Top" ClipToBounds="True">
+                                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                                       MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                                       LineHeight="15"
+                                                       Foreground="{DynamicResource SystemBaseHighColor}"/>
+                                            <TextBlock Text="{Binding RussianTitle}" FontSize="10"
+                                                       MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                                       LineHeight="13"
+                                                       Foreground="{DynamicResource SystemAccentColor}" Opacity="0.85"
+                                                       IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+
+                                        <!-- Progress bar (4px): tertiary back â€¢ red "aired-but-unwatched" â€¢ accent "watched" -->
+                                        <Border Grid.Row="1" Height="4" Margin="0,6,0,6"
+                                                Background="{DynamicResource SubtleFillColorTertiary}"
+                                                CornerRadius="2" ClipToBounds="True"
+                                                UseLayoutRounding="True">
+                                            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                                <!-- Red layer: 0..Aired/Total (Ð´Ð»Ñ onging â€” Ð²Ñ‹ÑˆÐ»Ð¾ ÑÐµÑ€Ð¸Ð¹, Ð´Ð»Ñ finished â€” Ð²ÑÐµ ÑÐµÑ€Ð¸Ð¸) -->
+                                                <Border Background="#E53935"
+                                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                        CornerRadius="2" RenderTransformOrigin="0%,0%"
+                                                        IsVisible="{Binding ShowAiredProgressBar}">
+                                                    <Border.RenderTransform>
+                                                        <ScaleTransform ScaleX="{Binding AiredValueFraction}"/>
+                                                    </Border.RenderTransform>
+                                                </Border>
+                                                <!-- Accent layer: 0..Progress/Total, ÑÐ²ÐµÑ€Ñ…Ñƒ, Ð·Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÑ‚ ÐºÑ€Ð°ÑÐ½Ñ‹Ð¹ ÑÐ»ÐµÐ²Ð° -->
+                                                <Border Background="{DynamicResource SystemAccentColor}"
+                                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                        CornerRadius="2" RenderTransformOrigin="0%,0%">
+                                                    <Border.RenderTransform>
+                                                        <ScaleTransform ScaleX="{Binding ProgressValueFraction}"/>
+                                                    </Border.RenderTransform>
+                                                </Border>
+                                            </Panel>
+                                        </Border>
+
+                                        <!-- Controls row: Â± hugging the numbers -->
+                                        <Grid Grid.Row="2" ColumnDefinitions="*, Auto, Auto, Auto, *" VerticalAlignment="Center"
+                                              UseLayoutRounding="True">
+                                            <Button Grid.Column="1" Classes="ProgressStep"
+                                                    IsVisible="{Binding CanEditProgress}"
+                                                    Command="{Binding $parent[UserControl].DataContext.DecrementProgressCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <material:MaterialIcon Kind="Minus" Width="14" Height="14" Opacity="0.75"/>
+                                            </Button>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4"
+                                                        VerticalAlignment="Center" Margin="4,0">
+                                                <TextBlock Text="{Binding ProgressPart}" FontSize="12" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource SystemBaseHighColor}"
+                                                           IsVisible="{Binding ShowProgress}"/>
+                                                <TextBlock Text="{Binding TotalPart}" FontSize="12"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource SystemBaseMediumColor}"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="3" Classes="ProgressStep"
+                                                    IsVisible="{Binding CanEditProgress}"
+                                                    Command="{Binding $parent[UserControl].DataContext.IncrementProgressCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <material:MaterialIcon Kind="Plus" Width="14" Height="14"
+                                                                      Foreground="{DynamicResource SystemAccentColor}"/>
+                                            </Button>
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+        </ScrollViewer>
+
+        <Border x:Name="ReleaseMapOverlay"
+                Grid.Row="1"
+                Grid.RowSpan="2"
+                Margin="20,0,20,16"
+                Padding="0"
+                Background="{DynamicResource CardBackgroundFillDefault}"
+                BorderBrush="{DynamicResource CardStrokeColorDefault}"
+                BorderThickness="1"
+                CornerRadius="16"
+                ClipToBounds="True"
+                Focusable="True"
+                IsVisible="False"
+                BoxShadow="0 2 8 0 #18000000"
+                Opacity="1"
+                RenderTransform="translate(0,0)"
+                KeyDown="ReleaseMapOverlay_KeyDown">
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.28" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.28" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Border.Transitions>
+            <Grid RowDefinitions="Auto,*">
+
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HERO BANNER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <Border x:Name="ReleaseHeaderPanel"
+                        Grid.Row="0"
+                        Height="150"
+                        CornerRadius="16,16,0,0"
+                        ClipToBounds="True"
+                        Padding="20,16">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="{DynamicResource SystemAccentColor}" Offset="0"/>
+                            <GradientStop Color="{DynamicResource SystemAccentColorDark1}" Offset="0.62"/>
+                            <GradientStop Color="{DynamicResource SystemAccentColorDark2}" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Panel>
+                        <!-- Details-style hero: poster as object, not background. -->
+                        <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+
+                            <Border Grid.Column="0"
+                                    Width="100"
+                                    Height="118"
+                                    CornerRadius="8"
+                                    ClipToBounds="True"
+                                    BoxShadow="0 4 20 0 #60000000">
+                                <Image x:Name="ReleaseHeroPoster"
+                                       Stretch="UniformToFill"
+                                       IsHitTestVisible="False"/>
+                            </Border>
+
+                            <!-- LEFT: title, meta, summary -->
+                            <StackPanel Grid.Column="1" Margin="18,0,62,0" VerticalAlignment="Center" Spacing="3">
+
+                                <!-- Main anime title -->
+                                <TextBlock x:Name="ReleaseHeroAnimeTitle"
+                                           Text=""
+                                           FontSize="22" FontWeight="Bold"
+                                           Foreground="White"
+                                           MaxLines="1"
+                                           TextTrimming="CharacterEllipsis"
+                                           LineHeight="28"/>
+ 
+                                <TextBlock x:Name="ReleaseHeroRussianTitle"
+                                           Text=""
+                                           FontSize="12"
+                                           Foreground="#A8FFFFFF"
+                                           MaxLines="1"
+                                           TextTrimming="CharacterEllipsis"
+                                           IsVisible="False"/>
+
+                                <StackPanel Orientation="Horizontal" Spacing="7" Margin="0,6,0,0">
+                                    <Border Padding="8,4" CornerRadius="6" Background="#20FFFFFF">
+                                        <TextBlock x:Name="ReleaseHeroKindText"
+                                                   Text="Следующая серия"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#E6FFFFFF"/>
+                                    </Border>
+
+                                    <Border Padding="8,4" CornerRadius="6" Background="#16FFFFFF">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <material:MaterialIcon Kind="ClockOutline" Width="13" Height="13"
+                                                                   Foreground="#CCFFFFFF"
+                                                                   VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="ReleaseHeroCountdownText"
+                                                       Text=""
+                                                       FontSize="11"
+                                                       Foreground="#D8FFFFFF"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Padding="8,4" CornerRadius="6" Background="#16FFFFFF">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <material:MaterialIcon Kind="CalendarClock" Width="13" Height="13"
+                                                                   Foreground="#CCFFFFFF"
+                                                                   VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="ReleaseHeroTimeText"
+                                                       Text=""
+                                                       FontSize="11"
+                                                       Foreground="#D8FFFFFF"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <TextBlock x:Name="ReleaseHeroWeekText"
+                                           Text=""
+                                           FontSize="11"
+                                           Foreground="#80FFFFFF"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+
+                            <!-- RIGHT: close button anchored top-right -->
+                            <Button Grid.Column="1"
+                                    Width="30" Height="30"
+                                    Padding="0"
+                                    VerticalAlignment="Top"
+                                    HorizontalAlignment="Right"
+                                    Background="#30FFFFFF"
+                                    BorderThickness="0"
+                                    CornerRadius="15"
+                                    Click="ReleaseCloseButton_Click"
+                                    ToolTip.Tip="Закрыть  Esc · F12">
+                                <Button.Styles>
+                                    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                                        <Setter Property="Background" Value="#55FFFFFF"/>
+                                    </Style>
+                                </Button.Styles>
+                                <material:MaterialIcon Kind="Close" Width="15" Height="15" Foreground="White"/>
+                            </Button>
+                        </Grid>
+                    </Panel>
+                </Border>
+
+                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD LIST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <Grid Grid.Row="1">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14,10,14,14">
+                        <StackPanel x:Name="ReleaseTimelinePanel" Spacing="3"/>
+                    </ScrollViewer>
+
+                    <!-- Empty state -->
+                    <Border x:Name="ReleaseEmptyState"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Padding="40,32"
+                            IsVisible="False">
+                        <StackPanel Spacing="14" HorizontalAlignment="Center">
+                            <material:MaterialIcon Kind="CalendarBlankOutline" Width="48" Height="48"
+                                                   HorizontalAlignment="Center"
+                                                   Foreground="#30FFFFFF"/>
+                            <TextBlock Text="Нет предстоящих релизов"
+                                       FontSize="16" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="#80FFFFFF"/>
+                            <TextBlock Text="После синхронизации здесь появится дорожная карта серий"
+                                       Width="320" TextWrapping="Wrap" TextAlignment="Center"
+                                       FontSize="12" Foreground="#40FFFFFF"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

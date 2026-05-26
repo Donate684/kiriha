@@ -1,0 +1,90 @@
+{
+  "labels": {
+    "status": "Status:",
+    "type": "Type:",
+    "season": "Season:",
+    "genres": "Genres:",
+    "studios": "Studios:",
+    "episodes": "Episodes:",
+    "score": "Score:",
+    "episode": "Episode",
+    "of": " of ",
+    "by": " by ",
+    "watched_episodes": "Episodes Watched",
+    "your_score": "Your Score",
+    "start_date": "Start Date",
+    "finish_date": "Finish Date",
+    "notes": "Notes",
+    "synopsis": "Synopsis",
+    "alternative_titles": "Alternative titles",
+    "russian_title": "Russian Title",
+    "english_title": "English Title",
+    "release_date": "Release Date",
+    "aired_episodes": "Aired episodes:",
+    "next_episode": "Next episode:",
+    "aired_today": "Aired today",
+    "series_of": "Episode {0} of {1}",
+    "series_only": "Episode {0}",
+    "aired_format": "{0} of {1}",
+    "new_ep": "New ep.",
+    "ep_abbr": "ep.",
+    "total_ep_format": "of {0} ep.",
+    "total_ep_finished": "{0} ep.",
+    "thoughts_placeholder": "Thoughts...",
+    "no_alternative_titles": "No alternative titles",
+    "no_synopsis": "No synopsis available"
+  },
+  "status": {
+    "watching": "Watching",
+    "completed": "Completed",
+    "on_hold": "On Hold",
+    "dropped": "Dropped",
+    "plan_to_watch": "Plan to Watch",
+    "rewatching": "Re-watching",
+    "rewatching_badge": "Re-watching",
+    "currently_airing": "Currently Airing",
+    "finished_airing": "Finished Airing",
+    "not_yet_aired": "Not Yet Aired",
+    "unknown": "Unknown",
+    "adding_item": "Adding: {0}...",
+    "added_item": "Added to list: {0}"
+  },
+  "types": {
+    "tv": "TV",
+    "movie": "Movie",
+    "ova": "OVA",
+    "ona": "ONA",
+    "special": "Special",
+    "music": "Music",
+    "tv_special": "Special"
+  },
+  "list_actions": {
+    "in_my_list": "In My List",
+    "not_in_my_list": "This anime is not in your list",
+    "add_to_list": "Add to list",
+    "remove_from_list": "Remove from list",
+    "confirm_delete": "ARE YOU SURE?"
+  },
+  "links": {
+    "mal": "MyAnimeList",
+    "shiki": "Shikimori"
+  },
+  "seasons": {
+    "winter": "Winter",
+    "spring": "Spring",
+    "summer": "Summer",
+    "fall": "Fall"
+  },
+  "seasonal": {
+    "categories": {
+      "new": "New",
+      "continuing": "Continuing",
+      "movies": "Movies",
+      "specials": "Specials",
+      "other": "Other"
+    },
+    "status": {
+      "loading_details": "Loading details ({0}/{1})"
+    }
+  }
+}

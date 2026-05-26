@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:Kiriha.Views"
+        xmlns:vm="using:Kiriha.ViewModels"
+        x:Class="Kiriha.Views.FirstStartupWindow"
+        x:DataType="vm:FirstStartupViewModel"
+        Title="Kiriha Setup"
+        WindowDecorations="None"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        SizeToContent="WidthAndHeight"
+        CanResize="False">
+    
+    <views:FirstStartupView />
+</Window>

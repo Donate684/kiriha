@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:material="using:Material.Icons.Avalonia"
+             x:Class="Kiriha.Views.Controls.DetectionStatusView"
+             x:DataType="vm:NowPlayingViewModel">
+
+    <Panel>
+        <!-- ═══ Disabled State ═══ -->
+        <Border CornerRadius="12" Padding="48"
+                Background="{DynamicResource SubtleFillColorSecondary}"
+                MinHeight="300">
+            <Border.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                    <Binding Path="!IsScrobblerEnabled" />
+                    <Binding Path="!IsMediaDetected" />
+                </MultiBinding>
+            </Border.IsVisible>
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="24">
+                <material:MaterialIcon Kind="RadioTower" Width="56" Height="56" Opacity="0.1"
+                                       HorizontalAlignment="Center"/>
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                    <TextBlock Text="{DynamicResource l.scrobbler.status.tracking_disabled}" FontSize="20" FontWeight="SemiBold" 
+                               HorizontalAlignment="Center" Opacity="0.8"/>
+                    <TextBlock Text="{DynamicResource l.scrobbler.status.enable_hint}" 
+                               FontSize="13" Opacity="0.4" TextAlignment="Center"/>
+                </StackPanel>
+                <Button Command="{Binding GoToSettingsCommand}" 
+                        Padding="20,10" CornerRadius="6"
+                        Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                        HorizontalAlignment="Center">
+                    <TextBlock Text="{DynamicResource l.navigation.settings}" FontWeight="SemiBold" FontSize="13"/>
+                </Button>
+            </StackPanel>
+        </Border>
+        
+        <!-- ═══ Waiting State (Enabled but no media) ═══ -->
+        <Border IsVisible="{Binding IsScrobblerEnabled}"
+                CornerRadius="12" Padding="48"
+                MinHeight="300">
+            <Border.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                    <Binding Path="IsScrobblerEnabled" />
+                    <Binding Path="!IsMediaDetected" />
+                </MultiBinding>
+            </Border.IsVisible>
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
+                <material:MaterialIcon Kind="Waveform" Width="48" Height="48" Opacity="0.1"
+                                       HorizontalAlignment="Center">
+                    <material:MaterialIcon.Styles>
+                        <Style Selector="material|MaterialIcon">
+                            <Style.Animations>
+                                <Animation Duration="0:0:3" IterationCount="INFINITE">
+                                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.05"/></KeyFrame>
+                                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.15"/></KeyFrame>
+                                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.05"/></KeyFrame>
+                                </Animation>
+                            </Style.Animations>
+                        </Style>
+                    </material:MaterialIcon.Styles>
+                </material:MaterialIcon>
+                <TextBlock Text="{DynamicResource l.scrobbler.status.wait_player}" FontSize="16" FontWeight="Medium" 
+                           HorizontalAlignment="Center" Opacity="0.4"/>
+            </StackPanel>
+        </Border>
+    </Panel>
+</UserControl>

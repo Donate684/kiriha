@@ -1,0 +1,51 @@
+{
+  "app_name": "Kiriha",
+  "version_prefix": "Версия",
+  "built_with": "Kiriha · Создано с помощью Avalonia UI",
+  "actions": {
+    "close": "Закрыть",
+    "cancel": "Отмена",
+    "confirm": "ОК",
+    "save": "Сохранить",
+    "refresh": "Обновить",
+    "search": "Поиск...",
+    "reset": "Сбросить",
+    "collapse": "Свернуть",
+    "add": "Добавить",
+    "remove": "Удалить",
+    "yes": "Да",
+    "no": "Нет",
+    "select_all": "Выбрать все",
+    "deselect_all": "Снять выделение",
+    "save_and_close": "Сохранить и закрыть",
+    "share": "Поделиться",
+    "update": "Обновить",
+    "details": "Детали",
+    "hide": "Скрыть",
+    "login": "Войти",
+    "logout": "Выйти",
+    "connect": "Подключить"
+  },
+  "errors": {
+    "generic": "Ошибка",
+    "network": "Ошибка сети",
+    "search": "Ошибка при поиске",
+    "add": "Ошибка при добавлении"
+  },
+  "time": {
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "date": "Дата",
+    "date_time": "Дата и время",
+    "day_abbr": "д",
+    "hour_abbr": "ч",
+    "min_abbr": "м"
+  },
+  "status": {
+    "on": "Вкл",
+    "off": "Выкл",
+    "active": "Активен",
+    "system": "Система",
+    "no_results": "Нет результатов"
+  }
+}

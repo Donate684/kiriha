@@ -1,0 +1,56 @@
+{
+  "loading": {
+    "cache": "Loading cache...",
+    "items": "Loading items...",
+    "from_mal": "Loading your data from MyAnimeList...",
+    "schedule": "Loading schedule: {0}/{1}"
+  },
+  "syncing": {
+    "generic": "Syncing...",
+    "failed": "Sync failed!",
+    "with": "Syncing with {0}...",
+    "mal": "Syncing with MyAnimeList...",
+    "episodes": "Syncing episodes",
+    "episodes_progress": "Syncing episodes ({0}/{1}): {2}",
+    "complete": "Sync complete ({0} items)",
+    "error_msg": "Sync error (Anime ID: {0})"
+  },
+  "saving": {
+    "generic": "Saving...",
+    "to_db": "Saving to database..."
+  },
+  "updating": {
+    "shiki": "Applying Russian metadata...",
+    "generic": "Updating {0}...",
+    "metadata": "Updating metadata..."
+  },
+  "localization": {
+    "count": "Localizing: {0} anime...",
+    "anime": "Localizing titles..."
+  },
+  "cache": {
+    "count": "Cached {0} items",
+    "images": "Caching images: {0}/{1}"
+  },
+  "search": {
+    "searching": "Searching...",
+    "auto_translating": "Translating query...",
+    "mal": "Searching MyAnimeList...",
+    "found_results": "Found results: {0}",
+    "nothing_found": "No results found",
+    "placeholder": "Enter anime title in English, Russian or Romaji"
+  },
+  "queue": {
+    "cover": "Cover Queue",
+    "metadata": "Metadata Queue"
+  },
+  "filtering": "Applying filters...",
+  "adding_to_list": "Adding to list...",
+  "added_to_list": "Added to list:",
+  "added_to_watching": "Added to Watching",
+  "rendering_collection": "Rendering collection...",
+  "updated": "Updated!",
+  "actions": {
+    "sync_now": "Sync Now"
+  }
+}

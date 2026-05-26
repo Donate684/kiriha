@@ -1,0 +1,53 @@
+{
+  "header": "Filters",
+  "title": "Filters",
+  "show": "SHOW",
+  "visibility": {
+    "label": "VISIBILITY",
+    "adult_only": "18+ Only"
+  },
+  "options": {
+    "not_in_list": "Not in list",
+    "none": "None",
+    "new_in_season": "New in Season",
+    "continuing": "Continuing",
+    "movies": "Movies",
+    "specials": "Specials",
+    "other": "Other",
+    "hide_in_lists": "Hide items in my lists",
+    "show_hidden": "Hidden",
+    "hide_tooltip": "Hide title (Not interested)",
+    "hide_confirm": "Hide?",
+    "unhide_confirm": "Restore?"
+  },
+  "score": {
+    "label": "Score",
+    "simplified": "Simplified Score",
+    "simplified_sub": "1-5+ scale instead of 10-point",
+    "masterpiece": "Masterpiece",
+    "excellent": "Excellent",
+    "very_good": "Very Good",
+    "good": "Good",
+    "average": "Average",
+    "mediocre": "Mediocre",
+    "bad": "Bad",
+    "very_bad": "Very Bad",
+    "horrible": "Horrible",
+    "appalling": "Appalling"
+  },
+  "popularity": "Popularity",
+  "adult": {
+    "hide": "Hide 18+",
+    "include": "Include 18+",
+    "only": "Only 18+"
+  },
+  "sort": {
+    "title": "Title",
+    "russiantitle": "Title (Russian)",
+    "score": "Score",
+    "progress": "Progress",
+    "date": "Date",
+    "popularity": "Popularity"
+  },
+  "header_format": "{0} ({1})"
+}

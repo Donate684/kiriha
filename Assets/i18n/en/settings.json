@@ -1,0 +1,118 @@
+{
+  "header": "Settings",
+  "title": "Personalization & Credentials",
+  "sections": {
+    "advanced": "Advanced customization",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "connection": "Connection",
+    "accounts": "Accounts",
+    "tracking": "Auto-Scrobbler"
+  },
+  "notifications": {
+    "new_episodes": {
+      "title": "New episodes",
+      "subtitle": "Notify me when a new episode airs for an anime in my list"
+    },
+    "app_update": {
+      "title": "Notify about updates",
+      "subtitle": "Show a notification when a new Kiriha version is available"
+    },
+    "delay": {
+      "title": "Notification delay",
+      "subtitle": "How many minutes after detection to show the toast (0 — immediately)"
+    }
+  },
+  "theme": {
+    "title": "UI Theme",
+    "subtitle": "Light, dark or system themes",
+    "default": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "language": {
+    "title": "Interface Language",
+    "subtitle": "Select your preferred language"
+  },
+  "mica": {
+    "title": "Mica Effect",
+    "subtitle": "Enable translucent window blur (Windows 11+)"
+  },
+  "grid_view": {
+    "title": "Grid View",
+    "subtitle": "Display list as cards with posters"
+  },
+  "mal": {
+    "title": "Connection",
+    "subtitle": "Sync list with MyAnimeList",
+    "connected": "Connected",
+    "disconnected": "Disconnected"
+  },
+  "shikimori": {
+    "duplicate_marks": "Duplicate Marks",
+    "duplicate_marks_sub": "Sync progress and scores to Shikimori",
+    "russian_titles": "Russian Titles",
+    "russian_titles_sub": "Additionally show Russian title alongside from Shikimori (does not replace original title)",
+    "russian_descriptions": "Russian Descriptions",
+    "russian_descriptions_sub": "Replace English descriptions with Shikimori's version (if available)",
+    "extended_metadata": "Extended Localization",
+    "other_mirror_active": "Disconnect the other Shikimori mirror first",
+    "one_sub": "The original site — recommended for most users",
+    "net_sub": "Fan fork of the Shikimori project",
+    "exclusive_notice": "You can connect only one Shikimori variant at a time — either the original or the fork. Disconnect the current one to switch.",
+    "fork_domains_tooltip": "The fork is served from multiple domains (shikimori.rip, .net, .fi, …) to circumvent regional blocking. The app figures out the working one automatically — including new domains we don't know about yet."
+  },
+  "airing_info": {
+    "title": "Airing Information",
+    "subtitle": "Show number of aired episodes and countdown to the next one"
+  },
+  "auto_launch": {
+    "title": "Auto Launch",
+    "subtitle": "Launch app on Windows startup"
+  },
+  "launch_minimized": {
+    "title": "Launch Minimized",
+    "subtitle": "Launch in system tray on Windows startup"
+  },
+  "discord": {
+    "title": "Discord Rich Presence",
+    "subtitle": "Show current anime in your Discord status"
+  },
+  "tray": {
+    "close_to_tray": "Close to tray",
+    "close_to_tray_sub": "Hide to tray instead of closing",
+    "minimize_to_tray": "Minimize to tray",
+    "minimize_to_tray_sub": "Hide to tray when window is minimized"
+  },
+  "updates": {
+    "check_on_launch": "Check for updates on startup",
+    "check_on_launch_sub": "Automatically check for new versions",
+    "download_in_background": "Download updates in background",
+    "download_in_background_sub": "Automatically download updates and only prompt to restart"
+  },
+  "cache": {
+    "title": "Cache",
+    "subtitle": "Clear temporary data without touching your list, accounts, or app settings.",
+    "clear_data": "Clear data",
+    "clear": "Clear",
+    "cleared": "Selected cache data was cleared",
+    "stats_items": "{0} item(s)",
+    "stats_with_size": "{0} item(s), {1}",
+    "items": {
+      "history": "History",
+      "images": "Image files",
+      "api": "API cache",
+      "recognition": "Recognition cache",
+      "seasonal": "Seasonal cache"
+    }
+  },
+  "open_wizard": "Open player setup wizard",
+  "custom_links": {
+    "title": "My Links",
+    "help_title": "How it works",
+    "help_body": "Added links show up as buttons next to MAL and Shiki on the anime details card\nand in the Now Playing panel.\n\nEnter a URL template — the placeholders below are replaced with the current anime's data\nand URL-encoded automatically.\n\nThe icon is pulled from the site's favicon automatically; if that fails the default globe stays.",
+    "name_placeholder": "Button name (e.g. AniDB)",
+    "examples": "Examples:",
+    "add": "Add link"
+  }
+}

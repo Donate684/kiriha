@@ -1,0 +1,37 @@
+{
+  "welcome": "Welcome to Kiriha!",
+  "subtitle": "Let's get you set up",
+  "step_of": "{0} of {1}",
+  "language": {
+    "title": "Choose your language",
+    "subtitle": "You can change this anytime in Settings"
+  },
+  "theme": {
+    "title": "Pick a theme",
+    "subtitle": "Choose how Kiriha looks"
+  },
+  "mal": {
+    "title": "Connect MyAnimeList",
+    "subtitle": "Sync your anime list (you can do this later)"
+  },
+  "shikimori": {
+    "title": "Connect Shikimori",
+    "subtitle": "For mirroring marks from MyAnimeList"
+  },
+  "system": {
+    "title": "System Settings",
+    "subtitle": "Configure application behavior"
+  },
+  "advanced": {
+    "title": "Advanced Localization",
+    "subtitle": "Configure data from Shikimori"
+  },
+  "tracking": {
+    "title": "Player Tracking Setup",
+    "instructions": "1. Open your player and start an anime (do not pause).\n2. The list updates every 5 seconds.",
+    "blocked_hint": "Please select at least one application to track"
+  },
+  "next": "Next",
+  "skip": "Skip",
+  "finish": "Get Started"
+}

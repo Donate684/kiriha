@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:material="using:Material.Icons.Avalonia"
+             xmlns:controls="using:Kiriha.Views.Controls"
+             x:Class="Kiriha.Views.WelcomeView"
+             x:DataType="vm:WelcomeViewModel">
+
+    <UserControl.Styles>
+        <!-- Spinner Arc rotation: kept at the UserControl level (not inline on
+             the Arc itself) so the Style/Animation/clock is parsed once and
+             reused, instead of being rebuilt every time the loading Border
+             toggles IsVisible during startup. -->
+        <Style Selector="Arc.WelcomeSpinner">
+            <Style.Animations>
+                <Animation Duration="0:0:1" IterationCount="Infinite">
+                    <KeyFrame KeyTime="0:0:0"><Setter Property="RotateTransform.Angle" Value="0"/></KeyFrame>
+                    <KeyFrame KeyTime="0:0:1"><Setter Property="RotateTransform.Angle" Value="360"/></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Background="Transparent">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="0" Margin="0,-80,0,0">
+            
+            <!-- Logo with soft accent halo -->
+            <Panel HorizontalAlignment="Center">
+                <!-- Мягкое акцентное свечение сзади -->
+                <!-- Soft halo: pure RadialGradient gives the same visual feel as
+                     a blurred fill at zero rendering cost. The previous BlurEffect
+                     Radius=30 was contributing ~150ms+ to the first frame on
+                     Mica windows because Avalonia's Effect pipeline runs through
+                     skia software blur on every paint. -->
+                <Ellipse Width="390" Height="390"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Opacity="0.22">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush GradientOrigin="50%,50%" Center="50%,50%" RadiusX="0.5" RadiusY="0.5">
+                            <GradientStop Offset="0"   Color="{DynamicResource SystemAccentColorLight2}"/>
+                            <GradientStop Offset="0.5" Color="{DynamicResource SystemAccentColor}"/>
+                            <GradientStop Offset="1"   Color="#00000000"/>
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+
+                <!-- Сам логотип -->
+                <controls:LeafLogo Width="270" Height="270"
+                                   Margin="0,0,0,50"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+            </Panel>
+
+            <!-- Brand (Margin top отрицательный — двигает текст выше, ближе к логотипу) -->
+            <StackPanel Spacing="4" Margin="0,-70,0,0">
+                <TextBlock Text="{DynamicResource l.common.app_name}" FontSize="52" FontWeight="Thin" 
+                           HorizontalAlignment="Center" LetterSpacing="8" Opacity="0.9"/>
+                <TextBlock Name="VersionLabel" FontSize="11" FontWeight="Black"
+                           HorizontalAlignment="Center" Opacity="0.3" LetterSpacing="5" Margin="0,5,0,0"/>
+            </StackPanel>
+
+        </StackPanel>
+
+        <!-- About link — bottom-centered, deliberately muted so it never
+             competes with the brand or the loading badge. Click opens the
+             AboutWindow modal (credits + library list). -->
+        <Button Content="{DynamicResource l.about.open_button}"
+                Click="OnAboutClick"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                Margin="0,0,0,16"
+                Background="Transparent" BorderThickness="0"
+                Padding="10,4"
+                FontSize="11"
+                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                Opacity="0.55"
+                Cursor="Hand"/>
+
+        <!-- Status / Progress Info — выведено за StackPanel, чтобы не двигало логотип/текст -->
+        <Border Background="{DynamicResource CardBackgroundFillDefault}" CornerRadius="20" Padding="20,10"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,10"
+                BorderBrush="{DynamicResource CardStrokeColorDefault}" BorderThickness="1"
+                IsVisible="{Binding IsLoading}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Arc Classes="WelcomeSpinner"
+                     Stroke="{DynamicResource SystemAccentColor}"
+                     StrokeThickness="2" SweepAngle="90" Width="12" Height="12"/>
+                <TextBlock Text="{DynamicResource l.sync.syncing.mal}" FontSize="13" Opacity="0.5"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Decoration bits.
+             Removed BlurEffect on these corner ellipses: skia software blur
+             with Radius=80..100 on 200..300px ellipses costs hundreds of ms on
+             the first frame and tens of ms on every subsequent paint. The
+             ellipses are clipped half off-screen and at Opacity=0.1, so the
+             remaining solid radial pseudo-glow via lower opacity still hints
+             at the same accent without hammering the renderer. -->
+        <Canvas IsHitTestVisible="False" Opacity="0.06">
+            <Ellipse Width="300" Height="300" Canvas.Left="-180" Canvas.Top="-180">
+                <Ellipse.Fill>
+                    <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="0.5" RadiusY="0.5">
+                        <GradientStop Offset="0" Color="{DynamicResource SystemAccentColor}"/>
+                        <GradientStop Offset="1" Color="#00000000"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            <Ellipse Width="220" Height="220" Canvas.Right="-130" Canvas.Bottom="-130">
+                <Ellipse.Fill>
+                    <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="0.5" RadiusY="0.5">
+                        <GradientStop Offset="0" Color="{DynamicResource SystemAccentColor}"/>
+                        <GradientStop Offset="1" Color="#00000000"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+        </Canvas>
+    </Grid>
+</UserControl>

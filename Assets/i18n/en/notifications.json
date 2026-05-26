@@ -1,0 +1,10 @@
+{
+  "new_episode": {
+    "title": "New episode",
+    "body": "Episode {0} — Available!"
+  },
+  "app_update": {
+    "title": "Kiriha update available",
+    "body": "Version {0} is ready. Open Settings to install."
+  }
+}

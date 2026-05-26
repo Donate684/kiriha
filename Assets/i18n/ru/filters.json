@@ -1,0 +1,53 @@
+{
+  "header": "Фильтры",
+  "title": "Фильтры",
+  "show": "ПОКАЗЫВАТЬ",
+  "visibility": {
+    "label": "ВИДИМОСТЬ",
+    "adult_only": "Только 18+"
+  },
+  "options": {
+    "not_in_list": "Не в моём списке",
+    "none": "Не в списке",
+    "new_in_season": "Новинки сезона",
+    "continuing": "Продолжения",
+    "movies": "Фильмы",
+    "specials": "Спешлы",
+    "other": "Прочее",
+    "hide_in_lists": "Скрыть из моих списков",
+    "show_hidden": "Скрытые",
+    "hide_tooltip": "Скрыть тайтл (Неинтересно)",
+    "hide_confirm": "Скрыть?",
+    "unhide_confirm": "Вернуть?"
+  },
+  "score": {
+    "label": "Оценка",
+    "simplified": "Упрощённая оценка",
+    "simplified_sub": "Шкала 1–5+ вместо 10-балльной",
+    "masterpiece": "Шедевр",
+    "excellent": "Отлично",
+    "very_good": "Очень хорошо",
+    "good": "Хорошо",
+    "average": "Средне",
+    "mediocre": "Так себе",
+    "bad": "Плохо",
+    "very_bad": "Очень плохо",
+    "horrible": "Ужасно",
+    "appalling": "Кошмар"
+  },
+  "popularity": "Популярность",
+  "adult": {
+    "hide": "Без 18+",
+    "include": "Все (18+)",
+    "only": "Только 18+"
+  },
+  "sort": {
+    "title": "Название",
+    "russiantitle": "Название (Русское)",
+    "score": "Оценка",
+    "progress": "Прогресс",
+    "date": "Дата",
+    "popularity": "Популярность"
+  },
+  "header_format": "{0} ({1})"
+}

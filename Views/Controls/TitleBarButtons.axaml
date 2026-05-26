@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="Kiriha.Views.Controls.TitleBarButtons">
+
+    <UserControl.Styles>
+        <!-- Base style for all caption buttons -->
+        <Style Selector="Button.CaptionBtn">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.1"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <!-- Minimize & Maximize hover/pressed (supports both Light and Dark themes) -->
+        <Style Selector="Button.CaptionBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPointerOver}"/>
+        </Style>
+        <Style Selector="Button.CaptionBtn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPressed}"/>
+        </Style>
+
+        <!-- Close button specific styles -->
+        <Style Selector="Button.CloseBtn">
+            <Setter Property="CornerRadius" Value="0,8,0,0"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+        </Style>
+        <Style Selector="Button.CloseBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#E81123"/>
+        </Style>
+        <Style Selector="Button.CloseBtn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#F1707A"/>
+        </Style>
+        
+        <!-- Icons inside buttons (Segoe Fluent perfectly matches Windows 11) -->
+        <Style Selector="Button.CaptionBtn TextBlock">
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets, sans-serif"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Opacity" Value="0.9"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        
+        <!-- White icon on close hover -->
+        <Style Selector="Button.CloseBtn:pointerover TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+        <Style Selector="Button.CloseBtn:pressed TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Orientation="Horizontal" IsHitTestVisible="True" VerticalAlignment="Top">
+        <Button x:Name="MinimizeBtn" Classes="CaptionBtn" Click="OnMinimizeClick">
+            <TextBlock Text="&#xE921;"/>
+        </Button>
+        <Button x:Name="MaximizeBtn" Classes="CaptionBtn" Click="OnMaximizeClick">
+            <TextBlock x:Name="MaximizeIcon" Text="&#xE922;"/>
+        </Button>
+        <Button x:Name="CloseBtn" Classes="CaptionBtn CloseBtn" Click="OnCloseClick">
+            <TextBlock Text="&#xE8BB;"/>
+        </Button>
+    </StackPanel>
+</UserControl>

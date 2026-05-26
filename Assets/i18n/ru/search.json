@@ -1,0 +1,11 @@
+{
+  "placeholder": "Поиск...",
+  "status": {
+    "searching": "Поиск...",
+    "translating": "Перевод названия...",
+    "searching_mal": "Поиск в MyAnimeList...",
+    "found": "Найдено результатов: {0}",
+    "not_found": "Ничего не найдено",
+    "error": "Ошибка поиска"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "labels": {
+    "status": "Статус:",
+    "type": "Тип:",
+    "season": "Сезон:",
+    "genres": "Жанры:",
+    "studios": "Студия:",
+    "episodes": "Эпизоды:",
+    "score": "Оценка:",
+    "episode": "Эпизод",
+    "of": " из ",
+    "by": " от ",
+    "watched_episodes": "Просмотрено эпизодов",
+    "your_score": "Ваша оценка",
+    "start_date": "Дата начала",
+    "finish_date": "Дата завершения",
+    "notes": "Заметки",
+    "synopsis": "Описание",
+    "alternative_titles": "Альтернативные названия",
+    "russian_title": "Русское название",
+    "english_title": "Английское название",
+    "release_date": "Дата выхода",
+    "aired_episodes": "Вышло серий:",
+    "next_episode": "Следующий эпизод:",
+    "aired_today": "Вышла сегодня",
+    "series_of": "Серия {0} из {1}",
+    "series_only": "Серия {0}",
+    "aired_format": "{0} из {1}",
+    "new_ep": "Новый эп.",
+    "ep_abbr": "эп.",
+    "total_ep_format": "из {0} эп.",
+    "total_ep_finished": "{0} эп.",
+    "thoughts_placeholder": "Мысли о тайтле...",
+    "no_alternative_titles": "Нет альтернативных названий",
+    "no_synopsis": "Описание отсутствует"
+  },
+  "status": {
+    "watching": "Смотрю",
+    "completed": "Завершено",
+    "on_hold": "Отложено",
+    "dropped": "Брошено",
+    "plan_to_watch": "В планах",
+    "rewatching": "Пересмотр",
+    "rewatching_badge": "Пересмотр",
+    "currently_airing": "Сейчас выходит",
+    "finished_airing": "Показ завершён",
+    "not_yet_aired": "Анонсировано",
+    "unknown": "Неизвестно",
+    "adding_item": "Добавление: {0}...",
+    "added_item": "Добавлено в список: {0}"
+  },
+  "types": {
+    "tv": "ТВ",
+    "movie": "Фильм",
+    "ova": "OVA",
+    "ona": "ONA",
+    "special": "Спешл",
+    "music": "Клип",
+    "tv_special": "Спешл"
+  },
+  "list_actions": {
+    "in_my_list": "В моём списке",
+    "not_in_my_list": "Этого аниме нет в вашем списке",
+    "add_to_list": "Добавить в список",
+    "remove_from_list": "Удалить из списка",
+    "confirm_delete": "ВЫ УВЕРЕНЫ?"
+  },
+  "links": {
+    "mal": "MyAnimeList",
+    "shiki": "Shikimori"
+  },
+  "seasons": {
+    "winter": "Зима",
+    "spring": "Весна",
+    "summer": "Лето",
+    "fall": "Осень"
+  },
+  "seasonal": {
+    "categories": {
+      "new": "Новые",
+      "continuing": "Продолжающиеся",
+      "movies": "Фильмы",
+      "specials": "Спешлы",
+      "other": "Прочее"
+    },
+    "status": {
+      "loading_details": "Загрузка деталей ({0}/{1})"
+    }
+  }
+}

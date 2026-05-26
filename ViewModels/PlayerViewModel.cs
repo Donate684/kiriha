@@ -1,0 +1,182 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Media.Imaging;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Kiriha.Core;
+using Kiriha.Core.Mpv;
+using Kiriha.Models;
+using Kiriha.Services;
+using Kiriha.Services.Data;
+
+namespace Kiriha.ViewModels;
+
+public partial class PlayerViewModel : ObservableObject, IDisposable
+{
+    private readonly IPlayerMediaMetadataResolver? _metadataResolver;
+    private readonly SettingsService? _settingsService;
+    private readonly InternalPlayerStateClient _stateClient = new();
+    private MpvPlayer? _player;
+    private DispatcherTimer? _timer;
+    private DispatcherTimer? _osdTimer;
+    private MpvThumbnailer? _thumbnailer;
+    private CancellationTokenSource? _thumbnailCts;
+    private CancellationTokenSource? _thumbnailWarmUpCts;
+    private int _thumbnailRequestId;
+    private int _timelinePreviewBucket = -1;
+    private string? _timelinePreviewImagePath;
+    private bool _isScrubbing = false;
+    private bool _isApplyingSettings;
+
+    public System.Collections.ObjectModel.ObservableCollection<TrackInfo> AudioTracks { get; } = new();
+    public System.Collections.ObjectModel.ObservableCollection<TrackInfo> SubtitleTracks { get; } = new();
+    public System.Collections.ObjectModel.ObservableCollection<ChapterInfo> Chapters { get; } = new();
+    public List<PlayerMouseActionOption> MouseActionOptions { get; } = new()
+    {
+        new("Ничего", PlayerMouseAction.None),
+        new("Пауза / воспроизведение", PlayerMouseAction.TogglePlayPause),
+        new("Полноэкранный режим", PlayerMouseAction.ToggleFullscreen),
+        new("Показать панель", PlayerMouseAction.ShowControls),
+        new("Открыть настройки", PlayerMouseAction.OpenSettings),
+        new("Назад на 10 секунд", PlayerMouseAction.SeekBackward10),
+        new("Вперёд на 10 секунд", PlayerMouseAction.SeekForward10),
+        new("Следующая аудиодорожка", PlayerMouseAction.CycleAudio),
+        new("Следующие субтитры", PlayerMouseAction.CycleSubtitle)
+    };
+    public List<PlayerWheelActionOption> WheelActionOptions { get; } = new()
+    {
+        new("Ничего", PlayerWheelAction.None),
+        new("Громче", PlayerWheelAction.VolumeUp),
+        new("Тише", PlayerWheelAction.VolumeDown),
+        new("Вперёд", PlayerWheelAction.SeekForward),
+        new("Назад", PlayerWheelAction.SeekBackward),
+        new("Скорость выше", PlayerWheelAction.SpeedUp),
+        new("Скорость ниже", PlayerWheelAction.SpeedDown)
+    };
+    public List<int> WheelStepOptions { get; } = new() { 1, 2, 5, 10 };
+    public List<string> ScreenshotFormatOptions { get; } = new() { "png", "jpg", "webp" };
+    public List<ScreenshotResolutionOption> ScreenshotResolutionOptions { get; } = new()
+    {
+        new("Исходное видео", "video"),
+        new("Размер окна", "window")
+    };
+
+    [ObservableProperty] private string _videoUrl = string.Empty;
+    [ObservableProperty] private string _animeTitle = string.Empty;
+    [ObservableProperty] private string _animeTitleRu = string.Empty;
+    [ObservableProperty] private string _animeTitleEn = string.Empty;
+    [ObservableProperty] private string _episodeTitle = string.Empty;
+    [ObservableProperty] private string _rawEpisodeText = string.Empty;
+    
+    [ObservableProperty] private bool _isPlaying = true;
+    [ObservableProperty] private double _currentTime = 0;
+    [ObservableProperty] private double _duration = 100;
+    [ObservableProperty] private string _currentTimeString = "00:00";
+    [ObservableProperty] private string _durationString = "00:00";
+    
+    [ObservableProperty] private double _volume = 100;
+    [ObservableProperty] private bool _isMuted = false;
+    [ObservableProperty] private bool _normalizeAudio = false;
+    private double _previousVolume = 100;
+
+    [ObservableProperty] private double _playbackSpeed = 1.0;
+
+    [ObservableProperty] private bool _playerAutoPlay = true;
+    [ObservableProperty] private bool _singlePlayerWindow = true;
+    [ObservableProperty] private bool _rememberPlayerVolume = true;
+    [ObservableProperty] private bool _autoHideControls = true;
+    [ObservableProperty] private bool _showChapterMarkers = true;
+    [ObservableProperty] private PlayerMouseActionOption? _leftClickAction;
+    [ObservableProperty] private PlayerMouseActionOption? _rightClickAction;
+    [ObservableProperty] private PlayerMouseActionOption? _middleClickAction;
+    [ObservableProperty] private PlayerWheelActionOption? _wheelUpAction;
+    [ObservableProperty] private PlayerWheelActionOption? _wheelDownAction;
+    [ObservableProperty] private int _wheelVolumeStep = 5;
+    [ObservableProperty] private bool _showPlayPauseButton = true;
+    [ObservableProperty] private bool _showSkipButtons = true;
+    [ObservableProperty] private bool _showMuteButton = true;
+    [ObservableProperty] private bool _showVolumeSlider = true;
+    [ObservableProperty] private bool _showTimeDisplay = true;
+    [ObservableProperty] private bool _showSpeedButton = true;
+    [ObservableProperty] private bool _showSubtitleButton = true;
+    [ObservableProperty] private bool _showAudioButton = true;
+    [ObservableProperty] private bool _showScreenshotButton = true;
+    [ObservableProperty] private bool _showSubtitleStyleButton = true;
+    [ObservableProperty] private string _preferredAudioLanguages = "Japanese,jpn,ja";
+    [ObservableProperty] private string _preferredSubtitleLanguages = "Russian,rus,ru";
+    [ObservableProperty] private bool _subtitleStyleOverrideEnabled = false;
+    [ObservableProperty] private string _subtitleStyleHotkey = "U";
+    [ObservableProperty] private string _subtitleFont = "Candara Bold";
+    [ObservableProperty] private double _subtitleFontSize = 60;
+    [ObservableProperty] private string _subtitleColor = "#FFFFFF";
+    [ObservableProperty] private string _subtitleBorderColor = "#000000";
+    [ObservableProperty] private string _subtitleShadowColor = "#000000";
+    [ObservableProperty] private double _subtitleBorderSize = 3.8;
+    [ObservableProperty] private double _subtitleShadowOffset = 1.5;
+    [ObservableProperty] private string _subtitleAlignY = "bottom";
+    [ObservableProperty] private string _subtitleAlignX = "center";
+    [ObservableProperty] private int _subtitleMarginY = 35;
+    [ObservableProperty] private bool _subtitleScaleByWindow = true;
+    [ObservableProperty] private string _screenshotDirectory = string.Empty;
+    [ObservableProperty] private string _screenshotFormat = "png";
+    [ObservableProperty] private ScreenshotResolutionOption? _screenshotResolution;
+    [ObservableProperty] private int _screenshotPngCompression = 4;
+    [ObservableProperty] private int _screenshotQuality = 95;
+    [ObservableProperty] private bool _screenshotHighBitDepth = false;
+    [ObservableProperty] private string _screenshotWithSubtitlesHotkey = "S";
+    [ObservableProperty] private string _screenshotWithoutSubtitlesHotkey = "Shift+S";
+    [ObservableProperty] private string _volumeUpHotkey = "Up";
+    [ObservableProperty] private string _volumeDownHotkey = "Down";
+    [ObservableProperty] private string _seekBackwardHotkey = "Left";
+    [ObservableProperty] private string _seekForwardHotkey = "Right";
+    [ObservableProperty] private string _mpvScale = "ewa_lanczossharp";
+    [ObservableProperty] private string _mpvChromaScale = "ewa_lanczossharp";
+    [ObservableProperty] private string _mpvDitherDepth = "auto";
+    [ObservableProperty] private bool _mpvCorrectDownscaling = true;
+    [ObservableProperty] private bool _mpvDeband = true;
+    [ObservableProperty] private int _mpvDebandIterations = 3;
+    [ObservableProperty] private int _mpvDebandThreshold = 30;
+    [ObservableProperty] private string _mpvHwdec = "auto";
+    [ObservableProperty] private string _mpvVideoOutput = "gpu-next";
+    [ObservableProperty] private string _mpvGpuApi = "auto";
+    [ObservableProperty] private string _mpvGpuContext = "auto";
+    [ObservableProperty] private string _mpvRuntimeInfo = "hwdec: -, interop: -, vo: -, context: -, decoder: -";
+    [ObservableProperty] private bool _isOsdVisible = false;
+    [ObservableProperty] private string _osdMessage = string.Empty;
+    [ObservableProperty] private string _osdDetail = string.Empty;
+    [ObservableProperty] private bool _isTimelinePreviewVisible = false;
+    [ObservableProperty] private Bitmap? _timelinePreviewImage;
+    [ObservableProperty] private string _timelinePreviewTime = string.Empty;
+    [ObservableProperty] private double _timelinePreviewLeft = 0;
+    
+    private int? _animeId;
+    private bool _isInitializing;
+
+    public PlayerViewModel(
+        string videoUrl,
+        PlayerMediaMetadata? metadata = null,
+        IPlayerMediaMetadataResolver? metadataResolver = null,
+        SettingsService? settingsService = null)
+    {
+        _isInitializing = true;
+        _metadataResolver = metadataResolver;
+        _settingsService = settingsService;
+        ApplyPlayerSettings();
+        ApplyMetadata(metadata ?? metadataResolver?.Resolve(videoUrl) ?? PlayerMediaMetadata.FromVideoPath(videoUrl));
+        
+        VideoUrl = videoUrl; // Sets VideoUrl and triggers OnVideoUrlChanged if needed, but since it's constructor, we already set the fields above.
+        _isInitializing = false;
+    }
+
+
+
+}
+
+public record PlayerMouseActionOption(string Name, PlayerMouseAction Value);
+public record PlayerWheelActionOption(string Name, PlayerWheelAction Value);
+public record ScreenshotResolutionOption(string Name, string Value);

@@ -1,0 +1,69 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kiriha.ViewModels"
+        x:Class="Kiriha.Views.CrashReportWindow"
+        x:DataType="vm:CrashReportViewModel"
+        Title="{DynamicResource l.crash.title}"
+        Width="780" Height="560"
+        MinWidth="520" MinHeight="360"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Assets/kiriha.ico"
+        Background="{DynamicResource ModalBackgroundFill}">
+
+    <Grid Margin="20" RowDefinitions="Auto,Auto,*,Auto,Auto" ColumnDefinitions="*">
+
+        <TextBlock Grid.Row="0"
+                   Text="{DynamicResource l.crash.heading}"
+                   FontSize="20"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="{DynamicResource l.crash.subtitle}"
+                   Margin="0,6,0,12"
+                   FontSize="13"
+                   Opacity="0.75"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+
+        <Border Grid.Row="2"
+                Background="{DynamicResource CardBackgroundFillSecondary}"
+                BorderBrush="{DynamicResource CardStrokeColorDefault}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="2">
+            <TextBox Text="{Binding ReportText, Mode=OneWay}"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="NoWrap"
+                     FontFamily="Consolas, Cascadia Mono, Menlo, monospace"
+                     FontSize="12"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     VerticalContentAlignment="Top"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+        </Border>
+
+        <TextBlock Grid.Row="3"
+                   Text="{Binding StatusText}"
+                   Margin="0,8,0,0"
+                   FontSize="12"
+                   Opacity="0.85"
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+
+        <StackPanel Grid.Row="4"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,12,0,0"
+                    Spacing="8">
+            <Button Content="{DynamicResource l.crash.button.open_folder}"
+                    Command="{Binding OpenFolderCommand}"/>
+            <Button Content="{DynamicResource l.crash.button.copy}"
+                    Command="{Binding CopyCommand}"/>
+            <Button Content="{DynamicResource l.crash.button.close}"
+                    Click="OnCloseClick"
+                    Classes="accent"/>
+        </StackPanel>
+    </Grid>
+</Window>

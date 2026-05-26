@@ -1,0 +1,54 @@
+<Project>
+  <!--
+    Central Package Management. Versions live here, csproj files only declare
+    "PackageReference Include=...". Single source of truth for upgrades, and
+    a hard guarantee against version drift if (when) more projects are added
+    to the solution.
+
+    Avalonia versions are still parameterised per-project via $(AvaloniaVersion)
+    / $(AvaloniaSubpackagesVersion) so a future Avalonia bump remains a one-line
+    change in Kiriha.csproj rather than touching every PackageVersion below.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Avalonia core stack, version controlled by $(AvaloniaVersion) in Kiriha.csproj -->
+    <PackageVersion Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
+    <!-- Avalonia sub-packages publish on a slower cadence -->
+    <PackageVersion Include="Avalonia.Controls.ItemsRepeater" Version="$(AvaloniaSubpackagesVersion)" />
+    <!-- 3rd-party UI -->
+    <PackageVersion Include="AsyncImageLoader.Avalonia" Version="3.8.0" />
+    <PackageVersion Include="Material.Icons.Avalonia" Version="3.0.2" />
+    <!-- MVVM / messaging -->
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <!-- Data / EF / SQLite -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8" />
+    <!-- Microsoft.Extensions.* — keep versions in lockstep -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.8" />
+    <!-- BCL extension packages -->
+    <PackageVersion Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+    <!-- Transitive security pin: Microsoft.Toolkit.Uwp.Notifications pulls an old System.Drawing.Common. -->
+    <PackageVersion Include="System.Drawing.Common" Version="10.0.8" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.8" />
+    <PackageVersion Include="System.Threading.RateLimiting" Version="10.0.8" />
+    <!-- Logging -->
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+    <!-- Misc -->
+    <PackageVersion Include="DiscordRichPresence" Version="1.6.1.70" />
+    <PackageVersion Include="Velopack" Version="0.0.1298" />
+    <!-- Tests -->
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+</Project>

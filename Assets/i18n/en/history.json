@@ -1,0 +1,28 @@
+{
+  "title": "View History",
+  "subtitle": "Recent activity and updates",
+  "no_history": "History is empty",
+  "no_results": "No results",
+  "unit_ep": "ep.",
+  "episode_range": "ep. {0}–{1}",
+  "episode_single": "ep. {0}",
+  "search_placeholder": "Search by title…",
+  "period": {
+    "all": "All",
+    "today": "Today",
+    "week": "Week",
+    "month": "Month"
+  },
+  "actions": {
+    "all": "All",
+    "watched": "Watched",
+    "reverted": "Reverted",
+    "scrobbled": "Scrobbled",
+    "score_set": "Score set:",
+    "score_set_filter": "Score Changed",
+    "sync_failed": "Sync Failed",
+    "completed": "Completed",
+    "dropped": "Dropped"
+  },
+  "already_scrobbled": "Already scrobbled"
+}

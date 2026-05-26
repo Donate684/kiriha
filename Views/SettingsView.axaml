@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:variants="using:Kiriha.Views.Controls.Variants"
+             x:Class="Kiriha.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel"
+             HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+
+    <variants:SettingsSidebar/>
+
+</UserControl>

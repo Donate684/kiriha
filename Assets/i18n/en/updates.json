@@ -1,0 +1,23 @@
+{
+  "title": "App Update",
+  "downloaded": "The update has been successfully downloaded. You can restart the application now.",
+  "available": "New version available: {0}",
+  "download": "Download update",
+  "downloading": "Downloading... {0}%",
+  "downloading_text": "Downloading update...",
+  "install_and_restart": "Restart",
+  "no_updates": "You have the latest version",
+  "check": "Check for updates",
+  "checking": "Checking...",
+  "check_error": "Error checking for updates",
+  "download_error": "Error downloading update",
+  "found": {
+    "title": "Update available",
+    "message": "A new version {0} is available. Do you want to update now?"
+  },
+  "manual_download": {
+    "title": "Manual install",
+    "subtitle": "If auto-update didn't work, grab the installer from the GitHub releases page.",
+    "button": "Open releases page"
+  }
+}
