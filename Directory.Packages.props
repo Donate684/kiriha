@@ -39,16 +39,49 @@
     <PackageVersion Include="System.Drawing.Common" Version="10.0.8" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.8" />
     <PackageVersion Include="System.Threading.RateLimiting" Version="10.0.8" />
+    <!-- Transitive update pins: keep outdated reports clean while CPM is enabled. -->
+    <PackageVersion Include="Avalonia.Angle.Windows.Natives" Version="2.1.27548.20260419" />
+    <PackageVersion Include="HarfBuzzSharp" Version="8.3.1.5" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.5" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.WebAssembly" Version="8.3.1.5" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="8.3.1.5" />
+    <PackageVersion Include="Humanizer.Core" Version="3.0.10" />
+    <PackageVersion Include="MicroCom.Runtime" Version="0.11.6" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="18.6.3" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.3.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="5.3.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.3.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="5.3.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.3.0" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageVersion Include="Serilog" Version="4.3.1" />
+    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.WebAssembly" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="3.119.4" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+    <PackageVersion Include="SQLitePCLRaw.core" Version="3.0.3" />
+    <PackageVersion Include="SQLitePCLRaw.provider.e_sqlite3" Version="3.0.3" />
+    <PackageVersion Include="System.CodeDom" Version="10.0.8" />
+    <PackageVersion Include="System.Composition" Version="10.0.8" />
+    <PackageVersion Include="System.Composition.AttributedModel" Version="10.0.8" />
+    <PackageVersion Include="System.Composition.Convention" Version="10.0.8" />
+    <PackageVersion Include="System.Composition.Hosting" Version="10.0.8" />
+    <PackageVersion Include="System.Composition.Runtime" Version="10.0.8" />
+    <PackageVersion Include="System.Composition.TypedParts" Version="10.0.8" />
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.94.0" />
     <!-- Logging -->
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <!-- Misc -->
     <PackageVersion Include="DiscordRichPresence" Version="1.6.1.70" />
-    <PackageVersion Include="Velopack" Version="0.0.1298" />
+    <PackageVersion Include="Velopack" Version="1.0.1" />
     <!-- Tests -->
-    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageVersion Include="xunit.analyzers" Version="1.27.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
 </Project>
