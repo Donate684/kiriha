@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:Kiriha.ViewModels"
         xmlns:material="using:Material.Icons.Avalonia"
+        xmlns:controls="clr-namespace:Kiriha.Views.Controls"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
         x:Class="Kiriha.Views.PlayerWindow"
         x:DataType="vm:PlayerViewModel"
@@ -18,7 +19,7 @@
         WindowDecorations="BorderOnly"
         DragDrop.AllowDrop="True">
     
-    <Grid Background="Transparent">
-        <!-- The UI has been moved to PlayerOverlayWindow.axaml to avoid Airspace issues with MPV -->
+    <Grid Background="Black">
+        <controls:MpvOpenGlVideoView x:Name="VideoHost"/>
     </Grid>
 </Window>

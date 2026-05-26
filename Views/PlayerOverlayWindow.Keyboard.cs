@@ -46,6 +46,21 @@ public partial class PlayerOverlayWindow
             return;
         }
 
+        var actualModifiers = e.KeyModifiers & (KeyModifiers.Shift | KeyModifiers.Control | KeyModifiers.Alt | KeyModifiers.Meta);
+        if (e.Key == Key.R && actualModifiers == KeyModifiers.None)
+        {
+            e.Handled = true;
+            vm.MoveSubtitleUp();
+            return;
+        }
+
+        if (e.Key == Key.R && actualModifiers == KeyModifiers.Shift)
+        {
+            e.Handled = true;
+            vm.MoveSubtitleDown();
+            return;
+        }
+
         if (MatchesHotkey(e, vm.VolumeUpHotkey))
         {
             e.Handled = true;

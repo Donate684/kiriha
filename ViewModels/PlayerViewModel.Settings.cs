@@ -44,6 +44,7 @@ public partial class PlayerViewModel
             ShowTimeDisplay = settings.ShowTimeDisplay;
             ShowSpeedButton = settings.ShowSpeedButton;
             ShowSubtitleButton = settings.ShowSubtitleButton;
+            ShowSubtitlePositionButton = settings.ShowSubtitlePositionButton;
             ShowAudioButton = settings.ShowAudioButton;
             ShowScreenshotButton = settings.ShowScreenshotButton;
             ShowSubtitleStyleButton = settings.ShowSubtitleStyleButton;

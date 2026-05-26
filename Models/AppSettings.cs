@@ -105,6 +105,7 @@ public class AppSettings
         public bool ShowTimeDisplay { get; set; } = true;
         public bool ShowSpeedButton { get; set; } = true;
         public bool ShowSubtitleButton { get; set; } = true;
+        public bool ShowSubtitlePositionButton { get; set; } = true;
         public bool ShowAudioButton { get; set; } = true;
         public bool ShowScreenshotButton { get; set; } = true;
         public bool ShowSubtitleStyleButton { get; set; } = true;

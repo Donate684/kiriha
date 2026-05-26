@@ -94,6 +94,7 @@ public partial class PlayerViewModel
     partial void OnShowTimeDisplayChanged(bool value) => SavePlayerPanelButtons(x => x.ShowTimeDisplay = value);
     partial void OnShowSpeedButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowSpeedButton = value);
     partial void OnShowSubtitleButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowSubtitleButton = value);
+    partial void OnShowSubtitlePositionButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowSubtitlePositionButton = value);
     partial void OnShowAudioButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowAudioButton = value);
     partial void OnShowScreenshotButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowScreenshotButton = value);
     partial void OnShowSubtitleStyleButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowSubtitleStyleButton = value);

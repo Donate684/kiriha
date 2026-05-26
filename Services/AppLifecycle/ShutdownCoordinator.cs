@@ -130,6 +130,15 @@ public sealed class ShutdownCoordinator
 
         try
         {
+            _serviceProvider.GetRequiredService<SettingsService>().SaveImmediate();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Shutdown flush: SettingsService.SaveImmediate failed");
+        }
+
+        try
+        {
             var historyDone = await WaitForAsync(
                 _serviceProvider.GetRequiredService<HistoryService>().FlushAsync(TimeSpan.FromSeconds(2)),
                 historyTimeoutMs);

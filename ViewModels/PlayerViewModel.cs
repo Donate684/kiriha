@@ -104,6 +104,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _showTimeDisplay = true;
     [ObservableProperty] private bool _showSpeedButton = true;
     [ObservableProperty] private bool _showSubtitleButton = true;
+    [ObservableProperty] private bool _showSubtitlePositionButton = true;
     [ObservableProperty] private bool _showAudioButton = true;
     [ObservableProperty] private bool _showScreenshotButton = true;
     [ObservableProperty] private bool _showSubtitleStyleButton = true;

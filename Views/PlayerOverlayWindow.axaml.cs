@@ -91,12 +91,6 @@ public partial class PlayerOverlayWindow : Window
         _hideTimer.Start();
     }
 
-
-
-
-
-
-
     private void OnDrop(object? sender, DragEventArgs e)
     {
         var files     = e.DataTransfer.TryGetFiles();

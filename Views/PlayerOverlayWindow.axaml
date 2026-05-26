@@ -723,6 +723,14 @@
                             <material:MaterialIcon Kind="MusicNote" Width="21" Height="21" Foreground="White"/>
                         </Button>
 
+                        <!-- Subtitle position -->
+                        <Button Name="SubtitlePositionButton"
+                                Classes="icon-btn"
+                                ToolTip.Tip="ЛКМ: субтитры выше. ПКМ: ниже"
+                                IsVisible="{Binding ShowSubtitlePositionButton}">
+                            <material:MaterialIcon Kind="FormatLineSpacing" Width="21" Height="21" Foreground="White"/>
+                        </Button>
+
                         <!-- Subtitle style override -->
                         <Button Classes="icon-btn"
                                 ToolTip.Tip="Стиль субтитров (U)"
@@ -1393,6 +1401,7 @@
                                     <CheckBox Content="Время" IsChecked="{Binding ShowTimeDisplay}"/>
                                     <CheckBox Content="Скорость" IsChecked="{Binding ShowSpeedButton}"/>
                                     <CheckBox Content="Субтитры" IsChecked="{Binding ShowSubtitleButton}"/>
+                                    <CheckBox Content="Позиция субтитров" IsChecked="{Binding ShowSubtitlePositionButton}"/>
                                     <CheckBox Content="Аудио" IsChecked="{Binding ShowAudioButton}"/>
                                     <CheckBox Content="Стиль субтитров" IsChecked="{Binding ShowSubtitleStyleButton}"/>
                                     <CheckBox Content="Скриншот" IsChecked="{Binding ShowScreenshotButton}"/>

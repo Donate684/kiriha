@@ -196,6 +196,27 @@ public partial class PlayerOverlayWindow
         }
     }
 
+    private void OnSubtitlePositionButtonPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (DataContext is not PlayerViewModel vm)
+            return;
+
+        var properties = e.GetCurrentPoint(this).Properties;
+        switch (properties.PointerUpdateKind)
+        {
+            case PointerUpdateKind.LeftButtonReleased:
+                e.Handled = true;
+                vm.MoveSubtitleUp();
+                ShowControls();
+                break;
+            case PointerUpdateKind.RightButtonReleased:
+                e.Handled = true;
+                vm.MoveSubtitleDown();
+                ShowControls();
+                break;
+        }
+    }
+
     private void OnTrackMenuItemClick(object? sender, RoutedEventArgs e)
     {
         e.Handled = true;

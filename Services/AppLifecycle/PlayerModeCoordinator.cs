@@ -10,6 +10,7 @@ using Kiriha.Services.Data;
 using Kiriha.ViewModels;
 using Kiriha.Views;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace Kiriha.Services.AppLifecycle;
 
@@ -37,6 +38,7 @@ public sealed class PlayerModeCoordinator
 
         _trayService.DisableTrayIcons();
         desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        desktop.ShutdownRequested += OnShutdownRequested;
         StartPlayerCommandServer();
 
         if (!PlayerProcessBridge.IsResident(args))
@@ -61,6 +63,7 @@ public sealed class PlayerModeCoordinator
                 foreach (var playerWindow in desktop.Windows.OfType<PlayerWindow>().ToArray())
                     playerWindow.Close();
 
+                FlushSettings();
                 desktop.Shutdown();
             }
 
@@ -162,5 +165,22 @@ public sealed class PlayerModeCoordinator
             return args[playerArgIndex + 1];
 
         return string.Empty;
+    }
+
+    private void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
+    {
+        FlushSettings();
+    }
+
+    private void FlushSettings()
+    {
+        try
+        {
+            _serviceProvider.GetRequiredService<SettingsService>().SaveImmediate();
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Player shutdown: failed to save settings");
+        }
     }
 }

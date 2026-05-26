@@ -54,6 +54,20 @@ public partial class PlayerViewModel
     }
 
     [RelayCommand]
+    public void MoveSubtitleUp()
+    {
+        _player?.AdjustSubtitlePosition(-1);
+        ShowOsd("Субтитры", "выше");
+    }
+
+    [RelayCommand]
+    public void MoveSubtitleDown()
+    {
+        _player?.AdjustSubtitlePosition(1);
+        ShowOsd("Субтитры", "ниже");
+    }
+
+    [RelayCommand]
     private void TakeScreenshot()
     {
         TakeScreenshot(includeSubtitles: false);

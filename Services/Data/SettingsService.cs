@@ -21,6 +21,12 @@ public class SettingsService : IDisposable
     private readonly Debouncer _debouncer;
     private readonly SemaphoreSlim _saveLock = new(1, 1);
     private readonly object _stateLock = new();
+    private long _uiVersion;
+    private long _systemVersion;
+    private long _playerVersion;
+    private long _torrentsVersion;
+    private long _apiVersion;
+    private long _customLinksVersion;
 
     public AppSettings Current { get; private set; } = new();
 
@@ -73,7 +79,9 @@ public class SettingsService : IDisposable
 
         lock (_stateLock)
         {
+            var before = CaptureSectionSnapshots(Current);
             update(Current);
+            MarkChangedSections(before, CaptureSectionSnapshots(Current));
         }
 
         if (save) Save();
@@ -118,16 +126,20 @@ public class SettingsService : IDisposable
     private void InternalSaveSync()
     {
         EnsureDirectory();
-        var json = PrepareJsonForSave();
+        var save = PrepareJsonForSave();
+        var json = EncryptForSave(save.Settings);
         AtomicWrite(_settingsPath, json);
+        MarkVersionsSaved(save.Versions);
         Log.Information("Settings saved to {Path}", _settingsPath);
     }
 
     private async Task InternalSaveAsync()
     {
         EnsureDirectory();
-        var json = PrepareJsonForSave();
+        var save = PrepareJsonForSave();
+        var json = EncryptForSave(save.Settings);
         await AtomicWriteAsync(_settingsPath, json);
+        MarkVersionsSaved(save.Versions);
         Log.Debug("Settings saved (async) to {Path}", _settingsPath);
     }
 
@@ -153,21 +165,124 @@ public class SettingsService : IDisposable
         else File.Move(tmp, path);
     }
 
-    private string PrepareJsonForSave()
+    private PendingSettingsSave PrepareJsonForSave()
     {
-        string json;
+        AppSettings snapshot;
+        SettingsVersions versions;
         lock (_stateLock)
         {
-            json = JsonSerializer.Serialize(Current);
+            snapshot = CloneSettings(Current);
+            versions = GetVersions();
         }
 
-        var clone = JsonSerializer.Deserialize<AppSettings>(json)!;
+        var merged = TryLoadSettingsFromDisk() ?? snapshot;
 
+        if (versions.Ui != 0) merged.UI = snapshot.UI;
+        if (versions.System != 0) merged.System = snapshot.System;
+        if (versions.Player != 0) merged.Player = snapshot.Player;
+        if (versions.Torrents != 0) merged.Torrents = snapshot.Torrents;
+        if (versions.Api != 0) merged.Api = snapshot.Api;
+        if (versions.CustomLinks != 0) merged.CustomLinks = snapshot.CustomLinks;
+
+        return new PendingSettingsSave(merged, versions);
+    }
+
+    private string EncryptForSave(AppSettings settings)
+    {
+        var clone = CloneSettings(settings);
         EncryptTokens(clone.Api.Mal);
         EncryptTokens(clone.Api.Shiki);
-
         return JsonSerializer.Serialize(clone, JsonOptions);
     }
+
+    private AppSettings? TryLoadSettingsFromDisk()
+    {
+        try
+        {
+            if (!File.Exists(_settingsPath))
+                return null;
+
+            var json = File.ReadAllText(_settingsPath);
+            var loaded = JsonSerializer.Deserialize<AppSettings>(json);
+            if (loaded == null)
+                return null;
+
+            DecryptTokens(loaded.Api.Mal, loaded.Api);
+            DecryptTokens(loaded.Api.Shiki, loaded.Api);
+            return loaded;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Settings merge: failed to read current settings from disk");
+            return null;
+        }
+    }
+
+    private static AppSettings CloneSettings(AppSettings settings)
+    {
+        var json = JsonSerializer.Serialize(settings);
+        return JsonSerializer.Deserialize<AppSettings>(json)!;
+    }
+
+    private SettingsVersions GetVersions() => new(
+        _uiVersion,
+        _systemVersion,
+        _playerVersion,
+        _torrentsVersion,
+        _apiVersion,
+        _customLinksVersion);
+
+    private void MarkVersionsSaved(SettingsVersions versions)
+    {
+        lock (_stateLock)
+        {
+            if (_uiVersion == versions.Ui) _uiVersion = 0;
+            if (_systemVersion == versions.System) _systemVersion = 0;
+            if (_playerVersion == versions.Player) _playerVersion = 0;
+            if (_torrentsVersion == versions.Torrents) _torrentsVersion = 0;
+            if (_apiVersion == versions.Api) _apiVersion = 0;
+            if (_customLinksVersion == versions.CustomLinks) _customLinksVersion = 0;
+        }
+    }
+
+    private static SettingsSectionSnapshots CaptureSectionSnapshots(AppSettings settings) => new(
+        SerializeSection(settings.UI),
+        SerializeSection(settings.System),
+        SerializeSection(settings.Player),
+        SerializeSection(settings.Torrents),
+        SerializeSection(settings.Api),
+        SerializeSection(settings.CustomLinks));
+
+    private void MarkChangedSections(SettingsSectionSnapshots before, SettingsSectionSnapshots after)
+    {
+        if (!string.Equals(before.Ui, after.Ui, StringComparison.Ordinal)) _uiVersion++;
+        if (!string.Equals(before.System, after.System, StringComparison.Ordinal)) _systemVersion++;
+        if (!string.Equals(before.Player, after.Player, StringComparison.Ordinal)) _playerVersion++;
+        if (!string.Equals(before.Torrents, after.Torrents, StringComparison.Ordinal)) _torrentsVersion++;
+        if (!string.Equals(before.Api, after.Api, StringComparison.Ordinal)) _apiVersion++;
+        if (!string.Equals(before.CustomLinks, after.CustomLinks, StringComparison.Ordinal)) _customLinksVersion++;
+    }
+
+    private static string SerializeSection<T>(T value) =>
+        JsonSerializer.Serialize(value);
+
+    private readonly record struct PendingSettingsSave(AppSettings Settings, SettingsVersions Versions);
+
+    private readonly record struct SettingsVersions(
+        long Ui,
+        long System,
+        long Player,
+        long Torrents,
+        long Api,
+        long CustomLinks);
+
+    private readonly record struct SettingsSectionSnapshots(
+        string Ui,
+        string System,
+        string Player,
+        string Torrents,
+        string Api,
+        string CustomLinks);
 
     private void EncryptTokens(object? tokens)
     {
@@ -273,6 +388,15 @@ public class SettingsService : IDisposable
 
     public void Dispose()
     {
+        try
+        {
+            SaveImmediate();
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "SettingsService: final save failed during dispose");
+        }
+
         _debouncer.Dispose();
         _saveLock.Dispose();
     }

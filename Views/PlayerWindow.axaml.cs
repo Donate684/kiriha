@@ -12,6 +12,7 @@ public partial class PlayerWindow : Window
 {
     private MpvPlayer? _player;
     private PlayerOverlayWindow? _overlay;
+    private bool _initialVideoLoaded;
 
     public MpvPlayer? Player => _player;
     
@@ -24,49 +25,65 @@ public partial class PlayerWindow : Window
     {
         base.OnOpened(e);
 
-        if (this.TryGetPlatformHandle() is { } handle)
+        try
         {
-            try
-            {
-                Log.Information("Initializing MPV player with HWND: {Handle}", handle.Handle);
-                var playerSettings = App.Services.GetRequiredService<SettingsService>().Current.Player;
-                var mpvOptions = new MpvOptions(
-                    playerSettings.MpvHwdec,
-                    playerSettings.MpvVideoOutput,
-                    playerSettings.MpvGpuApi,
-                    playerSettings.MpvGpuContext);
-                _player = new MpvPlayer(handle.Handle, mpvOptions);
+            Log.Information("Initializing MPV player with libmpv render API");
+            var playerSettings = App.Services.GetRequiredService<SettingsService>().Current.Player;
+            var mpvOptions = new MpvOptions(
+                playerSettings.MpvHwdec,
+                playerSettings.MpvVideoOutput,
+                playerSettings.MpvGpuApi,
+                playerSettings.MpvGpuContext);
 
-                if (DataContext is PlayerViewModel vm)
-                {
-                    vm.Initialize(_player);
-                    Log.Information("Loading video: {Url}", vm.VideoUrl);
-                    vm.LoadVideo(vm.VideoUrl);
-                }
+            _player = new MpvPlayer(mpvOptions);
 
-                // Show transparent overlay for UI
-                _overlay = new PlayerOverlayWindow(this);
-                _overlay.Show(this);
-            }
-            catch (Exception ex)
+            if (DataContext is PlayerViewModel vm)
             {
-                Log.Error(ex, "Failed to initialize MPV player");
+                vm.Initialize(_player);
             }
+
+            _overlay = new PlayerOverlayWindow(this);
+            _overlay.Show(this);
+
+            VideoHost.RenderContextReady += OnVideoRenderContextReady;
+            VideoHost.Player = _player;
         }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to initialize MPV player");
+        }
+    }
+
+    private void OnVideoRenderContextReady(object? sender, EventArgs e)
+    {
+        if (_initialVideoLoaded || _player == null || DataContext is not PlayerViewModel vm)
+            return;
+
+        _initialVideoLoaded = true;
+        Log.Information("Loading video: {Url}", vm.VideoUrl);
+        vm.LoadVideo(vm.VideoUrl);
+    }
+
+    protected override void OnResized(WindowResizedEventArgs e)
+    {
+        base.OnResized(e);
+        VideoHost.RequestNextFrameRendering();
     }
 
     protected override void OnClosed(EventArgs e)
     {
+        VideoHost.RenderContextReady -= OnVideoRenderContextReady;
+
         _overlay?.Close();
         _overlay = null;
+
+        base.OnClosed(e);
 
         if (DataContext is IDisposable disposable)
             disposable.Dispose();
 
         _player?.Dispose();
         _player = null;
-
-        base.OnClosed(e);
 
         if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
         {

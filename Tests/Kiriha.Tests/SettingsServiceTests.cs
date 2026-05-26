@@ -79,6 +79,43 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
+    public void SaveImmediate_MergesSectionsChangedBySeparateServices()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            using (var initial = new SettingsService(path))
+            {
+                initial.Update(settings =>
+                {
+                    settings.UI.LanguageCode = "en";
+                    settings.Player.Volume = 100;
+                }, save: false);
+                initial.SaveImmediate();
+            }
+
+            using (var mainProcess = new SettingsService(path))
+            using (var playerProcess = new SettingsService(path))
+            {
+                playerProcess.Update(settings => settings.Player.Volume = 33, save: false);
+                playerProcess.SaveImmediate();
+
+                mainProcess.Update(settings => settings.UI.LanguageCode = "ru", save: false);
+                mainProcess.SaveImmediate();
+            }
+
+            using var reloaded = new SettingsService(path);
+
+            Assert.Equal("ru", reloaded.Current.UI.LanguageCode);
+            Assert.Equal(33, reloaded.Current.Player.Volume);
+        }
+        finally
+        {
+            DeleteQuietly(path);
+        }
+    }
+
+    [Fact]
     public void Load_CorruptedJsonFallsBackToDefaults()
     {
         var path = CreateTempSettingsPath();
