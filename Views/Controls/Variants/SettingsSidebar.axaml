@@ -279,6 +279,17 @@
                     <Border Classes="Divider"/>
                     <Grid Classes="Row" ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="Стиль карточек"/>
+                            <TextBlock Classes="Sub" Text="Внешний вид карточек аниме"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="1" VerticalAlignment="Center" SelectedIndex="{Binding SelectedCardStyle}" Width="160" CornerRadius="6">
+                            <ComboBoxItem Content="Стандартный"/>
+                            <ComboBoxItem Content="Обновлённый"/>
+                        </ComboBox>
+                    </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                             <TextBlock Classes="Title" Text="{DynamicResource l.settings.tray.close_to_tray}"/>
                             <TextBlock Classes="Sub" Text="{DynamicResource l.settings.tray.close_to_tray_sub}"/>
                         </StackPanel>

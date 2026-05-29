@@ -28,7 +28,7 @@
                     <!-- ═══ Windows 11 Layered Surface System ═══ -->
                     <SolidColorBrush x:Key="LayerFillColorDefault" Color="#66F9F9F9"/>
                     <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#E4000000"/>
-                    <SolidColorBrush x:Key="CardBackgroundFillDefault" Color="#B3FFFFFF"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillDefault" Color="#00FFFFFF"/>
                     <SolidColorBrush x:Key="CardBackgroundFillSecondary" Color="#80F6F6F6"/>
                     <SolidColorBrush x:Key="SubtleFillColorSecondary" Color="#09000000"/>
                     <SolidColorBrush x:Key="SubtleFillColorTertiary" Color="#04000000"/>
@@ -42,6 +42,9 @@
                     <SolidColorBrush x:Key="ModalBackgroundFill" Color="#FFFFFFFF"/>
                     <SolidColorBrush x:Key="ModalSidebarFill" Color="#FFF3F3F3"/>
                     <SolidColorBrush x:Key="SystemControlBackgroundAltHighBrush" Color="Transparent"/>
+                    <!-- Luxury Overlay -->
+                    <SolidColorBrush x:Key="LuxuryFlyoutBackground" Color="#E6FFFFFF"/>
+                    <SolidColorBrush x:Key="LuxuryFlyoutBorder" Color="#22000000"/>
                     <!-- Scrollbar -->
                     <SolidColorBrush x:Key="ScrollBarTrackFill" Color="#08000000"/>
                     <SolidColorBrush x:Key="ScrollBarTrackFillHover" Color="#10000000"/>
@@ -50,6 +53,40 @@
                     <SolidColorBrush x:Key="ScrollBarThumbFillPressed" Color="#CC484848"/>
                     <!-- ═══ Leaf Logo (theme-aware) ═══ -->
                     <SolidColorBrush x:Key="LeafVeinBrush"   Color="#FFFFFF" Opacity="0.55"/>
+                    <!-- ═══ Anime Card (theme-aware) ═══ -->
+                    <x:String x:Key="CardBoxShadow">0 0 0 0 #00000000</x:String>
+                    <x:String x:Key="CardBoxShadowHover">0 0 0 0 #00000000</x:String>
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ProgressStepHoverBrush" Color="#12000000"/>
+                    <!-- Score flyout (light) -->
+                    <SolidColorBrush x:Key="ScoreFlyoutBackground" Color="#F5FFFFFF"/>
+                    <SolidColorBrush x:Key="ScoreFlyoutBorder" Color="#18000000"/>
+                    <SolidColorBrush x:Key="ScoreFlyoutItemHover" Color="#0C000000"/>
+                    <SolidColorBrush x:Key="ScoreFlyoutItemPressed" Color="#18000000"/>
+                    <SolidColorBrush x:Key="ScoreFlyoutItemForeground" Color="#E4000000"/>
+                    <!-- Card style radio (light) -->
+                    <SolidColorBrush x:Key="CardStyleRadioForeground" Color="#AA000000"/>
+                    <SolidColorBrush x:Key="CardStyleRadioBackground" Color="#09000000"/>
+                    <SolidColorBrush x:Key="CardStyleRadioBorder" Color="#0C000000"/>
+                    <SolidColorBrush x:Key="CardStyleRadioHoverBg" Color="#12000000"/>
+                    <SolidColorBrush x:Key="CardStyleRadioHoverBorder" Color="#18000000"/>
+                    <!-- Cinematic overlay (light) -->
+                    <LinearGradientBrush x:Key="CinematicBottomGradient" StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Color="#00000000" Offset="0"/>
+                        <GradientStop Color="#50000000" Offset="0.4"/>
+                        <GradientStop Color="#95000000" Offset="0.7"/>
+                        <GradientStop Color="#B5000000" Offset="1"/>
+                    </LinearGradientBrush>
+                    <LinearGradientBrush x:Key="CinematicTopGradient" StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Color="#50000000" Offset="0"/>
+                        <GradientStop Color="#00000000" Offset="1"/>
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="CinematicTitleForeground" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicSubtitleForeground" Color="#F2FFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicProgressForeground" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicProgressDimForeground" Color="#CCFFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicMinusForeground" Color="#90FFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicProgressBarBg" Color="#25FFFFFF"/>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <!-- ═══ Windows 11 Layered Surface System ═══ -->
@@ -69,6 +106,9 @@
                     <SolidColorBrush x:Key="ModalBackgroundFill" Color="#FF1F1F1F"/>
                     <SolidColorBrush x:Key="ModalSidebarFill" Color="#FF171717"/>
                     <SolidColorBrush x:Key="SystemControlBackgroundAltHighBrush" Color="Transparent"/>
+                    <!-- Luxury Overlay -->
+                    <SolidColorBrush x:Key="LuxuryFlyoutBackground" Color="#E6181818"/>
+                    <SolidColorBrush x:Key="LuxuryFlyoutBorder" Color="#22FFFFFF"/>
                     <!-- Scrollbar -->
                     <SolidColorBrush x:Key="ScrollBarTrackFill" Color="#0AFFFFFF"/>
                     <SolidColorBrush x:Key="ScrollBarTrackFillHover" Color="#14FFFFFF"/>
@@ -77,6 +117,40 @@
                     <SolidColorBrush x:Key="ScrollBarThumbFillPressed" Color="#A0C0C0C0"/>
                     <!-- ═══ Leaf Logo (theme-aware) ═══ -->
                     <SolidColorBrush x:Key="LeafVeinBrush"   Color="#FFFFFF" Opacity="0.75"/>
+                    <!-- ═══ Anime Card (theme-aware) ═══ -->
+                    <x:String x:Key="CardBoxShadow">0 2 8 0 #18000000</x:String>
+                    <x:String x:Key="CardBoxShadowHover">0 6 18 0 #2A000000</x:String>
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ProgressStepHoverBrush" Color="#15FFFFFF"/>
+                    <!-- Score flyout (dark) -->
+                    <SolidColorBrush x:Key="ScoreFlyoutBackground" Color="#F5101010"/>
+                    <SolidColorBrush x:Key="ScoreFlyoutBorder" Color="#20FFFFFF"/>
+                    <SolidColorBrush x:Key="ScoreFlyoutItemHover" Color="#15FFFFFF"/>
+                    <SolidColorBrush x:Key="ScoreFlyoutItemPressed" Color="#30FFFFFF"/>
+                    <SolidColorBrush x:Key="ScoreFlyoutItemForeground" Color="#FFFFFFFF"/>
+                    <!-- Card style radio (dark) -->
+                    <SolidColorBrush x:Key="CardStyleRadioForeground" Color="#CCFFFFFF"/>
+                    <SolidColorBrush x:Key="CardStyleRadioBackground" Color="#10FFFFFF"/>
+                    <SolidColorBrush x:Key="CardStyleRadioBorder" Color="#10FFFFFF"/>
+                    <SolidColorBrush x:Key="CardStyleRadioHoverBg" Color="#1AFFFFFF"/>
+                    <SolidColorBrush x:Key="CardStyleRadioHoverBorder" Color="#20FFFFFF"/>
+                    <!-- Cinematic overlay (dark) -->
+                    <LinearGradientBrush x:Key="CinematicBottomGradient" StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Color="#00000000" Offset="0"/>
+                        <GradientStop Color="#90000000" Offset="0.35"/>
+                        <GradientStop Color="#E8000000" Offset="0.7"/>
+                        <GradientStop Color="#F5000000" Offset="1"/>
+                    </LinearGradientBrush>
+                    <LinearGradientBrush x:Key="CinematicTopGradient" StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Color="#70000000" Offset="0"/>
+                        <GradientStop Color="#00000000" Offset="1"/>
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="CinematicTitleForeground" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicSubtitleForeground" Color="#B8FFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicProgressForeground" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicProgressDimForeground" Color="#70FFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicMinusForeground" Color="#90FFFFFF"/>
+                    <SolidColorBrush x:Key="CinematicProgressBarBg" Color="#25FFFFFF"/>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

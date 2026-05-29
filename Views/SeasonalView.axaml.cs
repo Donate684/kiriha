@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -6,6 +6,7 @@ using Kiriha.Core;
 using Kiriha.Models;
 using Kiriha.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace Kiriha.Views;
 
@@ -25,6 +26,17 @@ public partial class SeasonalView : UserControl
     // Reveal duration: about 12 cards * 45 ms plus the 450 ms transition.
     private static readonly TimeSpan InitialRevealWindow = TimeSpan.FromMilliseconds(1100);
 
+    // ═══ Card style switching ═══
+    private int _currentCardStyle = 1; // 0=Classic, 1=Cinematic
+    private static readonly string[] CardTemplateKeys =
+        { "CardTemplateClassic", "CardTemplateCinematic" };
+
+    private static readonly (double w, double h)[] LayoutParams =
+    {
+        (163, 310),  // Classic
+        (163, 275),  // Cinematic
+    };
+
     public SeasonalView()
     {
         InitializeComponent();
@@ -35,14 +47,47 @@ public partial class SeasonalView : UserControl
             _gridRepeater.ElementClearing += OnGridElementClearing;
         }
         DataContextChanged += OnDataContextChanged;
+
+        CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Register<CardStyleChangedMessage>(this, (r, m) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyCardStyle(m.Style));
+        });
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
+
+        var settings = App.Services.GetRequiredService<Kiriha.Services.Data.SettingsService>();
+        _currentCardStyle = settings.Current.UI.CardStyle;
+        ApplyCardStyle(_currentCardStyle);
+
         BeginInitialRevealWindow();
         // Initial viewport kickstart
         Avalonia.Threading.Dispatcher.UIThread.Post(QueueVisibleItems, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void ApplyCardStyle(int style)
+    {
+        if (style < 0 || style >= CardTemplateKeys.Length) return;
+        _currentCardStyle = style;
+
+        var key = CardTemplateKeys[style];
+        if (this.TryFindResource(key, this.ActualThemeVariant, out var resource) && resource is Avalonia.Controls.Templates.IDataTemplate dt)
+        {
+            if (_gridRepeater != null)
+                _gridRepeater.ItemTemplate = dt;
+        }
+
+        // Adjust layout dimensions for the selected style
+        if (_gridRepeater?.Layout is Avalonia.Layout.UniformGridLayout layout)
+        {
+            var (w, h) = LayoutParams[style];
+            layout.MinItemWidth = w;
+            layout.MinItemHeight = h;
+        }
+
+        BeginInitialRevealWindow();
     }
 
     /// <summary>

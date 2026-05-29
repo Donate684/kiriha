@@ -136,14 +136,15 @@
             <Setter Property="FontSize" Value="12"/>
         </Style>
 
-        <!-- ═══ Filter flyout presenter ═══ -->
+        <!-- ═══ Filter flyout presenter (Luxury/Glass style) ═══ -->
         <Style Selector="FlyoutPresenter.FilterFlyout">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="MinWidth" Value="320"/>
             <Setter Property="MaxWidth" Value="360"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Background" Value="{DynamicResource FlyoutPresenterBackground}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefault}"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <!-- Semi-transparent background + shadow for depth -->
+            <Setter Property="Background" Value="{DynamicResource LuxuryFlyoutBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LuxuryFlyoutBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
 

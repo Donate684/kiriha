@@ -26,7 +26,7 @@
         </ControlTemplate>
 
         <!-- ═══ Card Template ═══ -->
-        <DataTemplate x:Key="AnimeGridItemTemplate" x:DataType="models:AnimeItem">
+        <DataTemplate x:Key="CardTemplateClassic" x:DataType="models:AnimeItem">
             <Border Classes="AnimeCard revealItem" Margin="4" Width="155" ClipToBounds="True">
                 <Grid RowDefinitions="210, *">
                     <Panel Grid.Row="0" Background="Transparent" DoubleTapped="Poster_DoubleTapped">
@@ -138,6 +138,122 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
+        <!-- ═══════════ VARIANT B: Cinematic Overlay ═══════════ -->
+        <DataTemplate x:Key="CardTemplateCinematic" x:DataType="models:AnimeItem">
+            <Border Classes="AnimeCard revealItem" Margin="4" Width="155" Height="265" ClipToBounds="True">
+                <Panel Background="Transparent" DoubleTapped="Poster_DoubleTapped">
+                    <!-- Loading Placeholder -->
+                    <TemplatedControl Template="{DynamicResource PosterLoadingTemplate}"/>
+
+                    <!-- Actual Image -->
+                    <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill" />
+
+                    <!-- Top gradient for badge readability (soft) -->
+                    <Border VerticalAlignment="Top" Height="56" IsHitTestVisible="False"
+                            Background="{DynamicResource CinematicTopGradient}"/>
+
+                    <!-- Bottom cinematic gradient -->
+                    <Border VerticalAlignment="Bottom" Height="160" IsHitTestVisible="False"
+                            Background="{DynamicResource CinematicBottomGradient}"/>
+
+                    <!-- Status badge (Left) -->
+                    <Border Classes="Badge" VerticalAlignment="Top" HorizontalAlignment="Left"
+                            Margin="8"
+                            IsVisible="{Binding Status, Converter={StaticResource StatusNotNoneConverter}}"
+                            Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}">
+                        <TextBlock Text="{Binding Status, Converter={StaticResource LocConverter}}"
+                                 FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                    </Border>
+
+                    <!-- Popularity badge (Right) -->
+                    <Border Classes="Badge" VerticalAlignment="Top" HorizontalAlignment="Right"
+                            Margin="8" Background="#CC000000">
+                        <TextBlock Text="{Binding Popularity, StringFormat='#{0}'}"
+                                 FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                    </Border>
+
+                    <!-- Hide / Un-hide (client-only "not interested") -->
+                    <Border Classes="HideBtn" Classes.confirming="{Binding IsHideConfirming}"
+                            VerticalAlignment="Top" HorizontalAlignment="Left"
+                            Margin="6,26,6,6" Tapped="HideBtn_Tapped"
+                            ToolTip.Tip="{DynamicResource l.filters.options.hide_tooltip}">
+                        <Border.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                <Binding Path="Status" Converter="{StaticResource StatusNoneConverter}"/>
+                                <Binding Path="IsHiddenInSeasons"/>
+                            </MultiBinding>
+                        </Border.IsVisible>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <material:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" Foreground="White"
+                                                   IsVisible="{Binding !IsHiddenInSeasons}"/>
+                            <material:MaterialIcon Kind="EyeOutline" Width="14" Height="14" Foreground="White"
+                                                   IsVisible="{Binding IsHiddenInSeasons}"/>
+                            <TextBlock IsVisible="{Binding IsHideConfirming}"
+                                       FontSize="10" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{x:Static conv:HideConfirmTextConverter.Instance}">
+                                        <Binding Path="IsHiddenInSeasons"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Bottom overlay info -->
+                    <StackPanel VerticalAlignment="Bottom" Margin="10,0,10,8" Spacing="2">
+                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold"
+                                   MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                   LineHeight="15" Foreground="{DynamicResource CinematicTitleForeground}">
+                            <TextBlock.Effect>
+                                <DropShadowEffect BlurRadius="4" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
+                        <TextBlock Text="{Binding RussianTitle}" FontSize="10"
+                                   MaxLines="1" TextTrimming="CharacterEllipsis"
+                                   LineHeight="13" Foreground="{DynamicResource CinematicSubtitleForeground}"
+                                   IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock.Effect>
+                                <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
+
+                        <Grid ColumnDefinitions="*, Auto" Margin="0,4,0,0" VerticalAlignment="Center">
+                            <TextBlock Grid.Column="0" Text="{Binding Type, Converter={StaticResource LocConverter}}"
+                                       FontSize="10" VerticalAlignment="Center" Foreground="{DynamicResource CinematicSubtitleForeground}">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                                <!-- 5 Stars -->
+                                <StackPanel Orientation="Horizontal" Spacing="1"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding $parent[UserControl].DataContext.UseFiveStarRating}">
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=1:Seasons}"/>
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=2:Seasons}"/>
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=3:Seasons}"/>
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=4:Seasons}"/>
+                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=5:Seasons}"/>
+                                </StackPanel>
+                                <!-- 10-point -->
+                                <StackPanel Orientation="Horizontal" Spacing="3"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding !$parent[UserControl].DataContext.UseFiveStarRating}">
+                                    <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource CinematicTitleForeground}" VerticalAlignment="Center">
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
+                                        </TextBlock.Effect>
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Panel>
+            </Border>
+        </DataTemplate>
     </UserControl.Resources>
 
     <UserControl.Styles>
@@ -146,15 +262,6 @@
             <Setter Property="Background" Value="{DynamicResource CardBackgroundFillDefault}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="BoxShadow" Value="0 2 8 0 #18000000"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.18"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.AnimeCard:pointerover">
-            <Setter Property="BoxShadow" Value="0 6 18 0 #2A000000"/>
         </Style>
 
         <!-- ═══ Reveal-on-scroll ═══ -->
@@ -244,14 +351,15 @@
             <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
         </Style>
 
-        <!-- ═══ Filter flyout presenter ═══ -->
+        <!-- ═══ Filter flyout presenter (Luxury/Glass style) ═══ -->
         <Style Selector="FlyoutPresenter.FilterFlyout">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="MinWidth" Value="240"/>
             <Setter Property="MaxWidth" Value="280"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Background" Value="{DynamicResource FlyoutPresenterBackground}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefault}"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <!-- Semi-transparent background + shadow for depth -->
+            <Setter Property="Background" Value="{DynamicResource LuxuryFlyoutBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LuxuryFlyoutBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
 

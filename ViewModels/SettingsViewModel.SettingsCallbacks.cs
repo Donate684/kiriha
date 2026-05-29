@@ -11,6 +11,7 @@ using Avalonia;
 using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
 using Kiriha.Models;
 using Kiriha.Services.Data;
@@ -31,6 +32,12 @@ public partial class SettingsViewModel
             ThemeType.Dark => ThemeVariant.Dark,
             _ => ThemeVariant.Default
         };
+    }
+
+    partial void OnSelectedCardStyleChanged(int value)
+    {
+        _settingsService.Update(settings => settings.UI.CardStyle = value);
+        CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new CardStyleChangedMessage(value));
     }
 
     partial void OnUseFiveStarRatingChanged(bool value)

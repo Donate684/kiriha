@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
 using Kiriha.Models;
 using Kiriha.ViewModels;
@@ -31,6 +33,18 @@ public partial class AnimeListView : UserControl
     private const int RevealStaggerIdleResetMs = 140;
     private static readonly TimeSpan InitialRevealWindow = TimeSpan.FromMilliseconds(1100);
 
+    // ═══ Card style switching ═══
+    private int _currentCardStyle = 1; // 0=Classic, 1=Cinematic
+    private static readonly string[] CardTemplateKeys =
+        { "CardTemplateClassic", "CardTemplateCinematic" };
+
+    // Layout params per style: (MinItemWidth, MinItemHeight)
+    private static readonly (double w, double h)[] LayoutParams =
+    {
+        (163, 335),  // Classic
+        (163, 275),  // Cinematic
+    };
+
     public AnimeListView()
     {
         InitializeComponent();
@@ -43,20 +57,32 @@ public partial class AnimeListView : UserControl
             _gridRepeater.ElementPrepared += OnGridElementPrepared;
             _gridRepeater.ElementClearing += OnGridElementClearing;
         }
+
+        CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Register<CardStyleChangedMessage>(this, (r, m) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyCardStyle(m.Style));
+        });
     }
 
     private void OnViewKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key != Key.F12)
+        if (e.Key == Key.F12)
+        {
+            ToggleReleaseMap();
+            e.Handled = true;
             return;
+        }
 
-        ToggleReleaseMap();
-        e.Handled = true;
+
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
+
+        var settings = App.Services.GetRequiredService<Kiriha.Services.Data.SettingsService>();
+        _currentCardStyle = settings.Current.UI.CardStyle;
+        ApplyCardStyle(_currentCardStyle);
 
         BeginInitialRevealWindow();
         // Initial viewport kickstart
@@ -186,4 +212,31 @@ public partial class AnimeListView : UserControl
         }
     }
 
+
+
+
+
+    private void ApplyCardStyle(int style)
+    {
+        if (style < 0 || style >= CardTemplateKeys.Length) return;
+        _currentCardStyle = style;
+
+        var key = CardTemplateKeys[style];
+        if (this.TryFindResource(key, this.ActualThemeVariant, out var resource) && resource is IDataTemplate dt)
+        {
+            if (_gridRepeater != null)
+                _gridRepeater.ItemTemplate = dt;
+        }
+
+        // Adjust layout dimensions for the selected style
+        if (_gridRepeater?.Layout is Avalonia.Layout.UniformGridLayout layout)
+        {
+            var (w, h) = LayoutParams[style];
+            layout.MinItemWidth = w;
+            layout.MinItemHeight = h;
+        }
+
+        // Restart reveal cascade for the newly templated cards
+        BeginInitialRevealWindow();
+    }
 }
