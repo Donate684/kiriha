@@ -88,7 +88,7 @@ public class SyncManager : IHostedService
         if (_loopTask != null) return Task.CompletedTask;
         // Detached from the caller's context - IHostedService.StartAsync is meant to
         // return quickly. ProcessQueueAsync handles its own cancellation via _cts.
-        _loopTask = _backgroundTasks.Run("SyncManager.QueueLoop", _ => InitializeAndProcessQueueAsync());
+        _loopTask = _backgroundTasks.Run("SyncManager.QueueLoop", InitializeAndProcessQueueAsync, _cts.Token);
         return Task.CompletedTask;
     }
 
@@ -112,11 +112,13 @@ public class SyncManager : IHostedService
         _cts.Dispose();
     }
 
-    private async Task InitializeAndProcessQueueAsync()
+    private async Task InitializeAndProcessQueueAsync(CancellationToken ct)
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             await _dbInit.InitializationTask;
+            ct.ThrowIfCancellationRequested();
             var pendingTasks = await _syncTaskRepo.GetPendingAsync();
             
             // Deduplicate: only take the LATEST task of each type per AnimeId to avoid redundant work
@@ -168,16 +170,24 @@ public class SyncManager : IHostedService
             
             // Remove the tasks we skipped via deduplication
             var skippedIds = pendingTasks.Select(x => x.Id).Except(deduplicated.Select(x => x.Id)).ToList();
-            foreach (var id in skippedIds) await _syncTaskRepo.RemoveAsync(id);
+            foreach (var id in skippedIds)
+            {
+                ct.ThrowIfCancellationRequested();
+                await _syncTaskRepo.RemoveAsync(id);
+            }
 
             if (restoredCount > 0) Log.Information("Restored {Count} pending sync tasks from database.", restoredCount);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to load pending sync tasks from database");
         }
 
-        await ProcessQueueAsync();
+        await ProcessQueueAsync(ct);
     }
 
     private SyncTaskEntity MapToEntity(SyncTask task)
@@ -260,17 +270,17 @@ public class SyncManager : IHostedService
         Log.Information("SyncManager: Cancelled all pending tasks for Anime {AnimeId}", animeId);
     }
 
-    private async Task ProcessQueueAsync()
+    private async Task ProcessQueueAsync(CancellationToken ct)
     {
         try
         {
-            while (await _queue.Reader.WaitToReadAsync(_cts.Token))
+            while (await _queue.Reader.WaitToReadAsync(ct))
             {
                 while (_queue.Reader.TryRead(out var task))
                 {
                     try
                     {
-                        bool success = await ExecuteTaskAsync(task);
+                        bool success = await ExecuteTaskAsync(task, ct);
                         if (success)
                         {
                             await _syncTaskRepo.RemoveAsync(task.Id);
@@ -306,7 +316,7 @@ public class SyncManager : IHostedService
                     {
                         Log.Error(ex, "Error processing sync task {Id}", task.Id);
                     }
-                    await Task.Delay(DelayBetweenRequestsMs, _cts.Token);
+                    await Task.Delay(DelayBetweenRequestsMs, ct);
                 }
             }
         }
@@ -314,7 +324,7 @@ public class SyncManager : IHostedService
         catch (Exception ex) { Log.Error(ex, "SyncManager error"); }
     }
 
-    private async Task<bool> ExecuteTaskAsync(SyncTask task)
+    private async Task<bool> ExecuteTaskAsync(SyncTask task, CancellationToken ct)
     {
         if (_latestTaskIds.TryGetValue(task.AnimeId, out int latestId) && latestId > task.Id)
         {
@@ -371,14 +381,14 @@ public class SyncManager : IHostedService
                             task.Score,
                             task.FullItem?.IsRewatching,
                             task.FullItem?.RewatchCount,
-                            _cts.Token);
+                            ct);
                         break;
                     case SyncTaskType.FullUpdate:
                         if (task.FullItem != null)
-                            outcome = await tracker.SaveFullListStatusAsync(task.FullItem, _cts.Token);
+                            outcome = await tracker.SaveFullListStatusAsync(task.FullItem, ct);
                         break;
                     case SyncTaskType.Remove:
-                        outcome = await tracker.RemoveAnimeAsync(task.AnimeId, _cts.Token);
+                        outcome = await tracker.RemoveAnimeAsync(task.AnimeId, ct);
                         break;
                 }
 

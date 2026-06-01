@@ -70,7 +70,7 @@ public class ShikiApiService : ITrackerService
             _settingsService.Update(settings =>
             {
                 if (settings.Api.Shiki != null) settings.Api.Shiki.UserId = userId;
-            }, save: false);
+            }, SettingsSection.Api, save: false);
             _settingsService.SaveImmediate();
         }
 
@@ -191,7 +191,7 @@ public class ShikiApiService : ITrackerService
             if (newTokens != null)
             {
                 newTokens.UserId = tokens.UserId;
-                _settingsService.Update(settings => settings.Api.Shiki = newTokens, save: false);
+                _settingsService.Update(settings => settings.Api.Shiki = newTokens, SettingsSection.Api, save: false);
                 _settingsService.SaveImmediate();
                 return newTokens.AccessToken;
             }

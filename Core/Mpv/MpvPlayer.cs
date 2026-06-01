@@ -295,7 +295,15 @@ public class MpvPlayer : IDisposable
 
     public double GetDuration()
     {
-        return _propertyCache.Duration;
+        var cached = _propertyCache.Duration;
+        if (cached > 0)
+            return cached;
+
+        var duration = ReadDoubleProperty("duration", 0);
+        if (duration > 0)
+            _propertyCache.TryUpdateDuration(duration);
+
+        return duration;
     }
 
     public bool IsPaused()
@@ -496,6 +504,15 @@ public class MpvPlayer : IDisposable
         {
             LibMpvNative.mpv_free(ptr);
         }
+    }
+
+    private double ReadDoubleProperty(string name, double defaultValue)
+    {
+        return Read(handle =>
+        {
+            var result = LibMpvNative.mpv_get_property(handle, name, LibMpvNative.MPV_FORMAT_DOUBLE, out var value);
+            return result < 0 ? defaultValue : value;
+        }, defaultValue);
     }
 
     private void InvalidateRuntimeVideoInfo()

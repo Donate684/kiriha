@@ -25,7 +25,7 @@ public partial class SettingsViewModel
         var tokens = await _authService.LoginAsync();
         if (tokens != null)
         {
-            _settingsService.Update(settings => settings.Api.Mal = tokens, save: false);
+            _settingsService.Update(settings => settings.Api.Mal = tokens, SettingsSection.Api, save: false);
             _settingsService.SaveImmediate();
             IsLoggedIn = true;
             ShikiLoginOneCommand.NotifyCanExecuteChanged();
@@ -40,7 +40,7 @@ public partial class SettingsViewModel
         {
             settings.Api.Mal = null;
             settings.Api.Shiki = null;
-        }, save: false);
+        }, SettingsSection.Api, save: false);
         _settingsService.SaveImmediate();
         IsLoggedIn = false;
         IsShikiLoggedIn = false;
@@ -70,7 +70,7 @@ public partial class SettingsViewModel
 
         // Switch the active mirror first so ShikiAuthService picks up the right
         // OAuth endpoint + client_id when we kick off the browser flow.
-        _settingsService.Update(settings => settings.Api.ShikiMirror = mirror, save: false);
+        _settingsService.Update(settings => settings.Api.ShikiMirror = mirror, SettingsSection.Api, save: false);
         _settingsService.SaveImmediate();
 
         // Drop any host pin learned for the *previous* realm. Mixing a .net/.rip
@@ -82,7 +82,7 @@ public partial class SettingsViewModel
         if (tokens != null)
         {
             tokens.Mirror = mirror;
-            _settingsService.Update(settings => settings.Api.Shiki = tokens, save: false);
+            _settingsService.Update(settings => settings.Api.Shiki = tokens, SettingsSection.Api, save: false);
             _settingsService.SaveImmediate();
             IsShikiLoggedIn = true;
         }
@@ -91,7 +91,7 @@ public partial class SettingsViewModel
     [RelayCommand]
     public void ShikiLogout()
     {
-        _settingsService.Update(settings => settings.Api.Shiki = null, save: false);
+        _settingsService.Update(settings => settings.Api.Shiki = null, SettingsSection.Api, save: false);
         _settingsService.SaveImmediate();
         IsShikiLoggedIn = false;
     }

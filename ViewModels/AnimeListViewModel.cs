@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Collections;
 using Avalonia.Threading;
@@ -55,6 +56,8 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     }
     private Utils.Debouncer? _searchDebouncer;
     private Utils.Debouncer? _collectionChangeDebouncer;
+    private Utils.Debouncer? _filterRefreshDebouncer;
+    private int _filterRefreshVersion;
 
     // Per-minute ticker that re-evaluates the airing countdown ("Hч Mм") on
     // every visible card. Without it the pill text would only refresh when
@@ -130,20 +133,27 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         _sortBy = _settingsService.Current.UI.ListSortBy;
         IsFilterActive = _filterNsfw; 
 
-        _searchDebouncer = new Utils.Debouncer(TimeSpan.FromMilliseconds(300), () => {
-             Dispatcher.UIThread.Post(async () => await ApplyCurrentFiltersAsync());
-        });
+        _filterRefreshDebouncer = new Utils.Debouncer(
+            TimeSpan.FromMilliseconds(180),
+            ApplyCurrentFiltersAsync);
+
+        _searchDebouncer = new Utils.Debouncer(
+            TimeSpan.FromMilliseconds(300),
+            _ =>
+            {
+                ScheduleFilterRefresh();
+                return Task.CompletedTask;
+            });
 
         // Debouncer for CollectionChanged: airing/seasonal sync inserts 30+ new
         // anime in a tight burst (each going through a UI-thread Add). Without
         // debouncing, OnCollectionChanged would post UpdateCounts +
         // ApplyCurrentFilters per item, scanning 2400+ entries every time.
         // 200 ms collapses a burst into a single refresh.
-        _collectionChangeDebouncer = new Utils.Debouncer(TimeSpan.FromMilliseconds(200), () => {
-            Dispatcher.UIThread.Post(async () => {
-                await UpdateCountsAsync();
-                await ApplyCurrentFiltersAsync();
-            });
+        _collectionChangeDebouncer = new Utils.Debouncer(TimeSpan.FromMilliseconds(200), async ct =>
+        {
+            await UpdateCountsAsync();
+            await ApplyCurrentFiltersAsync(ct);
         });
 
         _animeService.Collection.CollectionChanged += OnCollectionChanged;
@@ -165,15 +175,15 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
     partial void OnSortByChanged(string value)
     {
-        _settingsService.Update(settings => settings.UI.ListSortBy = value);
-        Dispatcher.UIThread.Post(async () => await ApplyCurrentFiltersAsync());
+        _settingsService.Update(settings => settings.UI.ListSortBy = value, SettingsSection.UI);
+        ScheduleFilterRefresh();
     }
 
     partial void OnFilterNsfwChanged(bool value)
     {
-        _settingsService.Update(settings => settings.UI.ListShowNsfw = value);
+        _settingsService.Update(settings => settings.UI.ListShowNsfw = value, SettingsSection.UI);
         IsFilterActive = value;
-        Dispatcher.UIThread.Post(async () => await ApplyCurrentFiltersAsync());
+        ScheduleFilterRefresh();
     }
 
     [RelayCommand]
@@ -322,10 +332,19 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         await ApplyCurrentFiltersAsync();
     }
 
-    private async Task ApplyCurrentFiltersAsync()
+    private void ScheduleFilterRefresh()
     {
+        _filterRefreshDebouncer?.Invoke();
+    }
+
+    private async Task ApplyCurrentFiltersAsync(CancellationToken cancellationToken = default)
+    {
+        var version = Interlocked.Increment(ref _filterRefreshVersion);
         var filtered = await Dispatcher.UIThread.InvokeAsync(() =>
             _listProjection.Query(SelectedStatus, SearchQuery, FilterNsfw, SortBy));
+
+        if (cancellationToken.IsCancellationRequested || version != Volatile.Read(ref _filterRefreshVersion))
+            return;
 
         // In-place update of the existing AvaloniaList instead of replacing the
         // reference. Re-assigning FilteredItems would force every binding (and
@@ -405,6 +424,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     {
         _searchDebouncer?.Dispose();
         _collectionChangeDebouncer?.Dispose();
+        _filterRefreshDebouncer?.Dispose();
         _airingTicker?.Stop();
         _airingTicker = null;
         _readinessService.StateChanged -= OnReadinessStateChanged;

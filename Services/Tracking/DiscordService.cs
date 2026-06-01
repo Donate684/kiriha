@@ -15,6 +15,7 @@ public class DiscordService : IDisposable
 {
     private DiscordRpcClient? _client;
     private readonly SettingsService _settingsService;
+    private readonly object _gate = new();
     private const string DefaultClientId = "1496599223192391941"; // User's Client ID
 
     public DiscordService(SettingsService settingsService)
@@ -26,20 +27,26 @@ public class DiscordService : IDisposable
     {
         if (!_settingsService.Current.System.EnableDiscordRPC) return;
 
-        try
+        lock (_gate)
         {
-            _client = new DiscordRpcClient(DefaultClientId);
-            _client.Logger = new ConsoleLogger { Level = DiscordRPC.Logging.LogLevel.Warning };
-            
-            _client.OnReady += (sender, e) => Log.Information("Discord RPC Ready for {Username}", e.User.Username);
-            _client.OnPresenceUpdate += (sender, e) => Log.Debug("Discord Presence Updated");
+            if (_client?.IsInitialized == true) return;
 
-            _client.Initialize();
-            Log.Information("Discord RPC Service Initialized");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to initialize Discord RPC");
+            try
+            {
+                _client?.Dispose();
+                _client = new DiscordRpcClient(DefaultClientId);
+                _client.Logger = new ConsoleLogger { Level = DiscordRPC.Logging.LogLevel.Warning };
+                
+                _client.OnReady += (sender, e) => Log.Information("Discord RPC Ready for {Username}", e.User.Username);
+                _client.OnPresenceUpdate += (sender, e) => Log.Debug("Discord Presence Updated");
+
+                _client.Initialize();
+                Log.Information("Discord RPC Service Initialized");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to initialize Discord RPC");
+            }
         }
     }
 

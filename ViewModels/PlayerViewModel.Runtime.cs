@@ -53,9 +53,9 @@ public partial class PlayerViewModel
             VideoUrl = videoUrl;
 
         CurrentTime = 0;
-        Duration = 100;
+        Duration = 0;
         CurrentTimeString = "00:00";
-        DurationString = "00:00";
+        DurationString = "--:--";
         IsPlaying = PlayerAutoPlay;
 
         if (_player == null)
@@ -77,6 +77,9 @@ public partial class PlayerViewModel
     private void OnTimerTick(object? sender, EventArgs e)
     {
         if (_player == null) return;
+
+        if (Duration <= 0)
+            RefreshDurationFromPlayer();
 
         _stateClient.Publish(CreatePlayerState());
         RefreshMpvRuntimeInfo();
@@ -104,6 +107,16 @@ public partial class PlayerViewModel
     public void UpdateTracks()
     {
         _ = UpdateTracksAsync();
+    }
+
+    private void RefreshDurationFromPlayer()
+    {
+        var duration = _player?.GetDuration() ?? 0;
+        if (duration <= 0 || Math.Abs(duration - Duration) <= 0.01)
+            return;
+
+        Duration = duration;
+        DurationString = FormatTime(duration);
     }
 
     private async Task UpdateTracksAsync()
@@ -196,7 +209,7 @@ public partial class PlayerViewModel
 
         if (!_isApplyingSettings && RememberPlayerVolume && _settingsService != null)
         {
-            _settingsService.Update(settings => settings.Player.Volume = Math.Clamp(value, 0, 100));
+            _settingsService.Update(settings => settings.Player.Volume = Math.Clamp(value, 0, 100), SettingsSection.Player);
         }
 
         if (!_isApplyingSettings)
@@ -210,7 +223,7 @@ public partial class PlayerViewModel
 
         if (!_isApplyingSettings && _settingsService != null)
         {
-            _settingsService.Update(settings => settings.Player.PlaybackSpeed = speed);
+            _settingsService.Update(settings => settings.Player.PlaybackSpeed = speed, SettingsSection.Player);
         }
 
         if (!_isApplyingSettings)
@@ -222,7 +235,7 @@ public partial class PlayerViewModel
         _player?.SetAudioNormalization(value);
 
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.NormalizeAudio = value);
+        _settingsService.Update(settings => settings.Player.NormalizeAudio = value, SettingsSection.Player);
     }
 
     partial void OnIsMutedChanged(bool value)

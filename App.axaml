@@ -28,7 +28,7 @@
                     <!-- ═══ Windows 11 Layered Surface System ═══ -->
                     <SolidColorBrush x:Key="LayerFillColorDefault" Color="#66F9F9F9"/>
                     <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#E4000000"/>
-                    <SolidColorBrush x:Key="CardBackgroundFillDefault" Color="#00FFFFFF"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillDefault" Color="#B3FFFFFF"/>
                     <SolidColorBrush x:Key="CardBackgroundFillSecondary" Color="#80F6F6F6"/>
                     <SolidColorBrush x:Key="SubtleFillColorSecondary" Color="#09000000"/>
                     <SolidColorBrush x:Key="SubtleFillColorTertiary" Color="#04000000"/>

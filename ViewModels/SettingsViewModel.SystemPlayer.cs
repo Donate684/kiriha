@@ -23,7 +23,7 @@ public partial class SettingsViewModel
 {
     partial void OnEnableMicaChanged(bool value)
     {
-        _settingsService.Update(settings => settings.UI.EnableMica = value);
+        _settingsService.Update(settings => settings.UI.EnableMica = value, SettingsSection.UI);
 
         // Apply to all open windows
         if (Application.Current is App app && app.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -89,14 +89,14 @@ public partial class SettingsViewModel
 
     partial void OnAutoLaunchChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.AutoLaunch = value);
+        _settingsService.Update(settings => settings.System.AutoLaunch = value, SettingsSection.System);
         if (value) StartupService.EnableStartup(LaunchMinimized);
         else StartupService.DisableStartup();
     }
 
     partial void OnLaunchMinimizedChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.LaunchMinimized = value);
+        _settingsService.Update(settings => settings.System.LaunchMinimized = value, SettingsSection.System);
         if (AutoLaunch) StartupService.EnableStartup(value);
     }
 

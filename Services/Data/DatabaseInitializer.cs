@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -54,18 +55,26 @@ public sealed class DatabaseInitializer
 
         try
         {
+            var total = Stopwatch.StartNew();
             await Task.Run(async () =>
             {
                 using var context = await _contextFactory.CreateDbContextAsync();
 
+                var stage = Stopwatch.StartNew();
                 await AdoptLegacyEnsureCreatedDatabaseAsync(context);
+                Log.Information("StartupTiming: database legacy adoption check elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
+
+                stage.Restart();
                 await context.Database.MigrateAsync();
+                Log.Information("StartupTiming: database migrations elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
 
                 // WAL + sane defaults in a single batch (one round-trip on cold start).
+                stage.Restart();
                 await context.Database.ExecuteSqlRawAsync(
                     "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA wal_autocheckpoint=200;");
+                Log.Information("StartupTiming: database pragmas elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
 
-                Log.Information("Database initialized");
+                Log.Information("Database initialized elapsedMs={ElapsedMs}", total.ElapsedMilliseconds);
             });
             _initTcs.TrySetResult();
         }

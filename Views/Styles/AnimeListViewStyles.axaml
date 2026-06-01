@@ -55,7 +55,7 @@
             <Setter Property="RenderTransform" Value="translate(0,0)"/>
         </Style>
 
-        <!-- â•â•â• Glass pill badges over poster â•â•â• -->
+        <!-- Glass pill badges over poster -->
         <Style Selector="Border.Badge">
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="8,3"/>
@@ -63,7 +63,7 @@
             <Setter Property="BoxShadow" Value="0 2 8 0 #66000000"/>
         </Style>
 
-        <!-- â•â•â• Progress circle buttons â•â•â• -->
+        <!-- Progress circle buttons -->
         <Style Selector="Button.ProgressStep">
             <Setter Property="Width" Value="24"/>
             <Setter Property="Height" Value="24"/>
@@ -81,7 +81,7 @@
             <Setter Property="Background" Value="{DynamicResource ProgressStepHoverBrush}"/>
         </Style>
 
-        <!-- â•â•â• Sort list inside flyout â•â•â• -->
+        <!-- Sort list inside flyout -->
         <Style Selector="ListBox.SortList">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -129,7 +129,7 @@
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
-        <!-- â•â•â• Filter toggle row (clickable card with accent switch) â•â•â• -->
+        <!-- Filter toggle row (clickable card with accent switch) -->
         <Style Selector="ToggleButton.FilterToggle">
             <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiary}"/>
             <Setter Property="BorderThickness" Value="1"/>

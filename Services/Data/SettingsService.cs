@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -12,6 +13,19 @@ using Kiriha.Utils;
 using Serilog;
 
 namespace Kiriha.Services.Data;
+
+[Flags]
+public enum SettingsSection
+{
+    None = 0,
+    UI = 1 << 0,
+    System = 1 << 1,
+    Player = 1 << 2,
+    Torrents = 1 << 3,
+    Api = 1 << 4,
+    CustomLinks = 1 << 5,
+    All = UI | System | Player | Torrents | Api | CustomLinks
+}
 
 public class SettingsService : IDisposable
 {
@@ -32,13 +46,16 @@ public class SettingsService : IDisposable
 
     public SettingsService(string? settingsPath = null)
     {
+        var sw = Stopwatch.StartNew();
         _settingsPath = settingsPath ?? Kiriha.Core.PathHelper.GetSettingsPath();
         _debouncer = new Debouncer(TimeSpan.FromMilliseconds(500), async (_) => await SaveAsync());
         Load();
+        Log.Information("StartupTiming: settings service initialized elapsedMs={ElapsedMs}", sw.ElapsedMilliseconds);
     }
 
     public void Load()
     {
+        var sw = Stopwatch.StartNew();
         try
         {
             if (!File.Exists(_settingsPath))
@@ -48,28 +65,33 @@ public class SettingsService : IDisposable
                 return;
             }
 
-            var json = File.ReadAllText(_settingsPath);
-            var loaded = JsonSerializer.Deserialize<AppSettings>(json);
-            
-            if (loaded == null)
-            {
-                SetCurrent(new AppSettings());
-                MarkAllSectionsChanged();
-            }
-            else
-            {
-                DecryptTokens(loaded.Api.Mal, loaded.Api);
-                DecryptTokens(loaded.Api.Shiki, loaded.Api);
-                SetCurrent(loaded);
-            }
+            var loaded = LoadSettingsFile(_settingsPath)
+                ?? throw new JsonException("Settings file contained null JSON");
+            SetCurrent(loaded);
 
-            Log.Information("Settings loaded from {Path}", _settingsPath);
+            Log.Information("Settings loaded from {Path} elapsedMs={ElapsedMs}", _settingsPath, sw.ElapsedMilliseconds);
+        }
+        catch (IOException ex)
+        {
+            Log.Error(ex, "Error loading settings; file is temporarily unavailable, fallback will not be saved automatically");
+            SetCurrent(new AppSettings());
+            Log.Information("Settings fallback initialized elapsedMs={ElapsedMs}", sw.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
+            var backup = TryLoadBackupSettings(ex);
+            if (backup != null)
+            {
+                SetCurrent(backup);
+                MarkAllSectionsChanged();
+                Log.Information("Settings restored from backup elapsedMs={ElapsedMs}", sw.ElapsedMilliseconds);
+                return;
+            }
+
             Log.Error(ex, "Error loading settings");
             SetCurrent(new AppSettings());
             MarkAllSectionsChanged();
+            Log.Information("Settings fallback initialized elapsedMs={ElapsedMs}", sw.ElapsedMilliseconds);
         }
     }
 
@@ -84,6 +106,19 @@ public class SettingsService : IDisposable
             var before = CaptureSectionSnapshots(Current);
             update(Current);
             MarkChangedSections(before, CaptureSectionSnapshots(Current));
+        }
+
+        if (save) Save();
+    }
+
+    public void Update(Action<AppSettings> update, SettingsSection changedSections, bool save = true)
+    {
+        if (update == null) throw new ArgumentNullException(nameof(update));
+
+        lock (_stateLock)
+        {
+            update(Current);
+            MarkChangedSections(changedSections);
         }
 
         if (save) Save();
@@ -161,7 +196,7 @@ public class SettingsService : IDisposable
         var tmp = path + ".tmp";
         File.WriteAllText(tmp, content);
         // File.Replace requires the destination to exist; fall back to Move on first save.
-        if (File.Exists(path)) File.Replace(tmp, path, null);
+        if (File.Exists(path)) File.Replace(tmp, path, CanBackupCurrentSettings(path) ? GetBackupPath(path) : null);
         else File.Move(tmp, path);
     }
 
@@ -169,7 +204,7 @@ public class SettingsService : IDisposable
     {
         var tmp = path + ".tmp";
         await File.WriteAllTextAsync(tmp, content);
-        if (File.Exists(path)) File.Replace(tmp, path, null);
+        if (File.Exists(path)) File.Replace(tmp, path, CanBackupCurrentSettings(path) ? GetBackupPath(path) : null);
         else File.Move(tmp, path);
     }
 
@@ -210,26 +245,87 @@ public class SettingsService : IDisposable
             if (!File.Exists(_settingsPath))
                 return null;
 
-            var json = File.ReadAllText(_settingsPath);
-            var loaded = JsonSerializer.Deserialize<AppSettings>(json);
-            if (loaded == null)
-                return null;
-
-            DecryptTokens(loaded.Api.Mal, loaded.Api);
-            DecryptTokens(loaded.Api.Shiki, loaded.Api);
-            return loaded;
+            return LoadSettingsFile(_settingsPath) ?? TryLoadBackupSettings();
         }
         catch (Exception ex)
         {
             Log.Warning(ex, "Settings merge: failed to read current settings from disk");
+            return TryLoadBackupSettings();
+        }
+    }
+
+    private AppSettings? TryLoadBackupSettings(Exception? primaryException = null)
+    {
+        var backupPath = GetBackupPath(_settingsPath);
+        if (!File.Exists(backupPath))
+            return null;
+
+        try
+        {
+            var backup = LoadSettingsFile(backupPath);
+            if (backup == null)
+                return null;
+
+            if (primaryException != null)
+                Log.Warning(primaryException, "Settings load failed; restored from backup {BackupPath}", backupPath);
+            else
+                Log.Warning("Settings merge: using backup settings from {BackupPath}", backupPath);
+
+            return backup;
+        }
+        catch (Exception backupException)
+        {
+            if (primaryException != null)
+                Log.Error(backupException, "Error loading settings backup after primary load failed");
+            else
+                Log.Warning(backupException, "Settings merge: failed to read backup settings");
+
             return null;
         }
+    }
+
+    private AppSettings? LoadSettingsFile(string path)
+    {
+        var json = ReadAllTextShared(path);
+        var loaded = JsonSerializer.Deserialize<AppSettings>(json);
+        if (loaded == null)
+            return null;
+
+        DecryptTokens(loaded.Api.Mal, loaded.Api);
+        DecryptTokens(loaded.Api.Shiki, loaded.Api);
+        return loaded;
     }
 
     private static AppSettings CloneSettings(AppSettings settings)
     {
         var json = JsonSerializer.Serialize(settings);
         return JsonSerializer.Deserialize<AppSettings>(json)!;
+    }
+
+    private static string ReadAllTextShared(string path)
+    {
+        using var stream = new FileStream(
+            path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd();
+    }
+
+    private static string GetBackupPath(string path) => path + ".bak";
+
+    private static bool CanBackupCurrentSettings(string path)
+    {
+        try
+        {
+            var json = ReadAllTextShared(path);
+            return JsonSerializer.Deserialize<AppSettings>(json) != null;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private SettingsVersions GetVersions() => new(
@@ -271,6 +367,16 @@ public class SettingsService : IDisposable
         if (!string.Equals(before.CustomLinks, after.CustomLinks, StringComparison.Ordinal)) _customLinksVersion++;
     }
 
+    private void MarkChangedSections(SettingsSection sections)
+    {
+        if (sections.HasFlag(SettingsSection.UI)) _uiVersion++;
+        if (sections.HasFlag(SettingsSection.System)) _systemVersion++;
+        if (sections.HasFlag(SettingsSection.Player)) _playerVersion++;
+        if (sections.HasFlag(SettingsSection.Torrents)) _torrentsVersion++;
+        if (sections.HasFlag(SettingsSection.Api)) _apiVersion++;
+        if (sections.HasFlag(SettingsSection.CustomLinks)) _customLinksVersion++;
+    }
+
     private void MarkAllSectionsChanged()
     {
         lock (_stateLock)
@@ -300,10 +406,10 @@ public class SettingsService : IDisposable
         }
     }
 
+    private readonly record struct PendingSettingsSave(AppSettings Settings, SettingsVersions Versions);
+
     private static string SerializeSection<T>(T value) =>
         JsonSerializer.Serialize(value);
-
-    private readonly record struct PendingSettingsSave(AppSettings Settings, SettingsVersions Versions);
 
     private readonly record struct SettingsVersions(
         long Ui,
@@ -455,7 +561,7 @@ public class SettingsService : IDisposable
                 settings.System.CompletedSetupSteps.Add(key);
                 changed = true;
             }
-        }, save: false);
+        }, SettingsSection.System, save: false);
 
         if (changed) Save();
     }

@@ -273,9 +273,11 @@ public partial class PlayerViewModel
     {
         Dispatcher.UIThread.Post(() =>
         {
+            RefreshDurationFromPlayer();
             UpdateTracks();
             RefreshMpvRuntimeInfo();
             WarmUpThumbnailer();
+            _stateClient.Publish(CreatePlayerState());
         });
     }
 

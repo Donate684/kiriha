@@ -19,13 +19,13 @@ public partial class PlayerViewModel
     partial void OnPlayerAutoPlayChanged(bool value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.AutoPlay = value);
+        _settingsService.Update(settings => settings.Player.AutoPlay = value, SettingsSection.Player);
     }
 
     partial void OnSinglePlayerWindowChanged(bool value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.SingleWindow = value);
+        _settingsService.Update(settings => settings.Player.SingleWindow = value, SettingsSection.Player);
     }
 
     partial void OnRememberPlayerVolumeChanged(bool value)
@@ -35,56 +35,56 @@ public partial class PlayerViewModel
         {
             settings.Player.RememberVolume = value;
             if (value) settings.Player.Volume = Math.Clamp(Volume, 0, 100);
-        });
+        }, SettingsSection.Player);
     }
 
     partial void OnAutoHideControlsChanged(bool value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.AutoHideControls = value);
+        _settingsService.Update(settings => settings.Player.AutoHideControls = value, SettingsSection.Player);
     }
 
     partial void OnShowChapterMarkersChanged(bool value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.ShowChapterMarkers = value);
+        _settingsService.Update(settings => settings.Player.ShowChapterMarkers = value, SettingsSection.Player);
     }
 
     partial void OnLeftClickActionChanged(PlayerMouseActionOption? value)
     {
         if (_isApplyingSettings || _settingsService == null || value == null) return;
-        _settingsService.Update(settings => settings.Player.LeftClickAction = value.Value);
+        _settingsService.Update(settings => settings.Player.LeftClickAction = value.Value, SettingsSection.Player);
     }
 
     partial void OnRightClickActionChanged(PlayerMouseActionOption? value)
     {
         if (_isApplyingSettings || _settingsService == null || value == null) return;
-        _settingsService.Update(settings => settings.Player.RightClickAction = value.Value);
+        _settingsService.Update(settings => settings.Player.RightClickAction = value.Value, SettingsSection.Player);
     }
 
     partial void OnMiddleClickActionChanged(PlayerMouseActionOption? value)
     {
         if (_isApplyingSettings || _settingsService == null || value == null) return;
-        _settingsService.Update(settings => settings.Player.MiddleClickAction = value.Value);
+        _settingsService.Update(settings => settings.Player.MiddleClickAction = value.Value, SettingsSection.Player);
     }
 
     partial void OnWheelUpActionChanged(PlayerWheelActionOption? value)
     {
         if (_isApplyingSettings || _settingsService == null || value == null) return;
-        _settingsService.Update(settings => settings.Player.WheelUpAction = value.Value);
+        _settingsService.Update(settings => settings.Player.WheelUpAction = value.Value, SettingsSection.Player);
     }
 
     partial void OnWheelDownActionChanged(PlayerWheelActionOption? value)
     {
         if (_isApplyingSettings || _settingsService == null || value == null) return;
-        _settingsService.Update(settings => settings.Player.WheelDownAction = value.Value);
+        _settingsService.Update(settings => settings.Player.WheelDownAction = value.Value, SettingsSection.Player);
     }
 
     partial void OnWheelVolumeStepChanged(int value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
         WheelVolumeStep = FindWheelStep(value);
-        _settingsService.Update(settings => settings.Player.WheelVolumeStep = WheelVolumeStep);
+        _settingsService.Update(settings => settings.Player.WheelVolumeStep = WheelVolumeStep, SettingsSection.Player);
     }
 
     partial void OnShowPlayPauseButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowPlayPauseButton = value);
@@ -102,14 +102,14 @@ public partial class PlayerViewModel
     {
         if (_isApplyingSettings || _settingsService == null) return;
         PreferredAudioLanguages = NormalizeLanguageList(value, "Japanese,jpn,ja");
-        _settingsService.Update(settings => settings.Player.PreferredAudioLanguages = PreferredAudioLanguages);
+        _settingsService.Update(settings => settings.Player.PreferredAudioLanguages = PreferredAudioLanguages, SettingsSection.Player);
         ApplyTrackLanguagePreferences();
     }
     partial void OnPreferredSubtitleLanguagesChanged(string value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
         PreferredSubtitleLanguages = NormalizeLanguageList(value, "Russian,rus,ru");
-        _settingsService.Update(settings => settings.Player.PreferredSubtitleLanguages = PreferredSubtitleLanguages);
+        _settingsService.Update(settings => settings.Player.PreferredSubtitleLanguages = PreferredSubtitleLanguages, SettingsSection.Player);
         ApplyTrackLanguagePreferences();
     }
     partial void OnSubtitleStyleOverrideEnabledChanged(bool value)
@@ -120,12 +120,12 @@ public partial class PlayerViewModel
         if (_isApplyingSettings) return;
         ApplySubtitleStyleOverride();
         if (_settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.SubtitleStyleOverrideEnabled = value);
+        _settingsService.Update(settings => settings.Player.SubtitleStyleOverrideEnabled = value, SettingsSection.Player);
     }
     partial void OnSubtitleStyleHotkeyChanged(string value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.SubtitleStyleHotkey = NormalizeHotkey(value, "U"));
+        _settingsService.Update(settings => settings.Player.SubtitleStyleHotkey = NormalizeHotkey(value, "U"), SettingsSection.Player);
     }
     partial void OnSubtitleFontChanged(string value) => SaveSubtitleStyle(x => x.SubtitleFont = NormalizeMpvOption(value, "Candara Bold"));
     partial void OnSubtitleFontSizeChanged(double value) => SaveSubtitleStyle(x => x.SubtitleFontSize = Math.Clamp(value, 1, 300));
@@ -142,7 +142,7 @@ public partial class PlayerViewModel
     {
         if (_isApplyingSettings || _settingsService == null) return;
         var normalized = NormalizeScreenshotDirectory(value);
-        _settingsService.Update(settings => settings.Player.ScreenshotDirectory = normalized);
+        _settingsService.Update(settings => settings.Player.ScreenshotDirectory = normalized, SettingsSection.Player);
         ApplyScreenshotOptions();
     }
     partial void OnScreenshotFormatChanged(string value)
@@ -152,13 +152,13 @@ public partial class PlayerViewModel
             ScreenshotFormat = normalized;
 
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.ScreenshotFormat = normalized);
+        _settingsService.Update(settings => settings.Player.ScreenshotFormat = normalized, SettingsSection.Player);
         ApplyScreenshotOptions();
     }
     partial void OnScreenshotResolutionChanged(ScreenshotResolutionOption? value)
     {
         if (_isApplyingSettings || _settingsService == null || value == null) return;
-        _settingsService.Update(settings => settings.Player.ScreenshotResolutionMode = value.Value);
+        _settingsService.Update(settings => settings.Player.ScreenshotResolutionMode = value.Value, SettingsSection.Player);
     }
     partial void OnScreenshotPngCompressionChanged(int value)
     {
@@ -170,7 +170,7 @@ public partial class PlayerViewModel
         }
 
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.ScreenshotPngCompression = normalized);
+        _settingsService.Update(settings => settings.Player.ScreenshotPngCompression = normalized, SettingsSection.Player);
         ApplyScreenshotOptions();
     }
     partial void OnScreenshotQualityChanged(int value)
@@ -183,44 +183,44 @@ public partial class PlayerViewModel
         }
 
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.ScreenshotQuality = normalized);
+        _settingsService.Update(settings => settings.Player.ScreenshotQuality = normalized, SettingsSection.Player);
         ApplyScreenshotOptions();
     }
     partial void OnScreenshotHighBitDepthChanged(bool value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.ScreenshotHighBitDepth = value);
+        _settingsService.Update(settings => settings.Player.ScreenshotHighBitDepth = value, SettingsSection.Player);
         ApplyScreenshotOptions();
     }
     partial void OnScreenshotWithSubtitlesHotkeyChanged(string value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.ScreenshotWithSubtitlesHotkey = NormalizeHotkey(value, "S"));
+        _settingsService.Update(settings => settings.Player.ScreenshotWithSubtitlesHotkey = NormalizeHotkey(value, "S"), SettingsSection.Player);
     }
     partial void OnScreenshotWithoutSubtitlesHotkeyChanged(string value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.ScreenshotWithoutSubtitlesHotkey = NormalizeHotkey(value, "Shift+S"));
+        _settingsService.Update(settings => settings.Player.ScreenshotWithoutSubtitlesHotkey = NormalizeHotkey(value, "Shift+S"), SettingsSection.Player);
     }
     partial void OnVolumeUpHotkeyChanged(string value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.VolumeUpHotkey = NormalizeHotkey(value, "Up"));
+        _settingsService.Update(settings => settings.Player.VolumeUpHotkey = NormalizeHotkey(value, "Up"), SettingsSection.Player);
     }
     partial void OnVolumeDownHotkeyChanged(string value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.VolumeDownHotkey = NormalizeHotkey(value, "Down"));
+        _settingsService.Update(settings => settings.Player.VolumeDownHotkey = NormalizeHotkey(value, "Down"), SettingsSection.Player);
     }
     partial void OnSeekBackwardHotkeyChanged(string value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.SeekBackwardHotkey = NormalizeHotkey(value, "Left"));
+        _settingsService.Update(settings => settings.Player.SeekBackwardHotkey = NormalizeHotkey(value, "Left"), SettingsSection.Player);
     }
     partial void OnSeekForwardHotkeyChanged(string value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => settings.Player.SeekForwardHotkey = NormalizeHotkey(value, "Right"));
+        _settingsService.Update(settings => settings.Player.SeekForwardHotkey = NormalizeHotkey(value, "Right"), SettingsSection.Player);
     }
     partial void OnMpvScaleChanged(string value) =>
         SaveVideoProcessingOption(x => x.MpvScale = NormalizeMpvOption(value, "ewa_lanczossharp"));
@@ -253,26 +253,26 @@ public partial class PlayerViewModel
     private void SavePlayerPanelButtons(Action<AppSettings.PlayerConfig> update)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => update(settings.Player));
+        _settingsService.Update(settings => update(settings.Player), SettingsSection.Player);
     }
 
     private void SaveMpvOption(Action<AppSettings.PlayerConfig> update)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => update(settings.Player));
+        _settingsService.Update(settings => update(settings.Player), SettingsSection.Player);
     }
 
     private void SaveVideoProcessingOption(Action<AppSettings.PlayerConfig> update)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => update(settings.Player));
+        _settingsService.Update(settings => update(settings.Player), SettingsSection.Player);
         ApplyVideoProcessingOptions();
     }
 
     private void SaveSubtitleStyle(Action<AppSettings.PlayerConfig> update)
     {
         if (_isApplyingSettings || _settingsService == null) return;
-        _settingsService.Update(settings => update(settings.Player));
+        _settingsService.Update(settings => update(settings.Player), SettingsSection.Player);
         ApplySubtitleStyleOverride();
     }
 

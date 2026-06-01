@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CommunityToolkit.Mvvm.Input;
 using Kiriha.Models;
 using Kiriha.Models.Entities;
+using Kiriha.Services.Data;
 
 namespace Kiriha.ViewModels;
 
@@ -36,7 +37,7 @@ public partial class SeasonalViewModel
         {
             foreach (var id in toUnhide)
                 settings.UI.HiddenSeasonalIds?.Remove(id);
-        }, save: false);
+        }, SettingsSection.UI, save: false);
         _ = _settingsService.SaveAsync();
     }
 
@@ -63,7 +64,7 @@ public partial class SeasonalViewModel
                 if (!list.Contains(item.Id)) list.Add(item.Id);
                 item.IsHiddenInSeasons = true;
             }
-        }, save: false);
+        }, SettingsSection.UI, save: false);
         _ = _settingsService.SaveAsync();
         ApplyFilters();
     }

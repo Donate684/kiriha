@@ -10,6 +10,7 @@ using Kiriha.Models;
 using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Auth;
+using Kiriha.Services.Data;
 using Kiriha.Utils;
 
 namespace Kiriha.ViewModels;
@@ -28,48 +29,31 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     [ObservableProperty]
     private UpdateDialogViewModel? _updateDialog;
 
-    public SettingsViewModel SettingsViewModel => _settingsViewModel;
+    public SettingsViewModel? SettingsViewModel => _settingsViewModel;
 
-    private readonly AnimeListViewModel _animeListViewModel;
-    private readonly SettingsViewModel _settingsViewModel;
-    private readonly NowPlayingViewModel _nowPlayingViewModel;
-    private readonly HistoryViewModel _historyViewModel;
-    private readonly TorrentsViewModel _torrentsViewModel;
-    private readonly SeasonalViewModel _seasonalViewModel;
-    private readonly AnalyticsViewModel _analyticsViewModel;
+    private AnimeListViewModel? _animeListViewModel;
+    private SettingsViewModel? _settingsViewModel;
+    private NowPlayingViewModel? _nowPlayingViewModel;
+    private HistoryViewModel? _historyViewModel;
+    private TorrentsViewModel? _torrentsViewModel;
+    private SeasonalViewModel? _seasonalViewModel;
+    private AnalyticsViewModel? _analyticsViewModel;
     
     // IViewModelFactory delivers a fresh transient instance on each navigation —
     // see DI registrations: WelcomeViewModel and SearchViewModel are AddTransient.
     private readonly IViewModelFactory _viewModelFactory;
     
     private readonly Kiriha.Services.Data.SettingsService _settingsService;
-    private readonly Kiriha.Services.UpdateService _updateService;
 
     [ObservableProperty]
     private ViewModelBase _currentPage = null!;
 
     public MainWindowViewModel(
-        AnimeListViewModel animeListVm, 
-        SettingsViewModel settingsVm, 
-        NowPlayingViewModel nowPlayingVm, 
-        HistoryViewModel historyVm, 
-        TorrentsViewModel torrentsVm,
-        SeasonalViewModel seasonalVm,
-        AnalyticsViewModel analyticsVm,
         IViewModelFactory viewModelFactory,
-        Kiriha.Services.Data.SettingsService settingsService,
-        Kiriha.Services.UpdateService updateService)
+        Kiriha.Services.Data.SettingsService settingsService)
     {
-        _animeListViewModel = animeListVm;
-        _settingsViewModel = settingsVm;
-        _nowPlayingViewModel = nowPlayingVm;
-        _historyViewModel = historyVm;
-        _torrentsViewModel = torrentsVm;
-        _seasonalViewModel = seasonalVm;
-        _analyticsViewModel = analyticsVm;
         _viewModelFactory = viewModelFactory;
         _settingsService = settingsService;
-        _updateService = updateService;
 
         // Load saved sidebar state
         IsPaneOpen = _settingsService.Current.UI.IsPaneOpen;
@@ -102,7 +86,7 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
 
     partial void OnIsPaneOpenChanged(bool value)
     {
-        _settingsService.Update(settings => settings.UI.IsPaneOpen = value);
+        _settingsService.Update(settings => settings.UI.IsPaneOpen = value, SettingsSection.UI);
     }
 
     [ObservableProperty]
@@ -118,7 +102,6 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     {
         if (CurrentPage is IDisposable disposable && 
             CurrentPage != _animeListViewModel && 
-            CurrentPage != _settingsViewModel &&
             CurrentPage != _nowPlayingViewModel &&
             CurrentPage != _historyViewModel &&
             CurrentPage != _torrentsViewModel &&
@@ -129,6 +112,34 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
         }
         CurrentPage = page;
     }
+
+    private SettingsViewModel EnsureSettingsViewModel()
+    {
+        if (_settingsViewModel != null)
+            return _settingsViewModel;
+
+        _settingsViewModel = _viewModelFactory.Create<SettingsViewModel>();
+        OnPropertyChanged(nameof(SettingsViewModel));
+        return _settingsViewModel;
+    }
+
+    private AnimeListViewModel EnsureAnimeListViewModel() =>
+        _animeListViewModel ??= _viewModelFactory.Create<AnimeListViewModel>();
+
+    private NowPlayingViewModel EnsureNowPlayingViewModel() =>
+        _nowPlayingViewModel ??= _viewModelFactory.Create<NowPlayingViewModel>();
+
+    private HistoryViewModel EnsureHistoryViewModel() =>
+        _historyViewModel ??= _viewModelFactory.Create<HistoryViewModel>();
+
+    private TorrentsViewModel EnsureTorrentsViewModel() =>
+        _torrentsViewModel ??= _viewModelFactory.Create<TorrentsViewModel>();
+
+    private SeasonalViewModel EnsureSeasonalViewModel() =>
+        _seasonalViewModel ??= _viewModelFactory.Create<SeasonalViewModel>();
+
+    private AnalyticsViewModel EnsureAnalyticsViewModel() =>
+        _analyticsViewModel ??= _viewModelFactory.Create<AnalyticsViewModel>();
 
     partial void OnSelectedNavigationIndexChanged(int value)
     {
@@ -170,13 +181,14 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     [RelayCommand]
     public void NavigateHome()
     {
-        SetCurrentPage(_nowPlayingViewModel);
+        SetCurrentPage(EnsureNowPlayingViewModel());
     }
 
     [RelayCommand]
     public void NavigateSettings()
     {
         if (IsNavigationBlocked) return;
+        EnsureSettingsViewModel();
         IsSettingsOpen = true;
         IsSettingsSelected = true;
     }
@@ -191,7 +203,7 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     public void ShowUpdateDialog(bool isDownloaded = false)
     {
         if (IsUpdateDialogOpen) return;
-        UpdateDialog = new UpdateDialogViewModel(_updateService, CloseUpdateDialog, isDownloaded);
+        UpdateDialog = _viewModelFactory.CreateWithArgs<UpdateDialogViewModel>((Action)CloseUpdateDialog, isDownloaded);
         IsUpdateDialogOpen = true;
     }
 
@@ -205,37 +217,42 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     [RelayCommand]
     public void NavigateAnimeList()
     {
-        _animeListViewModel.RefreshLocalization();
-        SetCurrentPage(_animeListViewModel);
+        var animeList = EnsureAnimeListViewModel();
+        animeList.RefreshLocalization();
+        SetCurrentPage(animeList);
     }
 
     [RelayCommand]
     public void NavigateSeasonal()
     {
-        var userStore = _animeListViewModel.AnimeItems
+        var animeList = EnsureAnimeListViewModel();
+        var seasonal = EnsureSeasonalViewModel();
+        var userStore = animeList.AnimeItems
             .GroupBy(x => x.Id)
             .ToDictionary(x => x.Key, x => x.First().Status);
-        _seasonalViewModel.UpdateUserList(userStore);
+        seasonal.UpdateUserList(userStore);
         // Trigger the initial Shikimori/MAL load on the very first navigation
         // (no-op on subsequent navigations - the call is idempotent). This
         // replaces an eager preload in SeasonalViewModel's ctor, which used
         // to fire HTTP requests during the app's first render frames.
-        _seasonalViewModel.EnsureInitialLoad();
-        SetCurrentPage(_seasonalViewModel);
+        seasonal.EnsureInitialLoad();
+        SetCurrentPage(seasonal);
     }
 
     [RelayCommand]
     public void NavigateHistory()
     {
-        _historyViewModel.RefreshHistory().SafeFireAndForget("NavigateHistory");
-        SetCurrentPage(_historyViewModel);
+        var history = EnsureHistoryViewModel();
+        history.RefreshHistory().SafeFireAndForget("NavigateHistory");
+        SetCurrentPage(history);
     }
 
     [RelayCommand]
     public void NavigateTorrents()
     {
-        _torrentsViewModel.RefreshWatchingList();
-        SetCurrentPage(_torrentsViewModel);
+        var torrents = EnsureTorrentsViewModel();
+        torrents.RefreshWatchingList();
+        SetCurrentPage(torrents);
     }
 
     [RelayCommand]
@@ -251,8 +268,9 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
         SelectedNavigationIndex = 0;
         IsSettingsSelected = false;
         IsSettingsOpen = false;
-        _analyticsViewModel.Refresh().SafeFireAndForget("NavigateAnalytics");
-        SetCurrentPage(_analyticsViewModel);
+        var analytics = EnsureAnalyticsViewModel();
+        analytics.Refresh().SafeFireAndForget("NavigateAnalytics");
+        SetCurrentPage(analytics);
     }
 
     [RelayCommand]

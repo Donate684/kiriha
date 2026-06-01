@@ -24,7 +24,7 @@ public partial class SettingsViewModel
     partial void OnSelectedThemeChanged(ThemeOption value)
     {
         if (Application.Current == null || value == null) return;
-        _settingsService.Update(settings => settings.UI.Theme = value.Value);
+        _settingsService.Update(settings => settings.UI.Theme = value.Value, SettingsSection.UI);
 
         Application.Current.RequestedThemeVariant = value.Value switch
         {
@@ -36,41 +36,41 @@ public partial class SettingsViewModel
 
     partial void OnSelectedCardStyleChanged(int value)
     {
-        _settingsService.Update(settings => settings.UI.CardStyle = value);
+        _settingsService.Update(settings => settings.UI.CardStyle = value, SettingsSection.UI);
         CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new CardStyleChangedMessage(value));
     }
 
     partial void OnUseRussianTitlesChanged(bool value)
     {
-        _settingsService.Update(settings => settings.UI.UseRussianTitles = value);
+        _settingsService.Update(settings => settings.UI.UseRussianTitles = value, SettingsSection.UI);
         _animeListViewModel.RefreshLocalization();
     }
 
     partial void OnUseRussianDescriptionsChanged(bool value)
     {
-        _settingsService.Update(settings => settings.UI.UseRussianDescriptions = value);
+        _settingsService.Update(settings => settings.UI.UseRussianDescriptions = value, SettingsSection.UI);
         _animeListViewModel.RefreshLocalization();
     }
 
     partial void OnShowAiringInfoChanged(bool value)
     {
-        _settingsService.Update(settings => settings.UI.ShowAiringInfo = value);
+        _settingsService.Update(settings => settings.UI.ShowAiringInfo = value, SettingsSection.UI);
         _animeListViewModel.RefreshLocalization();
     }
 
     partial void OnCloseToTrayChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.CloseToTray = value);
+        _settingsService.Update(settings => settings.System.CloseToTray = value, SettingsSection.System);
     }
 
     partial void OnMinimizeToTrayChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.MinimizeToTray = value);
+        _settingsService.Update(settings => settings.System.MinimizeToTray = value, SettingsSection.System);
     }
 
     partial void OnKeepPlayerProcessAliveChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.KeepPlayerProcessAlive = value);
+        _settingsService.Update(settings => settings.System.KeepPlayerProcessAlive = value, SettingsSection.System);
 
         if (value) PlayerProcessBridge.StartResident();
         else _ = PlayerProcessBridge.StopResidentAsync();
@@ -78,7 +78,7 @@ public partial class SettingsViewModel
 
     partial void OnSinglePlayerWindowChanged(bool value)
     {
-        _settingsService.Update(settings => settings.Player.SingleWindow = value);
+        _settingsService.Update(settings => settings.Player.SingleWindow = value, SettingsSection.Player);
     }
 
     partial void OnMpvHwdecChanged(string value) =>
@@ -95,7 +95,7 @@ public partial class SettingsViewModel
 
     private void SaveMpvOption(Action<AppSettings.PlayerConfig> update)
     {
-        _settingsService.Update(settings => update(settings.Player));
+        _settingsService.Update(settings => update(settings.Player), SettingsSection.Player);
     }
 
     private static string NormalizeMpvOption(string? value, string fallback)
@@ -105,25 +105,25 @@ public partial class SettingsViewModel
 
     partial void OnEnableScrobblerChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.Scrobbler.Enabled = value);
+        _settingsService.Update(settings => settings.System.Scrobbler.Enabled = value, SettingsSection.System);
     }
 
     partial void OnScrobbleDelaySecondsChanged(decimal? value)
     {
         if (value.HasValue)
         {
-            _settingsService.Update(settings => settings.System.Scrobbler.DelaySeconds = (int)value.Value);
+            _settingsService.Update(settings => settings.System.Scrobbler.DelaySeconds = (int)value.Value, SettingsSection.System);
         }
     }
 
     partial void OnScrobbleNotifyOnSkipChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.Scrobbler.NotifyOnSkippedEpisode = value);
+        _settingsService.Update(settings => settings.System.Scrobbler.NotifyOnSkippedEpisode = value, SettingsSection.System);
     }
 
     partial void OnEnableDiscordRPCChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.EnableDiscordRPC = value);
+        _settingsService.Update(settings => settings.System.EnableDiscordRPC = value, SettingsSection.System);
         // Update Discord service status
         _discordService.UpdateStatus(value);
     }
@@ -132,7 +132,7 @@ public partial class SettingsViewModel
     {
         if (value != null && value.Code != _settingsService.Read(settings => settings.UI.LanguageCode))
         {
-            _settingsService.Update(settings => settings.UI.LanguageCode = value.Code);
+            _settingsService.Update(settings => settings.UI.LanguageCode = value.Code, SettingsSection.UI);
             _localizationService.LoadLanguage(value.Code);
             OnPropertyChanged(nameof(AvailableThemes));
             var theme = _settingsService.Read(settings => settings.UI.Theme);
@@ -144,22 +144,22 @@ public partial class SettingsViewModel
 
     partial void OnAutoCheckUpdatesChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.AutoCheckUpdates = value);
+        _settingsService.Update(settings => settings.System.AutoCheckUpdates = value, SettingsSection.System);
     }
 
     partial void OnAutoDownloadUpdatesChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.AutoDownloadUpdates = value);
+        _settingsService.Update(settings => settings.System.AutoDownloadUpdates = value, SettingsSection.System);
     }
 
     partial void OnNotifyNewEpisodesChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.NotifyNewEpisodes = value);
+        _settingsService.Update(settings => settings.System.NotifyNewEpisodes = value, SettingsSection.System);
     }
 
     partial void OnNotifyAppUpdateChanged(bool value)
     {
-        _settingsService.Update(settings => settings.System.NotifyAppUpdate = value);
+        _settingsService.Update(settings => settings.System.NotifyAppUpdate = value, SettingsSection.System);
     }
 
     partial void OnNewEpisodeNotificationDelayMinutesChanged(decimal? value)
@@ -167,7 +167,7 @@ public partial class SettingsViewModel
         if (value.HasValue)
         {
             var minutes = (int)Math.Max(0, value.Value);
-            _settingsService.Update(settings => settings.System.NewEpisodeNotificationDelayMinutes = minutes);
+            _settingsService.Update(settings => settings.System.NewEpisodeNotificationDelayMinutes = minutes, SettingsSection.System);
         }
     }
 }

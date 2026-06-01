@@ -368,7 +368,7 @@
 
     <Grid RowDefinitions="Auto, Auto, *, Auto" Margin="0">
 
-        <!-- â•â•â• Search Bar + Sorting + Filters + Sync â•â•â• -->
+        <!-- Search Bar + Sorting + Filters + Sync -->
         <Border Grid.Row="0" Margin="20,4,20,12" Padding="8,6" Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="10"
                 BorderBrush="{DynamicResource CardStrokeColorDefault}" BorderThickness="1">
             <Grid ColumnDefinitions="*, Auto, Auto">
@@ -502,7 +502,7 @@
             </Grid>
         </Border>
 
-        <!-- â•â•â• Status Tabs â•â•â• -->
+        <!-- Status Tabs -->
         <Border x:Name="StatusTabsPanel"
                 Grid.Row="1" Margin="20,0,20,12" Padding="4"
                 Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="8"
@@ -565,7 +565,7 @@
             </Border.Transitions>
             <Grid RowDefinitions="Auto,*">
 
-                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HERO BANNER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <!-- HERO BANNER -->
                 <Border x:Name="ReleaseHeaderPanel"
                         Grid.Row="0"
                         Height="150"
@@ -677,7 +677,7 @@
                     </Panel>
                 </Border>
 
-                <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CARD LIST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+                <!-- CARD LIST -->
                 <Grid Grid.Row="1">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14,10,14,14">
                         <StackPanel x:Name="ReleaseTimelinePanel" Spacing="3"/>

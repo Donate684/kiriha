@@ -116,6 +116,158 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
+    public void Update_WithExplicitSection_MergesWithoutJsonDiff()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            using (var initial = new SettingsService(path))
+            {
+                initial.Update(settings =>
+                {
+                    settings.UI.LanguageCode = "en";
+                    settings.Player.Volume = 100;
+                }, save: false);
+                initial.SaveImmediate();
+            }
+
+            using (var mainProcess = new SettingsService(path))
+            using (var playerProcess = new SettingsService(path))
+            {
+                playerProcess.Update(settings => settings.Player.Volume = 33, SettingsSection.Player, save: false);
+                playerProcess.SaveImmediate();
+
+                mainProcess.Update(settings => settings.UI.LanguageCode = "ru", SettingsSection.UI, save: false);
+                mainProcess.SaveImmediate();
+            }
+
+            using var reloaded = new SettingsService(path);
+
+            Assert.Equal("ru", reloaded.Current.UI.LanguageCode);
+            Assert.Equal(33, reloaded.Current.Player.Volume);
+        }
+        finally
+        {
+            DeleteQuietly(path);
+        }
+    }
+
+    [Fact]
+    public void Load_ReadsSettingsWhileAnotherProcessHasWriteAccess()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            using (var initial = new SettingsService(path))
+            {
+                initial.Update(settings =>
+                {
+                    settings.UI.LanguageCode = "ru";
+                    settings.Player.Volume = 55;
+                }, save: false);
+                initial.SaveImmediate();
+            }
+
+            using var lockHandle = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            using var service = new SettingsService(path);
+
+            Assert.Equal("ru", service.Current.UI.LanguageCode);
+            Assert.Equal(55, service.Current.Player.Volume);
+        }
+        finally
+        {
+            DeleteQuietly(path);
+        }
+    }
+
+    [Fact]
+    public void Dispose_DoesNotOverwriteSettingsWhenLoadFailedBecauseFileIsLocked()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            using (var initial = new SettingsService(path))
+            {
+                initial.Update(settings => settings.UI.LanguageCode = "ru", save: false);
+                initial.SaveImmediate();
+            }
+
+            using (var lockHandle = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            using (new SettingsService(path))
+            {
+            }
+
+            using var reloaded = new SettingsService(path);
+
+            Assert.Equal("ru", reloaded.Current.UI.LanguageCode);
+        }
+        finally
+        {
+            DeleteQuietly(path);
+        }
+    }
+
+    [Fact]
+    public void SaveImmediate_CreatesBackupOfPreviousSettings()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            using (var service = new SettingsService(path))
+            {
+                service.Update(settings => settings.UI.LanguageCode = "ru", save: false);
+                service.SaveImmediate();
+
+                service.Update(settings => settings.UI.LanguageCode = "uk", save: false);
+                service.SaveImmediate();
+            }
+
+            using var current = new SettingsService(path);
+            using var backup = new SettingsService(path + ".bak");
+
+            Assert.Equal("uk", current.Current.UI.LanguageCode);
+            Assert.Equal("ru", backup.Current.UI.LanguageCode);
+        }
+        finally
+        {
+            DeleteQuietly(path);
+        }
+    }
+
+    [Fact]
+    public void Load_RestoresSettingsFromBackupWhenPrimaryJsonIsCorrupted()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            using (var service = new SettingsService(path))
+            {
+                service.Update(settings => settings.UI.LanguageCode = "ru", save: false);
+                service.SaveImmediate();
+
+                service.Update(settings => settings.UI.LanguageCode = "uk", save: false);
+                service.SaveImmediate();
+            }
+
+            File.WriteAllText(path, "{ broken json");
+
+            using (new SettingsService(path))
+            {
+            }
+
+            using var restored = new SettingsService(path);
+            using var backup = new SettingsService(path + ".bak");
+
+            Assert.Equal("ru", restored.Current.UI.LanguageCode);
+            Assert.Equal("ru", backup.Current.UI.LanguageCode);
+        }
+        finally
+        {
+            DeleteQuietly(path);
+        }
+    }
+
+    [Fact]
     public void Load_CorruptedJsonFallsBackToDefaults()
     {
         var path = CreateTempSettingsPath();

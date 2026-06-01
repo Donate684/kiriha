@@ -56,7 +56,7 @@ public partial class SettingsViewModel
     private void OnCustomLinkPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         // User typed something into Name / UrlTemplate — persist.
-        _settingsService.Update(settings => { }, save: false);
+        _settingsService.Update(settings => { }, SettingsSection.CustomLinks, save: false);
         _settingsService.Save();
 
         // When the URL changes, try to refresh the favicon. We deliberately
@@ -128,7 +128,7 @@ public partial class SettingsViewModel
         {
             settings.CustomLinks.Clear();
             foreach (var link in CustomLinks) settings.CustomLinks.Add(link);
-        });
+        }, SettingsSection.CustomLinks);
     }
 
     [RelayCommand]

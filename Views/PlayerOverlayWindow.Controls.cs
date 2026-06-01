@@ -20,6 +20,7 @@ public partial class PlayerOverlayWindow
 {
     private void ShowControls()
     {
+        var now = DateTime.UtcNow;
         if (!_controlsVisible)
         {
             _controlsVisible = true;
@@ -37,6 +38,11 @@ public partial class PlayerOverlayWindow
             }
             Cursor = new Cursor(StandardCursorType.Arrow);
         }
+
+        if (now - _lastControlsKeepAliveUtc < ControlsKeepAliveInterval)
+            return;
+
+        _lastControlsKeepAliveUtc = now;
         // Reset the hide timer
         _hideTimer.Stop();
         _hideTimer.Start();
@@ -45,6 +51,7 @@ public partial class PlayerOverlayWindow
     private void HideControls()
     {
         _controlsVisible = false;
+        _lastControlsKeepAliveUtc = DateTime.MinValue;
         var top = this.FindControl<Border>("TopBar");
         var bot = this.FindControl<Border>("BottomBar");
         if (top != null) 

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Core;
@@ -47,22 +48,30 @@ public sealed class AppReadinessService
     private async Task StartCoreAsync()
     {
         SetState(AppReadinessState.Starting);
+        var total = Stopwatch.StartNew();
 
         try
         {
+            var stage = Stopwatch.StartNew();
             var databaseInitializer = _serviceProvider.GetRequiredService<DatabaseInitializer>();
             await databaseInitializer.InitializeAsync();
             await databaseInitializer.InitializationTask;
+            Log.Information("StartupTiming: readiness database stage elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
 
+            stage.Restart();
             var animeService = _serviceProvider.GetRequiredService<AnimeService>();
             await animeService.InitializeAsync();
             await animeService.InitializationTask;
+            Log.Information("StartupTiming: readiness anime stage elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
 
+            stage.Restart();
             _serviceProvider.GetRequiredService<NotificationService>();
             _serviceProvider.GetRequiredService<DiscordService>().Initialize();
             await _serviceProvider.GetRequiredService<SmtcService>().StartAsync();
             _serviceProvider.GetRequiredService<MaintenanceService>().Start();
+            Log.Information("StartupTiming: readiness foreground services stage elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
 
+            stage.Restart();
             foreach (var hosted in _serviceProvider.GetServices<IHostedService>())
             {
                 try
@@ -74,12 +83,16 @@ public sealed class AppReadinessService
                     Log.Error(ex, "Failed to start hosted service {Type}", hosted.GetType().Name);
                 }
             }
+            Log.Information("StartupTiming: readiness hosted services stage elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
 
+            stage.Restart();
             if (_serviceProvider.GetRequiredService<SettingsService>().Current.System.KeepPlayerProcessAlive)
                 PlayerProcessBridge.StartResident();
+            Log.Information("StartupTiming: readiness resident player stage elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
 
             SetState(AppReadinessState.Ready);
             _readyTcs.TrySetResult();
+            Log.Information("StartupTiming: readiness complete elapsedMs={ElapsedMs}", total.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {

@@ -97,7 +97,7 @@ public partial class PlayerSelectionViewModel : ViewModelBase, IDisposable
         {
             settings.System.Scrobbler.AllowedProcesses.Clear();
             foreach (var name in enabled) settings.System.Scrobbler.AllowedProcesses.Add(name);
-        }, save: false);
+        }, SettingsSection.System, save: false);
         _settingsService.SaveImmediate();
         window.Close();
     }

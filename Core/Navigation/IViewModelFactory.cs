@@ -18,6 +18,7 @@ namespace Kiriha.Core.Navigation;
 public interface IViewModelFactory
 {
     TViewModel Create<TViewModel>() where TViewModel : ViewModelBase;
+    TViewModel CreateWithArgs<TViewModel>(params object[] args) where TViewModel : ViewModelBase;
 }
 
 /// <summary>
@@ -33,4 +34,7 @@ public sealed class ViewModelFactory : IViewModelFactory
 
     public TViewModel Create<TViewModel>() where TViewModel : ViewModelBase =>
         _services.GetRequiredService<TViewModel>();
+
+    public TViewModel CreateWithArgs<TViewModel>(params object[] args) where TViewModel : ViewModelBase =>
+        ActivatorUtilities.CreateInstance<TViewModel>(_services, args);
 }

@@ -75,9 +75,9 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     
     [ObservableProperty] private bool _isPlaying = true;
     [ObservableProperty] private double _currentTime = 0;
-    [ObservableProperty] private double _duration = 100;
+    [ObservableProperty] private double _duration = 0;
     [ObservableProperty] private string _currentTimeString = "00:00";
-    [ObservableProperty] private string _durationString = "00:00";
+    [ObservableProperty] private string _durationString = "--:--";
     
     [ObservableProperty] private double _volume = 100;
     [ObservableProperty] private bool _isMuted = false;

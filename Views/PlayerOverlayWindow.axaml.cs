@@ -25,8 +25,10 @@ public partial class PlayerOverlayWindow : Window
     private MpvPlayer? _player => _ownerWindow.Player;
 
     // Auto-hide: hide panels after 3 seconds of no mouse movement
+    private static readonly TimeSpan ControlsKeepAliveInterval = TimeSpan.FromMilliseconds(180);
     private readonly DispatcherTimer _hideTimer;
     private bool _controlsVisible = true;
+    private DateTime _lastControlsKeepAliveUtc = DateTime.MinValue;
 
     // Chapter markers
     private Canvas? _chapterCanvas;

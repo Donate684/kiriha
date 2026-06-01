@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kiriha.Core;
+using Kiriha.Services.Data;
 
 namespace Kiriha.ViewModels;
 
@@ -55,7 +56,7 @@ public partial class SeasonalViewModel
                 if (FilterOnHold) s.SeasonalStatusFilters.Add("OnHold");
                 if (FilterPlanToWatch) s.SeasonalStatusFilters.Add("PlanToWatch");
                 if (FilterDropped) s.SeasonalStatusFilters.Add("Dropped");
-            }, save: false);
+            }, SettingsSection.UI, save: false);
 
             await _settingsService.SaveAsync();
         });

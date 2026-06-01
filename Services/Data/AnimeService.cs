@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -84,12 +85,22 @@ public class AnimeService
 
         try
         {
+            var total = Stopwatch.StartNew();
+            var stage = Stopwatch.StartNew();
             await _dbInit.InitializationTask;
+            Log.Information("StartupTiming: anime service waited for database elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
+
+            stage.Restart();
             var cached = await _userAnimeRepo.GetAllAsync();
+            Log.Information(
+                "StartupTiming: cached anime loaded count={Count} elapsedMs={ElapsedMs}",
+                cached?.Count ?? 0,
+                stage.ElapsedMilliseconds);
             
             // Single-shot Reset instead of per-item Add: one CollectionChanged event
             // for 2000+ items vs. 2000+ events. Eliminates the ~400 ms UI stall
             // observed on startup when seeding the cached anime list.
+            stage.Restart();
             await _uiDispatcher.InvokeAsync(() =>
             {
                 if (cached != null && cached.Count > 0)
@@ -97,11 +108,19 @@ public class AnimeService
                 else
                     Collection.Clear();
             });
+            Log.Information(
+                "StartupTiming: cached anime applied to UI collection count={Count} elapsedMs={ElapsedMs}",
+                Collection.Count,
+                stage.ElapsedMilliseconds);
             
             if (Collection.Count == 0)
             {
+                stage.Restart();
                 await SyncWithTrackersAsync();
+                Log.Information("StartupTiming: initial tracker sync elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
             }
+
+            Log.Information("StartupTiming: anime service initialized elapsedMs={ElapsedMs}", total.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
