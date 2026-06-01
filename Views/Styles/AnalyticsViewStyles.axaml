@@ -1,0 +1,120 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kiriha.ViewModels"
+        xmlns:material="using:Material.Icons.Avalonia"
+        xmlns:core="using:Kiriha.Core"
+        xmlns:u="using:Kiriha.Utils">
+<!-- ═══ Базовая панель-карточка ═══ -->
+        <Style Selector="Border.AnalyticsPanel">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillDefault}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefault}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+        </Style>
+
+        <!-- ═══ Метрика ═══ -->
+        <Style Selector="Border.MetricPanel">
+            <Setter Property="MinHeight" Value="108"/>
+            <Setter Property="Padding" Value="18,16"/>
+        </Style>
+
+        <!-- ═══ Hero-баннер ═══ -->
+        <Style Selector="Border.HeroBanner">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillDefault}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefault}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="20,18"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+        </Style>
+
+        <!-- ═══ Прогресс-бар аналитики ═══ -->
+        <Style Selector="ProgressBar.AnalyticsBar">
+            <Setter Property="Height" Value="5"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="100"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+
+        <!-- ═══ Ячейка месяца на heatmap ═══ -->
+        <Style Selector="Border.MonthCell">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Border.MonthCell.current">
+            <Setter Property="BorderBrush" Value="#FFFF7A1A"/>
+        </Style>
+
+        <!-- ═══ Кнопки точек графика ═══ -->
+        <Style Selector="Button.ChartPointButton">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="CornerRadius" Value="3"/>
+        </Style>
+        <Style Selector="Button.ChartPointButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+        </Style>
+
+        <!-- ═══ Кнопка избранной строки ═══ -->
+        <Style Selector="Button.FavoriteRowButton">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="10"/>
+        </Style>
+        <Style Selector="Button.FavoriteRowButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+        </Style>
+
+        <!-- ═══ Tab-кнопка секции ═══ -->
+        <Style Selector="RadioButton.SectionTab">
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.SectionTab">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Opacity" Value="0.55"/>
+        </Style>
+        <Style Selector="RadioButton.SectionTab:pointerover">
+            <Setter Property="Opacity" Value="0.78"/>
+            <Setter Property="Background" Value="#0A808080"/>
+        </Style>
+        <Style Selector="RadioButton.SectionTab:checked">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+</Styles>

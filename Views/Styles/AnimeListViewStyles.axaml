@@ -1,0 +1,286 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kiriha.ViewModels"
+        xmlns:models="using:Kiriha.Models"
+        xmlns:material="using:Material.Icons.Avalonia"
+        xmlns:conv="using:Kiriha.Converters"
+        xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+        xmlns:core="using:Kiriha.Core"
+        xmlns:u="using:Kiriha.Utils"
+        xmlns:controls="using:Kiriha.Views.Controls">
+<Style Selector="FlyoutPresenter.ScoreFlyout, MenuFlyoutPresenter.ScoreFlyout">
+            <Setter Property="Background" Value="{DynamicResource ScoreFlyoutBackground}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ScoreFlyoutBorder}"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MaxWidth" Value="250"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+        <Style Selector="MenuFlyoutPresenter.ScoreFlyout MenuItem:pointerover /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="Background" Value="{DynamicResource ScoreFlyoutItemHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ScoreFlyoutItemForeground}"/>
+        </Style>
+        <Style Selector="MenuFlyoutPresenter.ScoreFlyout MenuItem:pressed /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="Background" Value="{DynamicResource ScoreFlyoutItemPressed}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ScoreFlyoutItemForeground}"/>
+        </Style>
+        <Style Selector="Button.ScoreBadgeButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#EE000000"/>
+        </Style>
+
+        <!-- ═══ Card shell: soft, shadowed, with smooth hover lift ═══ -->
+        <Style Selector="Border.AnimeCard">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillDefault}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        
+        <Style Selector="Border.FloatingMagCard">
+            <Setter Property="BoxShadow" Value="{DynamicResource CardBoxShadow}"/>
+        </Style>
+
+        <!-- ═══ Reveal-on-scroll: карточка fade+slide-up при появлении в viewport ═══ -->
+        <Style Selector="Border.revealItem">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform" Value="translate(0,20px)"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.45" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.45" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.revealItem.shown">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="RenderTransform" Value="translate(0,0)"/>
+        </Style>
+
+        <!-- â•â•â• Glass pill badges over poster â•â•â• -->
+        <Style Selector="Border.Badge">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BoxShadow" Value="0 2 8 0 #66000000"/>
+        </Style>
+
+        <!-- â•â•â• Progress circle buttons â•â•â• -->
+        <Style Selector="Button.ProgressStep">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.ProgressStep:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource ProgressStepHoverBrush}"/>
+        </Style>
+
+        <!-- â•â•â• Sort list inside flyout â•â•â• -->
+        <Style Selector="ListBox.SortList">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:selected:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ListBox.SortList ListBoxItem:selected:focus /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+
+        <!-- ═══ Filter flyout presenter (Luxury/Glass style) ═══ -->
+        <Style Selector="FlyoutPresenter.FilterFlyout">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="232"/>
+            <Setter Property="MaxWidth" Value="260"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <!-- Semi-transparent background + shadow for depth -->
+            <Setter Property="Background" Value="{DynamicResource LuxuryFlyoutBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LuxuryFlyoutBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- â•â•â• Filter toggle row (clickable card with accent switch) â•â•â• -->
+        <Style Selector="ToggleButton.FilterToggle">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiary}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorSecondary}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondary}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+
+        <!-- Switch indicator inside toggle -->
+        <Style Selector="ToggleButton.FilterToggle Border.SwitchTrack">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="CornerRadius" Value="9"/>
+            <Setter Property="Background" Value="#55808080"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.18"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked Border.SwitchTrack">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle Ellipse.SwitchThumb">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Fill" Value="White"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="3,0,0,0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <ThicknessTransition Property="Margin" Duration="0:0:0.18" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.FilterToggle:checked Ellipse.SwitchThumb">
+            <Setter Property="Margin" Value="17,0,0,0"/>
+        </Style>
+
+        <!-- Reset button inside flyout -->
+        <Style Selector="Button.FilterReset">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="0,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Opacity" Value="0.85"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.FilterReset:pointerover">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+        <Style Selector="Button.FilterReset:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentFillColorSelectedTextBackground}"/>
+        </Style>
+
+        <!-- ═══ Minimal card: hover overlay slide-up ═══ -->
+        <Style Selector="Border.MinimalCard Border.MinimalOverlay">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform" Value="translate(0,16px)"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.MinimalCard:pointerover Border.MinimalOverlay">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="RenderTransform" Value="translate(0,0)"/>
+        </Style>
+
+        <!-- ═══ Card Style Menu: radio button options ═══ -->
+        <Style Selector="RadioButton.CardStyleRadio">
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{DynamicResource CardStyleRadioForeground}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource CardStyleRadioBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStyleRadioBorder}"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Border.Transitions>
+                            <Transitions>
+                                <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                                <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                            </Transitions>
+                        </Border.Transitions>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.CardStyleRadio:pointerover /template/ Border">
+            <Setter Property="Background" Value="{DynamicResource CardStyleRadioHoverBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStyleRadioHoverBorder}"/>
+        </Style>
+        <Style Selector="RadioButton.CardStyleRadio:checked /template/ Border">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="RadioButton.CardStyleRadio:checked">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+</Styles>

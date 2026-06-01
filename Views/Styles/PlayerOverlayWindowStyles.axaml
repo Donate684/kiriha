@@ -1,0 +1,336 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Kiriha.ViewModels"
+        xmlns:mpv="clr-namespace:Kiriha.Core.Mpv"
+        xmlns:material="using:Material.Icons.Avalonia"
+        xmlns:conv="using:Kiriha.Converters">
+<!-- ===== Slider custom style ===== -->
+        <Style Selector="Slider.timeline">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid Background="Transparent" ClipToBounds="False">
+                        <Track Name="PART_Track" Orientation="Horizontal" ClipToBounds="False"
+                               Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}">
+                            <Track.DecreaseButton>
+                                <RepeatButton Name="PART_DecreaseButton" Focusable="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate>
+                                            <Grid Background="Transparent">
+                                                <Border Name="DecTrack" Height="3" Background="{DynamicResource SystemAccentColor}" CornerRadius="1.5" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                                    <Border.Transitions>
+                                                        <Transitions>
+                                                            <DoubleTransition Property="Height" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                                                        </Transitions>
+                                                    </Border.Transitions>
+                                                </Border>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseButton>
+                            <Track.IncreaseButton>
+                                <RepeatButton Name="PART_IncreaseButton" Focusable="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate>
+                                            <Grid Background="Transparent">
+                                                <Border Name="IncTrack" Height="3" Background="#33FFFFFF" CornerRadius="1.5" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                                    <Border.Transitions>
+                                                        <Transitions>
+                                                            <DoubleTransition Property="Height" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                                                        </Transitions>
+                                                    </Border.Transitions>
+                                                </Border>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseButton>
+                            <Track.Thumb>
+                                <Thumb Name="thumb" Width="0" Height="0" ClipToBounds="False" Opacity="0">
+                                    <Thumb.Transitions>
+                                        <Transitions>
+                                            <DoubleTransition Property="Width" Duration="0:0:0.12" Easing="CubicEaseOut"/>
+                                            <DoubleTransition Property="Height" Duration="0:0:0.12" Easing="CubicEaseOut"/>
+                                            <DoubleTransition Property="Opacity" Duration="0:0:0.12"/>
+                                        </Transitions>
+                                    </Thumb.Transitions>
+                                    <Thumb.Template>
+                                        <ControlTemplate>
+                                            <Ellipse Fill="{DynamicResource SystemAccentColor}"/>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <!-- Timeline hover: thicker track + show thumb -->
+        <Style Selector="Slider.timeline:pointerover /template/ Border#DecTrack">
+            <Setter Property="Height" Value="5"/>
+        </Style>
+        <Style Selector="Slider.timeline:pointerover /template/ Border#IncTrack">
+            <Setter Property="Height" Value="5"/>
+        </Style>
+        <Style Selector="Slider.timeline:pointerover /template/ Thumb#thumb">
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+
+        <Style Selector="Slider.volume">
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid Background="Transparent" ClipToBounds="False">
+                        <Track Name="PART_Track" Orientation="Horizontal" ClipToBounds="False"
+                               Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}">
+                            <Track.DecreaseButton>
+                                <RepeatButton Focusable="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate>
+                                            <Grid Background="Transparent">
+                                                <Border Height="2.5" Background="{DynamicResource SystemAccentColor}" CornerRadius="1.5" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseButton>
+                            <Track.IncreaseButton>
+                                <RepeatButton Focusable="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate>
+                                            <Grid Background="Transparent">
+                                                <Border Height="2.5" Background="#30FFFFFF" CornerRadius="1.5" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseButton>
+                            <Track.Thumb>
+                                <Thumb Width="10" Height="10" ClipToBounds="False">
+                                    <Thumb.Template>
+                                        <ControlTemplate>
+                                            <Ellipse Fill="{DynamicResource SystemAccentColor}"/>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- Tooltip custom style -->
+        <Style Selector="ToolTip">
+            <Setter Property="Background" Value="#E61A1A1A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#40FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="FlyoutPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <!-- Minimal icon buttons -->
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="7"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover /template/ Border">
+            <Setter Property="Background" Value="#1CFFFFFF"/>
+        </Style>
+        <Style Selector="Button.icon-btn:pressed /template/ Border">
+            <Setter Property="Background" Value="#38FFFFFF"/>
+        </Style>
+        <Style Selector="Button.icon-btn:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.93)"/>
+        </Style>
+
+        <!-- Top right window buttons -->
+        <Style Selector="Button.wnd-btn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="52"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.wnd-btn:pointerover /template/ Border">
+            <Setter Property="Background" Value="#25FFFFFF"/>
+        </Style>
+        <Style Selector="Button.wnd-btn.close">
+            <Setter Property="CornerRadius" Value="0,8,0,0"/>
+        </Style>
+        <Style Selector="Button.wnd-btn.close:pointerover /template/ Border">
+            <Setter Property="Background" Value="#E81123"/>
+        </Style>
+        <Style Selector="Button.wnd-btn:pressed /template/ Border">
+            <Setter Property="Background" Value="#40FFFFFF"/>
+        </Style>
+
+        <!-- Speed menu item -->
+        <Style Selector="MenuItem.speed-item">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
+        <Style Selector="Button.track-menu-item">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.track-menu-item:pointerover">
+            <Setter Property="Background" Value="#22FFFFFF"/>
+        </Style>
+        <Style Selector="Button.track-menu-item TextBlock">
+            <Setter Property="Foreground" Value="#E6FFFFFF"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+        <!-- Player settings flyout -->
+        <Style Selector="ListBox.player-settings-nav">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8"/>
+        </Style>
+        <Style Selector="ListBox.player-settings-nav ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="ListBox.player-settings-nav ListBoxItem /template/ ContentPresenter">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="10,8"/>
+        </Style>
+        <Style Selector="ListBox.player-settings-nav ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#18FFFFFF"/>
+        </Style>
+        <Style Selector="ListBox.player-settings-nav ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="#28FFFFFF"/>
+        </Style>
+        <Style Selector="TextBlock.player-settings-title">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+        </Style>
+        <Style Selector="TextBlock.player-settings-row-title">
+            <Setter Property="Foreground" Value="#E6FFFFFF"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+        <Style Selector="TextBlock.player-settings-row-sub">
+            <Setter Property="Foreground" Value="#80FFFFFF"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Border.player-settings-divider">
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Background" Value="#22FFFFFF"/>
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+        <Style Selector="ToggleSwitch">
+            <Setter Property="Foreground" Value="#D9FFFFFF"/>
+        </Style>
+        <Style Selector="ToggleSwitch /template/ Border#PART_SwitchKnobBounds">
+            <Setter Property="Background" Value="#33FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#8AFFFFFF"/>
+        </Style>
+        <Style Selector="ToggleSwitch:checked /template/ Border#PART_SwitchKnobBounds">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}"/>
+        </Style>
+        <Style Selector="ToggleSwitch /template/ Ellipse#PART_SwitchKnob">
+            <Setter Property="Fill" Value="#F2FFFFFF"/>
+        </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="Foreground" Value="#E6FFFFFF"/>
+        </Style>
+        <Style Selector="CheckBox /template/ ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="#E6FFFFFF"/>
+        </Style>
+        <Style Selector="TextBlock.overlay-text">
+            <Setter Property="Effect">
+                <DropShadowEffect Color="#78000000" BlurRadius="2" OffsetX="0" OffsetY="1"/>
+            </Setter>
+        </Style>
+        <Style Selector="TextBlock.overlay-secondary-text">
+            <Setter Property="Effect">
+                <DropShadowEffect Color="#68000000" BlurRadius="2" OffsetX="0" OffsetY="1"/>
+            </Setter>
+        </Style>
+        <Style Selector="Border.control-pill">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="Border.time-pill">
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="Padding" Value="6,0"/>
+        </Style>
+        <Style Selector="Border.osd-panel">
+            <Setter Property="Background" Value="#CC101010"/>
+            <Setter Property="BorderBrush" Value="#2FFFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="18,12"/>
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="BoxShadow" Value="0 8 24 0 #70000000"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+</Styles>
