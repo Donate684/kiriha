@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Kiriha.Core;
 using Kiriha.Core.Dialogs;
 using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;
@@ -27,6 +28,7 @@ public class MaintenanceService : IDisposable
     private readonly NotificationService _notificationService;
     private readonly IDialogService _dialogs;
     private readonly IBackgroundTaskSupervisor _backgroundTasks;
+    private readonly IUiDispatcher _uiDispatcher;
 
     private int _isRunning; // 0/1, manipulated via Interlocked
 
@@ -54,7 +56,8 @@ public class MaintenanceService : IDisposable
         ImageCacheService imageCacheService,
         NotificationService notificationService,
         IDialogService dialogs,
-        IBackgroundTaskSupervisor backgroundTasks)
+        IBackgroundTaskSupervisor backgroundTasks,
+        IUiDispatcher uiDispatcher)
     {
         _updateService = updateService;
         _rssService = rssService;
@@ -66,6 +69,7 @@ public class MaintenanceService : IDisposable
         _notificationService = notificationService;
         _dialogs = dialogs;
         _backgroundTasks = backgroundTasks;
+        _uiDispatcher = uiDispatcher;
     }
 
     public void Start()
@@ -141,7 +145,7 @@ public class MaintenanceService : IDisposable
                     bool downloaded = await _updateService.DownloadAndInstallAsync(null, ct);
                     if (downloaded)
                     {
-                        Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                        _uiDispatcher.InvokeAsync(async () =>
                         {
                             await _dialogs.ShowUpdateDialogAsync(isDownloaded: true);
                         }).SafeFireAndForget("UpdateDialog");
@@ -149,7 +153,7 @@ public class MaintenanceService : IDisposable
                 }
                 else
                 {
-                    Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                    _uiDispatcher.InvokeAsync(async () =>
                     {
                         await _dialogs.ShowUpdateDialogAsync();
                     }).SafeFireAndForget("UpdateDialog");

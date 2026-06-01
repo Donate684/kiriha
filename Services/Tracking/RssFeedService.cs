@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Kiriha.Core;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
 using Kiriha.Services.Data;
@@ -20,6 +21,7 @@ public class RssFeedService
     private readonly AnimeService _animeService;
     private readonly MappingService _mappingService;
     private readonly HttpConditionalCache _httpCache;
+    private readonly IUiDispatcher _uiDispatcher;
 
     public System.Collections.ObjectModel.ObservableCollection<Kiriha.Models.TorrentItem> TorrentItems { get; } = new();
 
@@ -29,11 +31,13 @@ public class RssFeedService
         IHttpClientFactory httpClientFactory,
         AnimeService animeService,
         MappingService mappingService,
-        IHttpCacheRepository httpCacheRepo)
+        IHttpCacheRepository httpCacheRepo,
+        IUiDispatcher uiDispatcher)
     {
         _httpClient = httpClientFactory.CreateClient("RssClient");
         _animeService = animeService;
         _mappingService = mappingService;
+        _uiDispatcher = uiDispatcher;
         _httpCache = new HttpConditionalCache(_httpClient, httpCacheRepo, "Nyaa");
     }
 
@@ -228,7 +232,7 @@ public class RssFeedService
             var results = new List<Kiriha.Models.TorrentItem>();
 
             // Snapshot ObservableCollection on UI thread to avoid "Collection was modified" races.
-            var activeAnime = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            var activeAnime = await _uiDispatcher.InvokeAsync(() =>
                 _animeService.Collection
                     .Where(x => x.Status == UserAnimeStatus.Watching || x.Status == UserAnimeStatus.PlanToWatch)
                     .ToList());
@@ -269,7 +273,7 @@ public class RssFeedService
         // Gate: only hit Nyaa if at least one watching anime is actually awaiting a new episode
         // (NextEpisodeAt is null or already passed). Otherwise torrents have nothing new for us.
         // Snapshot on UI thread — ObservableCollection is not thread-safe.
-        var awaitingEpisode = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        var awaitingEpisode = await _uiDispatcher.InvokeAsync(() =>
             _animeService.Collection.Any(NeedsNyaaCheck));
         if (!awaitingEpisode)
         {
@@ -288,7 +292,7 @@ public class RssFeedService
 
             // Get only ongoing/watching items to save resources.
             // Snapshot on UI thread — ObservableCollection is not thread-safe.
-            var activeAnime = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            var activeAnime = await _uiDispatcher.InvokeAsync(() =>
                 _animeService.Collection
                     .Where(x => x.Status == UserAnimeStatus.Watching || x.Status == UserAnimeStatus.PlanToWatch)
                     .ToList());
@@ -356,7 +360,7 @@ public class RssFeedService
 
             if (newTorrents.Any())
             {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                _uiDispatcher.Post(() => {
                     // Add to the beginning of collection
                     foreach (var t in newTorrents.OrderBy(x => x.PublishDate))
                     {

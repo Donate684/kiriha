@@ -4,7 +4,6 @@ using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Core;
-using Avalonia.Threading;
 using Kiriha.Services.Data;
 using Kiriha.ViewModels;
 using Kiriha.Views;
@@ -17,12 +16,14 @@ namespace Kiriha.Services;
 public class InstanceServer : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IUiDispatcher _uiDispatcher;
     private readonly object _pipeGate = new();
     private NamedPipeServerStream? _currentPipe;
 
-    public InstanceServer(IServiceProvider serviceProvider)
+    public InstanceServer(IServiceProvider serviceProvider, IUiDispatcher uiDispatcher)
     {
         _serviceProvider = serviceProvider;
+        _uiDispatcher = uiDispatcher;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -96,7 +97,7 @@ public class InstanceServer : BackgroundService
                 videoUrl = args[playerArgIndex + 1];
             }
 
-            Dispatcher.UIThread.Post(() => {
+            _uiDispatcher.Post(() => {
                 var metadataResolver = _serviceProvider.GetRequiredService<IPlayerMediaMetadataResolver>();
                 var settingsService = _serviceProvider.GetService<SettingsService>();
                 if (settingsService?.Current.Player.SingleWindow == true
@@ -119,7 +120,7 @@ public class InstanceServer : BackgroundService
         }
         else
         {
-            Dispatcher.UIThread.Post(() => {
+            _uiDispatcher.Post(() => {
                 if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
                 {
                     if (desktop.MainWindow != null)

@@ -41,6 +41,7 @@ internal static class DataServicesRegistration
 #endif
         });
 
+        services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
         services.AddSingleton<SettingsService>();
         services.AddSingleton<AppReadinessService>();
         services.AddSingleton<DatabaseInitializer>();

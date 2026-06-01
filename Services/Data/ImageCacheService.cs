@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media.Imaging;
+using Kiriha.Core;
 using Kiriha.Models;
 using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
@@ -24,6 +25,7 @@ public class ImageCacheService : IDisposable
 
     private readonly HttpClient _client;
     private readonly IBackgroundTaskSupervisor _backgroundTasks;
+    private readonly IUiDispatcher _uiDispatcher;
 
     private const long MaxDiskCacheSizeBytes = 1024L * 1024 * 1024; // 1 GB
     private readonly SemaphoreSlim _downloadSemaphore = new(6, 6);
@@ -36,9 +38,13 @@ public class ImageCacheService : IDisposable
         encodedBudgetBytes: 32L * 1024 * 1024,
         pixelBudgetBytes:   16L * 1024 * 1024);
     
-    public ImageCacheService(IHttpClientFactory httpClientFactory, IBackgroundTaskSupervisor backgroundTasks)
+    public ImageCacheService(
+        IHttpClientFactory httpClientFactory,
+        IBackgroundTaskSupervisor backgroundTasks,
+        IUiDispatcher uiDispatcher)
     {
         _backgroundTasks = backgroundTasks;
+        _uiDispatcher = uiDispatcher;
         _client = httpClientFactory.CreateClient();
         _client.DefaultRequestHeaders.UserAgent.ParseAdd(Kiriha.Core.AppInfo.UserAgent);
 
@@ -369,7 +375,7 @@ public class ImageCacheService : IDisposable
             if (string.IsNullOrEmpty(localPath) || ct.IsCancellationRequested)
                 return;
 
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            _uiDispatcher.Post(() =>
             {
                 if (ct.IsCancellationRequested) return;
                 item.LocalPosterPath = localPath;

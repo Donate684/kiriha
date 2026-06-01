@@ -17,15 +17,18 @@ public class AiringInfoService
     private readonly AniListApiService _aniListApi;
     private readonly AnimeService _animeService;
     private readonly NotificationService _notificationService;
+    private readonly IUiDispatcher _uiDispatcher;
 
     public AiringInfoService(
         AniListApiService aniListApi,
         AnimeService animeService,
-        NotificationService notificationService)
+        NotificationService notificationService,
+        IUiDispatcher uiDispatcher)
     {
         _aniListApi = aniListApi;
         _animeService = animeService;
         _notificationService = notificationService;
+        _uiDispatcher = uiDispatcher;
     }
 
     /// <summary>
@@ -74,7 +77,7 @@ public class AiringInfoService
 
         var threshold = DateTime.Now.AddHours(-6);
         // Snapshot on UI thread - ObservableCollection is not thread-safe.
-        var toSync = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        var toSync = await _uiDispatcher.InvokeAsync(() =>
             _animeService.Collection
                 .Where(x => x.StatusDetailed == "currently_airing" &&
                             x.Status == UserAnimeStatus.Watching &&
@@ -121,7 +124,7 @@ public class AiringInfoService
         var (finalAiredCount, nextSlot) = ResolveAired(anime, airing);
         int? notifyEp = null;
 
-        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        await _uiDispatcher.InvokeAsync(() =>
         {
             if (finalAiredCount != anime.EpisodesAired)
             {
@@ -147,9 +150,9 @@ public class AiringInfoService
         }
     }
 
-    private static async Task MarkSyncedAsync(AnimeItem anime, DateTime now)
+    private async Task MarkSyncedAsync(AnimeItem anime, DateTime now)
     {
-        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        await _uiDispatcher.InvokeAsync(() =>
         {
             anime.LastEpisodesSync = now;
             anime.RefreshMetadata();

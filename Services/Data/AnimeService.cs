@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
 using Kiriha.Models;
@@ -32,6 +31,7 @@ public class AnimeService
     private readonly SettingsService _settingsService;
     private readonly HistoryService _historyService;
     private readonly IBackgroundTaskSupervisor _backgroundTasks;
+    private readonly IUiDispatcher _uiDispatcher;
     private readonly TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _initStarted; // Interlocked guard for InitializeAsync
     private int _syncing;     // Interlocked guard for SyncWithTrackersAsync
@@ -60,7 +60,8 @@ public class AnimeService
         SyncManager syncManager,
         SettingsService settingsService,
         HistoryService historyService,
-        IBackgroundTaskSupervisor backgroundTasks)
+        IBackgroundTaskSupervisor backgroundTasks,
+        IUiDispatcher uiDispatcher)
     {
         _userAnimeRepo = userAnimeRepo;
         _syncTaskRepo = syncTaskRepo;
@@ -70,6 +71,7 @@ public class AnimeService
         _settingsService = settingsService;
         _historyService = historyService;
         _backgroundTasks = backgroundTasks;
+        _uiDispatcher = uiDispatcher;
     }
 
     public async Task InitializeAsync()
@@ -88,7 +90,7 @@ public class AnimeService
             // Single-shot Reset instead of per-item Add: one CollectionChanged event
             // for 2000+ items vs. 2000+ events. Eliminates the ~400 ms UI stall
             // observed on startup when seeding the cached anime list.
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            await _uiDispatcher.InvokeAsync(() =>
             {
                 if (cached != null && cached.Count > 0)
                     Collection.Reset(cached);
@@ -142,7 +144,7 @@ public class AnimeService
             // diff. Otherwise we'd "remove" the missing half of the user's library from the local
             // DB on every retry. Threshold: lose >30% relative to current cache when cache is
             // non-trivial. The user can always do a full re-sync after restart if this triggers.
-            var currentItems = await Dispatcher.UIThread.InvokeAsync(() => Collection.ToList());
+            var currentItems = await _uiDispatcher.InvokeAsync(() => Collection.ToList());
             var localCount = currentItems.Count;
             if (localCount >= 50 && apiList.Count < localCount * 0.7)
             {
@@ -159,7 +161,7 @@ public class AnimeService
             status?.Report(UIUtils.GetLoc("sync.saving.to_db"));
             // Snapshot Collection on the UI thread to avoid "Collection was modified" if
             // the UI is iterating concurrently. ObservableCollection is not thread-safe.
-            var snapshot = await Dispatcher.UIThread.InvokeAsync(() => Collection.ToList());
+            var snapshot = await _uiDispatcher.InvokeAsync(() => Collection.ToList());
             await _userAnimeRepo.SyncFromRemoteAsync(snapshot);
             
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
@@ -229,7 +231,7 @@ public class AnimeService
         var toRemove = currentItems.Where(x => !apiMap.ContainsKey(x.Id)).ToList();
         if (toRemove.Any())
         {
-            await Dispatcher.UIThread.InvokeAsync(() => 
+            await _uiDispatcher.InvokeAsync(() => 
             {
                 foreach (var item in toRemove) Collection.Remove(item);
             });
@@ -272,7 +274,7 @@ public class AnimeService
                 {
                     var currentBatch = uiBatch.ToList();
                     uiBatch.Clear();
-                    await Dispatcher.UIThread.InvokeAsync(() => 
+                    await _uiDispatcher.InvokeAsync(() => 
                     {
                         foreach (var action in currentBatch) action();
                     });
@@ -291,7 +293,7 @@ public class AnimeService
 
         // Read Collection and apply CopyTo on the UI thread: ObservableCollection is not thread-safe
         // and AnimeItem property setters raise PropertyChanged that UI bindings must observe on UI.
-        var existing = await Dispatcher.UIThread.InvokeAsync(() =>
+        var existing = await _uiDispatcher.InvokeAsync(() =>
         {
             var found = Collection.FirstOrDefault(x => x.Id == item.Id);
             if (found != null)
@@ -324,7 +326,7 @@ public class AnimeService
         _syncManager.CancelTasksForAnime(animeId);
         await _syncTaskRepo.RemoveForAnimeAsync(animeId);
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        await _uiDispatcher.InvokeAsync(() =>
         {
             var item = Collection.FirstOrDefault(x => x.Id == animeId);
             if (item != null) Collection.Remove(item);

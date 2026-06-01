@@ -23,6 +23,7 @@ public class ShikiMetadataService : IDisposable
     private readonly SettingsService _settingsService;
     private readonly HttpConditionalCache _httpCache;
     private readonly ShikiHostResolver _hostResolver;
+    private readonly IUiDispatcher _uiDispatcher;
 
     private readonly SemaphoreSlim _rateLimitLock = new(1, 1);
     private readonly SemaphoreSlim _concurrentFetches = new(2, 2);
@@ -36,13 +37,15 @@ public class ShikiMetadataService : IDisposable
         Repositories.IMetadataRepository metadataRepo,
         Repositories.IUserAnimeRepository userAnimeRepo,
         Repositories.IHttpCacheRepository httpCacheRepo,
-        ShikiHostResolver hostResolver)
+        ShikiHostResolver hostResolver,
+        IUiDispatcher uiDispatcher)
     {
         _httpClient = httpClientFactory.CreateClient("ShikiClient");
         _settingsService = settingsService;
         _metadataRepo = metadataRepo;
         _userAnimeRepo = userAnimeRepo;
         _hostResolver = hostResolver;
+        _uiDispatcher = uiDispatcher;
         _httpCache = new HttpConditionalCache(
             _httpClient,
             httpCacheRepo,
@@ -209,7 +212,7 @@ public class ShikiMetadataService : IDisposable
             if (meta != null)
             {
                 // ApplyMetadata mutates ObservableObject properties — dispatch to UI thread.
-                bool changed = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => ApplyMetadata(item, meta));
+                bool changed = await _uiDispatcher.InvokeAsync(() => ApplyMetadata(item, meta));
                 if (changed) await _userAnimeRepo.UpdateMetadataAsync(item);
                 localizedCount++;
             }
@@ -240,7 +243,7 @@ public class ShikiMetadataService : IDisposable
                         {
                             await _metadataRepo.UpsertAsync(fetchedMeta);
                             
-                            Avalonia.Threading.Dispatcher.UIThread.Post(async () => {
+                            _uiDispatcher.Post(async () => {
                                 bool changed = ApplyMetadata(item, fetchedMeta);
                                 if (changed) await _userAnimeRepo.UpdateMetadataAsync(item);
                                 int count = Interlocked.Increment(ref localizedCount);
@@ -277,7 +280,7 @@ public class ShikiMetadataService : IDisposable
         var meta = await GetOrFetchMetadataAsync(item.Id, maxAge: null, onFetched: null);
         if (meta == null) return;
 
-        bool changed = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => ApplyMetadata(item, meta));
+        bool changed = await _uiDispatcher.InvokeAsync(() => ApplyMetadata(item, meta));
         if (changed)
         {
             try { await _userAnimeRepo.UpdateMetadataAsync(item); }

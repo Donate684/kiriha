@@ -23,6 +23,7 @@ public class TrackingService : IDisposable
     private readonly SettingsService _settingsService;
     private readonly DiscordService _discordService;
     private readonly IScrobbleService _scrobbleService;
+    private readonly IUiDispatcher _uiDispatcher;
 
     public event EventHandler<ParsedMedia?>? MediaChanged;
     public event EventHandler<AnimeItem?>? AnimeMatched;
@@ -44,7 +45,8 @@ public class TrackingService : IDisposable
         AnimeService animeService,
         SettingsService settingsService,
         DiscordService discordService,
-        IScrobbleService scrobbleService)
+        IScrobbleService scrobbleService,
+        IUiDispatcher uiDispatcher)
     {
         _anisthesiaService = anisthesiaService;
         _mappingService = mappingService;
@@ -52,6 +54,7 @@ public class TrackingService : IDisposable
         _settingsService = settingsService;
         _discordService = discordService;
         _scrobbleService = scrobbleService;
+        _uiDispatcher = uiDispatcher;
 
         _anisthesiaService.MediaDetected += OnMediaDetected;
         _anisthesiaService.MediaCleared += OnMediaCleared;
@@ -171,7 +174,7 @@ public class TrackingService : IDisposable
         {
             await Task.WhenAny(_animeService.InitializationTask, Task.Delay(5000));
             
-            var userList = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => _animeService.Collection.ToList());
+            var userList = await _uiDispatcher.InvokeAsync(() => _animeService.Collection.ToList());
             var matched = userList.FirstOrDefault(x => x.Id == animeId);
 
             ParsedMedia? cur;
@@ -314,7 +317,7 @@ public class TrackingService : IDisposable
 
             // Snapshot the user list on UI thread — ObservableCollection is not thread-safe
             // and MappingService enumerates it lazily multiple times.
-            var userList = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(
+            var userList = await _uiDispatcher.InvokeAsync(
                 () => _animeService.Collection.ToList());
 
             // Perform Mapping
