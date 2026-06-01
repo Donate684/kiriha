@@ -54,10 +54,15 @@
                     <!-- ═══ Leaf Logo (theme-aware) ═══ -->
                     <SolidColorBrush x:Key="LeafVeinBrush"   Color="#FFFFFF" Opacity="0.55"/>
                     <!-- ═══ Anime Card (theme-aware) ═══ -->
-                    <x:String x:Key="CardBoxShadow">0 0 0 0 #00000000</x:String>
-                    <x:String x:Key="CardBoxShadowHover">0 0 0 0 #00000000</x:String>
+                    <BoxShadows x:Key="CardBoxShadow">0 0 0 0 #00000000</BoxShadows>
+                    <BoxShadows x:Key="CardBoxShadowHover">0 0 0 0 #00000000</BoxShadows>
                     <SolidColorBrush x:Key="CardBorderBrush" Color="Transparent"/>
                     <SolidColorBrush x:Key="ProgressStepHoverBrush" Color="#12000000"/>
+                    <SolidColorBrush x:Key="SegmentedTrackBrush" Color="#26000000"/>
+                    <SolidColorBrush x:Key="PillBgBrush" Color="#F3F4F6"/>
+                    <SolidColorBrush x:Key="PillFgPurpleBrush" Color="#6D28D9"/>
+                    <SolidColorBrush x:Key="PillFgGoldBrush" Color="#B45309"/>
+                    <SolidColorBrush x:Key="PillFgGrayBrush" Color="#4B5563"/>
                     <!-- Score flyout (light) -->
                     <SolidColorBrush x:Key="ScoreFlyoutBackground" Color="#F5FFFFFF"/>
                     <SolidColorBrush x:Key="ScoreFlyoutBorder" Color="#18000000"/>
@@ -118,10 +123,15 @@
                     <!-- ═══ Leaf Logo (theme-aware) ═══ -->
                     <SolidColorBrush x:Key="LeafVeinBrush"   Color="#FFFFFF" Opacity="0.75"/>
                     <!-- ═══ Anime Card (theme-aware) ═══ -->
-                    <x:String x:Key="CardBoxShadow">0 2 8 0 #18000000</x:String>
-                    <x:String x:Key="CardBoxShadowHover">0 6 18 0 #2A000000</x:String>
+                    <BoxShadows x:Key="CardBoxShadow">0 2 8 0 #18000000</BoxShadows>
+                    <BoxShadows x:Key="CardBoxShadowHover">0 6 18 0 #2A000000</BoxShadows>
                     <SolidColorBrush x:Key="CardBorderBrush" Color="Transparent"/>
                     <SolidColorBrush x:Key="ProgressStepHoverBrush" Color="#15FFFFFF"/>
+                    <SolidColorBrush x:Key="SegmentedTrackBrush" Color="#2AFFFFFF"/>
+                    <SolidColorBrush x:Key="PillBgBrush" Color="#2A2540"/>
+                    <SolidColorBrush x:Key="PillFgPurpleBrush" Color="#B388FF"/>
+                    <SolidColorBrush x:Key="PillFgGoldBrush" Color="#F6D365"/>
+                    <SolidColorBrush x:Key="PillFgGrayBrush" Color="#8B95A5"/>
                     <!-- Score flyout (dark) -->
                     <SolidColorBrush x:Key="ScoreFlyoutBackground" Color="#F5101010"/>
                     <SolidColorBrush x:Key="ScoreFlyoutBorder" Color="#20FFFFFF"/>
@@ -154,8 +164,6 @@
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
-        <conv:StarKindConverter x:Key="StarKindConverter"/>
-        <conv:StarColorConverter x:Key="StarColorConverter"/>
         <conv:LocConverter x:Key="LocConverter"/>
     </Application.Resources>
 

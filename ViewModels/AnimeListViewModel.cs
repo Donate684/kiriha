@@ -13,6 +13,7 @@ using Kiriha.Converters;
 using Kiriha.Core;
 using Kiriha.Models;
 using Kiriha.Models.Entities;
+using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
 using Kiriha.Utils;
@@ -27,6 +28,8 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     private readonly LoadQueueService _queueService;
     private readonly AiringInfoService _airingInfoService;
     private readonly RssFeedService _rssService;
+    private readonly AppReadinessService _readinessService;
+    private readonly AnimeCollectionProjection _listProjection = new();
 
     public ObservableCollection<AnimeItem> AnimeItems => _animeService.Collection;
 
@@ -59,41 +62,27 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     // could sit stuck on "3ч 19м" for hours.
     private DispatcherTimer? _airingTicker;
 
-    public object[] AvailableScores => _settingsService.Current.UI.UseFiveStarRating 
-        ? new object[] 
-        { 
-            RatingHelper.GetRatingOption("-"),
-            RatingHelper.GetRatingOption("10"),
-            RatingHelper.GetRatingOption("9"),
-            RatingHelper.GetRatingOption("7"),
-            RatingHelper.GetRatingOption("5"),
-            RatingHelper.GetRatingOption("3"),
-            RatingHelper.GetRatingOption("1")
-        }
-        : new object[] 
-        { 
-            RatingHelper.GetRatingOption("-"),
-            RatingHelper.GetRatingOption("10"),
-            RatingHelper.GetRatingOption("9"),
-            RatingHelper.GetRatingOption("8"),
-            RatingHelper.GetRatingOption("7"),
-            RatingHelper.GetRatingOption("6"),
-            RatingHelper.GetRatingOption("5"),
-            RatingHelper.GetRatingOption("4"),
-            RatingHelper.GetRatingOption("3"),
-            RatingHelper.GetRatingOption("2"),
-            RatingHelper.GetRatingOption("1")
-        };
+    public object[] AvailableScores =>
+    [
+        RatingHelper.GetRatingOption("-"),
+        RatingHelper.GetRatingOption("10"),
+        RatingHelper.GetRatingOption("9"),
+        RatingHelper.GetRatingOption("8"),
+        RatingHelper.GetRatingOption("7"),
+        RatingHelper.GetRatingOption("6"),
+        RatingHelper.GetRatingOption("5"),
+        RatingHelper.GetRatingOption("4"),
+        RatingHelper.GetRatingOption("3"),
+        RatingHelper.GetRatingOption("2"),
+        RatingHelper.GetRatingOption("1")
+    ];
 
     private string GetLoc(string key) => UIUtils.GetLoc(key);
 
     public void RefreshAvailableScores()
     {
         OnPropertyChanged(nameof(AvailableScores));
-        OnPropertyChanged(nameof(UseFiveStarRating));
     }
-
-    public bool UseFiveStarRating => _settingsService.Current.UI.UseFiveStarRating;
 
     [ObservableProperty] private AnimeItem? _activeItem;
 
@@ -122,13 +111,20 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     public bool IsDroppedSelected => SelectedStatus == UserAnimeStatus.Dropped;
     public bool IsPlanToWatchSelected => SelectedStatus == UserAnimeStatus.PlanToWatch;
 
-    public AnimeListViewModel(SettingsService settingsService, AnimeService animeService, LoadQueueService queueService, AiringInfoService airingInfoService, RssFeedService rssService)
+    public AnimeListViewModel(
+        SettingsService settingsService,
+        AnimeService animeService,
+        LoadQueueService queueService,
+        AiringInfoService airingInfoService,
+        RssFeedService rssService,
+        AppReadinessService readinessService)
     {
         _settingsService = settingsService;
         _animeService = animeService;
         _queueService = queueService;
         _airingInfoService = airingInfoService;
         _rssService = rssService;
+        _readinessService = readinessService;
 
         _filterNsfw = _settingsService.Current.UI.ListShowNsfw;
         _sortBy = _settingsService.Current.UI.ListSortBy;
@@ -163,7 +159,8 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         });
 
         RefreshLocalization();
-        InitializeAsync().SafeFireAndForget("InitializeAsync");
+        _readinessService.StateChanged += OnReadinessStateChanged;
+        ObserveReadinessAsync().SafeFireAndForget("ObserveReadinessAsync");
     }
 
     partial void OnSortByChanged(string value)
@@ -199,6 +196,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
         // Coalesce bursts: airing/Shikimori sync can fire 30+ Add events in a
         // few hundred ms. The debouncer collapses them into a single refresh.
+        _listProjection.ApplyCollectionChange(e, _animeService.Collection);
         _collectionChangeDebouncer?.Invoke();
     }
 
@@ -232,21 +230,24 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         foreach (var item in AnimeItems) item.RefreshMetadata();
     }
 
-    private async Task InitializeAsync()
+    private void OnReadinessStateChanged(object? sender, AppReadinessState state)
     {
-        IsBusy = true;
+        Dispatcher.UIThread.Post(() => IsBusy = state == AppReadinessState.Starting);
+    }
+
+    private async Task ObserveReadinessAsync()
+    {
+        IsBusy = _readinessService.State is AppReadinessState.NotStarted or AppReadinessState.Starting;
         try
         {
-            await _animeService.InitializeAsync();
+            await _readinessService.ReadyTask;
+            RebuildListProjection();
             await UpdateCountsAsync();
             await ApplyCurrentFiltersAsync();
-
-            // If it's a fresh start (no items in DB), trigger a full sync automatically.
-            // Otherwise MaintenanceService handles periodic airing sync (threshold 12h, first run ~5 min after startup).
-            if (AnimeItems.Count == 0)
-            {
-                await SyncMal();
-            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "AnimeListViewModel: readiness observer failed");
         }
         finally
         {
@@ -262,29 +263,20 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
     private async Task UpdateCountsAsync()
     {
-        var snapshot = await Dispatcher.UIThread.InvokeAsync(() => _animeService.Collection.ToList());
-
-        // Offload counting to background thread to avoid UI stutters on large collections
-        var (watching, completed, onHold, dropped, ptw) = await Task.Run(() => 
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            int w = 0, c = 0, h = 0, d = 0, p = 0;
-            foreach (var item in snapshot)
-            {
-                var status = item.Status;
-                if (status == UserAnimeStatus.Watching || item.IsRewatching) w++;
-                else if (status == UserAnimeStatus.Completed) c++;
-                else if (status == UserAnimeStatus.OnHold) h++;
-                else if (status == UserAnimeStatus.Dropped) d++;
-                else if (status == UserAnimeStatus.PlanToWatch) p++;
-            }
-            return (w, c, h, d, p);
-        });
+            var watching = _listProjection.Count(UserAnimeStatus.Watching);
+            var completed = _listProjection.Count(UserAnimeStatus.Completed);
+            var onHold = _listProjection.Count(UserAnimeStatus.OnHold);
+            var dropped = _listProjection.Count(UserAnimeStatus.Dropped);
+            var ptw = _listProjection.Count(UserAnimeStatus.PlanToWatch);
 
-        WatchingHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.watching"), watching.ToString());
-        CompletedHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.completed"), completed.ToString());
-        OnHoldHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.on_hold"), onHold.ToString());
-        DroppedHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.dropped"), dropped.ToString());
-        PlanToWatchHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.plan_to_watch"), ptw.ToString());
+            WatchingHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.watching"), watching.ToString());
+            CompletedHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.completed"), completed.ToString());
+            OnHoldHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.on_hold"), onHold.ToString());
+            DroppedHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.dropped"), dropped.ToString());
+            PlanToWatchHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.plan_to_watch"), ptw.ToString());
+        });
     }
 
     [RelayCommand]
@@ -297,6 +289,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
             
             if (success)
             {
+                RebuildListProjection();
                 await UpdateCountsAsync();
                 await ApplyCurrentFiltersAsync();
                 
@@ -331,24 +324,8 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
     private async Task ApplyCurrentFiltersAsync()
     {
-        var snapshot = await Dispatcher.UIThread.InvokeAsync(() => _animeService.Collection.ToList());
-
-        // Offload LINQ queries to background thread
-        var filtered = await Task.Run(() => 
-        {
-            var query = snapshot.AsEnumerable();
-
-            if (SelectedStatus == UserAnimeStatus.Watching)
-                query = query.Where(x => x.Status == UserAnimeStatus.Watching || x.IsRewatching);
-            else
-                query = query.Where(x => x.Status == SelectedStatus);
-
-            query = query.ApplySearch(SearchQuery)
-                         .ApplyNsfw(FilterNsfw)
-                         .ApplySorting(SortBy);
-
-            return query.ToList();
-        });
+        var filtered = await Dispatcher.UIThread.InvokeAsync(() =>
+            _listProjection.Query(SelectedStatus, SearchQuery, FilterNsfw, SortBy));
 
         // In-place update of the existing AvaloniaList instead of replacing the
         // reference. Re-assigning FilteredItems would force every binding (and
@@ -363,8 +340,14 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
     public void RefreshAfterDetailsEdit()
     {
+        RebuildListProjection();
         UpdateCountsAsync().SafeFireAndForget("RefreshAfterDetailsEdit");
         ApplyCurrentFiltersAsync().SafeFireAndForget("RefreshAfterDetailsEdit");
+    }
+
+    private void RebuildListProjection()
+    {
+        _listProjection.Rebuild(_animeService.Collection);
     }
 
     [RelayCommand]
@@ -421,8 +404,11 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         _searchDebouncer?.Dispose();
+        _collectionChangeDebouncer?.Dispose();
         _airingTicker?.Stop();
         _airingTicker = null;
+        _readinessService.StateChanged -= OnReadinessStateChanged;
         _animeService.Collection.CollectionChanged -= OnCollectionChanged;
+        _listProjection.Dispose();
     }
 }

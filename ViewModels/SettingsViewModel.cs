@@ -81,9 +81,6 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _isShikiLoggedIn;
     
     [ObservableProperty]
-    private bool _useFiveStarRating;
-
-    [ObservableProperty]
     private bool _useRussianTitles;
 
     [ObservableProperty]
@@ -272,7 +269,6 @@ public partial class SettingsViewModel : ViewModelBase
         
         IsLoggedIn = _settingsService.Current.Api.Mal != null;
         IsShikiLoggedIn = _settingsService.Current.Api.Shiki != null;
-        UseFiveStarRating = _settingsService.Current.UI.UseFiveStarRating;
         UseRussianTitles = _settingsService.Current.UI.UseRussianTitles;
         UseRussianDescriptions = _settingsService.Current.UI.UseRussianDescriptions;
         ShowAiringInfo = _settingsService.Current.UI.ShowAiringInfo;

@@ -40,12 +40,6 @@ public partial class SettingsViewModel
         CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new CardStyleChangedMessage(value));
     }
 
-    partial void OnUseFiveStarRatingChanged(bool value)
-    {
-        _settingsService.Update(settings => settings.UI.UseFiveStarRating = value);
-        _animeListViewModel.RefreshAvailableScores();
-    }
-
     partial void OnUseRussianTitlesChanged(bool value)
     {
         _settingsService.Update(settings => settings.UI.UseRussianTitles = value);

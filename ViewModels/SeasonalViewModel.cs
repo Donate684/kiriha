@@ -109,8 +109,6 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _specialsHeader = "";
     [ObservableProperty] private string _otherHeader = "";
 
-    public bool UseFiveStarRating => _settingsService.Current.UI.UseFiveStarRating;
-
     public List<string> Seasons { get; } = new() { Constants.Seasons.Winter, Constants.Seasons.Spring, Constants.Seasons.Summer, Constants.Seasons.Fall };
 
 
@@ -125,8 +123,8 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
 
         // Hydrate the in-memory _seasonalCache from disk exactly once per
         // process. Done synchronously here (sub-100 ms for typical sizes) so
-        // that the very first LoadSeasonalAnimeAsync Ã¢â‚¬â€ whether triggered by
-        // navigation or by the deferred prime Ã¢â‚¬â€ sees persisted data and can
+        // that the very first LoadSeasonalAnimeAsync, whether triggered by
+        // navigation or by the deferred prime, sees persisted data and can
         // serve a near-instant first paint.
         if (Interlocked.CompareExchange(ref _diskHydrated, 1, 0) == 0)
         {
@@ -399,6 +397,16 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
         var selectedCategory = SelectedCategory;
         var currentYear = CurrentYear;
         var currentSeason = CurrentSeason;
+        var hiddenIds = _hiddenSeasonalIds.Count == 0
+            ? new HashSet<int>()
+            : new HashSet<int>(_hiddenSeasonalIds);
+        var wantHidden = ShowHidden;
+        var filterNotInList = FilterNotInList;
+        var filterWatching = FilterWatching;
+        var filterCompleted = FilterCompleted;
+        var filterOnHold = FilterOnHold;
+        var filterPlanToWatch = FilterPlanToWatch;
+        var filterDropped = FilterDropped;
 
         var (items, header, headers, resolvedCategory) = await Task.Run(() => 
         {
@@ -407,10 +415,8 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
             // "Hidden" behaves like another status group: when its checkbox is on,
             // hidden ids are included (and become the only result if no other
             // status filter is set). When it's off, hidden ids are excluded.
-            var hiddenIds = _hiddenSeasonalIds;
-            bool wantHidden = ShowHidden;
-            bool anyStatusFilter = FilterWatching || FilterCompleted || FilterOnHold || FilterPlanToWatch || FilterDropped;
-            bool anyFilter = FilterNotInList || anyStatusFilter || wantHidden;
+            bool anyStatusFilter = filterWatching || filterCompleted || filterOnHold || filterPlanToWatch || filterDropped;
+            bool anyFilter = filterNotInList || anyStatusFilter || wantHidden;
 
             if (!anyFilter)
             {
@@ -424,12 +430,13 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
                 {
                     bool isHidden = hiddenIds.Count > 0 && hiddenIds.Contains(x.Id);
                     if (isHidden) return wantHidden;
-                    return (FilterNotInList && x.Status == UserAnimeStatus.None) ||
-                           (FilterWatching && x.Status == UserAnimeStatus.Watching) ||
-                           (FilterCompleted && x.Status == UserAnimeStatus.Completed) ||
-                           (FilterOnHold && x.Status == UserAnimeStatus.OnHold) ||
-                           (FilterPlanToWatch && x.Status == UserAnimeStatus.PlanToWatch) ||
-                           (FilterDropped && x.Status == UserAnimeStatus.Dropped);
+                    var status = userStore.TryGetValue(x.Id, out var storedStatus) ? storedStatus : UserAnimeStatus.None;
+                    return (filterNotInList && status == UserAnimeStatus.None) ||
+                           (filterWatching && status == UserAnimeStatus.Watching) ||
+                           (filterCompleted && status == UserAnimeStatus.Completed) ||
+                           (filterOnHold && status == UserAnimeStatus.OnHold) ||
+                           (filterPlanToWatch && status == UserAnimeStatus.PlanToWatch) ||
+                           (filterDropped && status == UserAnimeStatus.Dropped);
                 });
             }
 

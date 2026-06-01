@@ -136,6 +136,30 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
+    public void Dispose_RewritesCorruptedJsonWithDefaults()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "{ broken json");
+
+            using (new SettingsService(path))
+            {
+            }
+
+            using var reloaded = new SettingsService(path);
+
+            Assert.Equal("en", reloaded.Current.UI.LanguageCode);
+            Assert.Null(reloaded.Current.Api.Mal);
+        }
+        finally
+        {
+            DeleteQuietly(path);
+        }
+    }
+
+    [Fact]
     public void SaveImmediate_EncryptsOAuthTokensAtRestAndReloadsThem()
     {
         var path = CreateTempSettingsPath();

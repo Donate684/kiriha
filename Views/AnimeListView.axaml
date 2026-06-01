@@ -7,19 +7,24 @@
              xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
              xmlns:core="using:Kiriha.Core"
              xmlns:u="using:Kiriha.Utils"
+             xmlns:controls="using:Kiriha.Views.Controls"
              x:Class="Kiriha.Views.AnimeListView"
              x:DataType="vm:AnimeListViewModel"
              x:CompileBindings="True"
              x:Name="animeListRoot">
 
     <UserControl.Resources>
-        <conv:RatingConverter x:Key="RatingConverter"/>
         <conv:LocConverter x:Key="LocConverter"/>
 
-        <!-- ═══════════ VARIANT A: Classic ═══════════ -->
-        <DataTemplate x:Key="CardTemplateClassic" x:DataType="models:AnimeItem">
-            <Border Classes="AnimeCard revealItem" Margin="4" Width="155" ClipToBounds="True">
-                <Grid RowDefinitions="210, *">
+
+
+        <!-- ═══════════ VARIANT F: Floating Magazine ═══════════ -->
+        <DataTemplate x:Key="CardTemplateFloatingMagazine" x:DataType="models:AnimeItem">
+            <Border Classes="AnimeCard revealItem FloatingMagCard" Margin="4" Width="158" Height="325" ClipToBounds="False"
+                    CornerRadius="10" Background="{DynamicResource CardBackgroundFillSecondary}"
+                    BorderBrush="{DynamicResource DividerStrokeColorDefault}" BorderThickness="1">
+                <Border CornerRadius="10" ClipToBounds="True">
+                    <Grid RowDefinitions="210, *">
                     <!-- Poster -->
                     <Panel Grid.Row="0" Background="Transparent" DoubleTapped="Poster_DoubleTapped">
                         <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill"/>
@@ -37,9 +42,9 @@
                         <!-- Top-Left: airing + rewatching pills -->
                         <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left"
                                     Margin="8" Orientation="Horizontal" Spacing="4">
-                            <Border Classes="Badge" Background="{Binding AiringBadgeColor}"
-                                    IsVisible="{Binding AiringBadgeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                <TextBlock Text="{Binding AiringBadgeText}"
+                            <Border Classes="Badge" Background="{Binding Presentation.AiringBadgeColor}"
+                                    IsVisible="{Binding Presentation.AiringBadgeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <TextBlock Text="{Binding Presentation.AiringBadgeText}"
                                            FontSize="9" Foreground="White" FontWeight="SemiBold"/>
                             </Border>
                             <Border Classes="Badge" Background="#2E7D32"
@@ -64,231 +69,59 @@
                                             FlyoutPresenterClasses="ScoreFlyout"
                                             Opened="ScoreMenu_Opened"/>
                             </Button.Flyout>
-                            <StackPanel Orientation="Horizontal" Spacing="2">
-                                <!-- 5 Stars -->
-                                <StackPanel Orientation="Horizontal" Spacing="1"
-                                            IsVisible="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
-                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=1:MyList}"/>
-                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=2:MyList}"/>
-                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=3:MyList}"/>
-                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=4:MyList}"/>
-                                    <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=5:MyList}"/>
-                                </StackPanel>
-                                <!-- 10-point fallback -->
-                                <StackPanel Orientation="Horizontal" Spacing="3"
-                                            IsVisible="{Binding !#animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
-                                    <material:MaterialIcon Kind="Star" Width="13" Height="13" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding Score}" FontSize="11" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="3">
+                                <material:MaterialIcon Kind="Star" Width="13" Height="13" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Score}" FontSize="11" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </Panel>
 
-                    <!-- Info block -->
-                    <Grid Grid.Row="1" RowDefinitions="*, Auto, Auto" Margin="10,8,10,4">
-                        <StackPanel Grid.Row="0" Spacing="1" Height="57" VerticalAlignment="Top" ClipToBounds="True">
+                    <!-- Bottom Info -->
+                    <StackPanel Grid.Row="1" Margin="11,10,11,12" Spacing="8">
+                        <StackPanel Spacing="2" Height="36" VerticalAlignment="Top">
                             <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
                                        MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                       LineHeight="15"
-                                       Foreground="{DynamicResource SystemBaseHighColor}"/>
+                                       LineHeight="15" Foreground="{DynamicResource SystemBaseHighColor}"/>
                             <TextBlock Text="{Binding RussianTitle}" FontSize="10"
-                                       MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                       LineHeight="13"
-                                       Foreground="{DynamicResource SystemAccentColor}" Opacity="0.85"
+                                       MaxLines="1" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       LineHeight="13" Foreground="{DynamicResource SystemBaseMediumColor}" Opacity="0.85"
                                        IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         </StackPanel>
 
                         <!-- Progress bar -->
-                        <Border Grid.Row="1" Height="4" Margin="0,6,0,6"
-                                Background="{DynamicResource SubtleFillColorTertiary}"
-                                CornerRadius="2" ClipToBounds="True"
-                                UseLayoutRounding="True">
-                            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                <Border Background="#E53935"
-                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                        CornerRadius="2" RenderTransformOrigin="0%,0%"
-                                        IsVisible="{Binding ShowAiredProgressBar}">
-                                    <Border.RenderTransform>
-                                        <ScaleTransform ScaleX="{Binding AiredValueFraction}"/>
-                                    </Border.RenderTransform>
-                                </Border>
-                                <Border Background="{DynamicResource SystemAccentColor}"
-                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                        CornerRadius="2" RenderTransformOrigin="0%,0%">
-                                    <Border.RenderTransform>
-                                        <ScaleTransform ScaleX="{Binding ProgressValueFraction}"/>
-                                    </Border.RenderTransform>
-                                </Border>
-                            </Panel>
-                        </Border>
+                        <controls:SegmentedProgressBar Margin="0,4"
+                                                       Current="{Binding Progress}"
+                                                       Total="{Binding TotalEpisodes}"
+                                                       Aired="{Binding EpisodesAired}"
+                                                       AccentBrush="#67D7A1"
+                                                       AiredBrush="#E53935"
+                                                       TrackBrush="{DynamicResource SegmentedTrackBrush}"
+                                                       IsVisible="{Binding Presentation.ShowProgress}"/>
 
-                        <!-- Controls row -->
-                        <Grid Grid.Row="2" ColumnDefinitions="*, Auto, Auto, Auto, *" VerticalAlignment="Center"
-                              UseLayoutRounding="True">
-                            <Button Grid.Column="1" Classes="ProgressStep"
-                                    IsVisible="{Binding CanEditProgress}"
+                        <!-- Episode controls -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                            <Button Grid.Column="0" Classes="ProgressStep"
+                                    IsVisible="{Binding Presentation.CanEditProgress}"
                                     Command="{Binding $parent[UserControl].DataContext.DecrementProgressCommand}"
                                     CommandParameter="{Binding}">
-                                <material:MaterialIcon Kind="Minus" Width="14" Height="14" Opacity="0.75"/>
+                                <material:MaterialIcon Kind="Minus" Width="16" Height="16" Foreground="{DynamicResource SystemBaseMediumColor}"/>
                             </Button>
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4"
-                                        VerticalAlignment="Center" Margin="4,0">
-                                <TextBlock Text="{Binding ProgressPart}" FontSize="12" FontWeight="SemiBold"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SystemBaseHighColor}"
-                                           IsVisible="{Binding ShowProgress}"/>
-                                <TextBlock Text="{Binding TotalPart}" FontSize="12"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SystemBaseMediumColor}"/>
+                            
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Presentation.ProgressPart}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource SystemBaseMediumColor}" IsVisible="{Binding Presentation.ShowProgress}"/>
+                                <TextBlock Text="{Binding Presentation.TotalPart}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource SystemBaseMediumColor}"/>
                             </StackPanel>
-                            <Button Grid.Column="3" Classes="ProgressStep"
-                                    IsVisible="{Binding CanEditProgress}"
+
+                            <Button Grid.Column="2" Classes="ProgressStep"
+                                    IsVisible="{Binding Presentation.CanEditProgress}"
                                     Command="{Binding $parent[UserControl].DataContext.IncrementProgressCommand}"
                                     CommandParameter="{Binding}">
-                                <material:MaterialIcon Kind="Plus" Width="14" Height="14"
-                                                      Foreground="{DynamicResource SystemAccentColor}"/>
+                                <material:MaterialIcon Kind="Plus" Width="16" Height="16" Foreground="#67D7A1"/>
                             </Button>
                         </Grid>
-                    </Grid>
+                    </StackPanel>
                 </Grid>
-            </Border>
-        </DataTemplate>
-
-        <!-- ═══════════ VARIANT B: Cinematic Overlay ═══════════ -->
-        <DataTemplate x:Key="CardTemplateCinematic" x:DataType="models:AnimeItem">
-            <Border Classes="AnimeCard revealItem" Margin="4" Width="155" Height="265" ClipToBounds="True">
-                <Panel Background="Transparent" DoubleTapped="Poster_DoubleTapped">
-                    <!-- Full-height poster -->
-                    <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill"/>
-
-                    <!-- Top gradient for badges -->
-                    <Border VerticalAlignment="Top" Height="56" IsHitTestVisible="False"
-                            Background="{DynamicResource CinematicTopGradient}"/>
-
-                    <!-- Bottom cinematic gradient -->
-                    <Border VerticalAlignment="Bottom" Height="160" IsHitTestVisible="False"
-                            Background="{DynamicResource CinematicBottomGradient}"/>
-
-                    <!-- Top-Left: airing + rewatching pills -->
-                    <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left"
-                                Margin="8" Orientation="Horizontal" Spacing="4">
-                        <Border Classes="Badge" Background="{Binding AiringBadgeColor}"
-                                IsVisible="{Binding AiringBadgeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <TextBlock Text="{Binding AiringBadgeText}"
-                                       FontSize="9" Foreground="White" FontWeight="SemiBold"/>
-                        </Border>
-                        <Border Classes="Badge" Background="#2E7D32"
-                                IsVisible="{Binding IsRewatching}">
-                            <TextBlock Text="{DynamicResource l.anime.status.rewatching}"
-                                       FontSize="9" Foreground="White" FontWeight="SemiBold"/>
-                        </Border>
-                    </StackPanel>
-
-                    <!-- Top-Right: score -->
-                    <Button VerticalAlignment="Top" HorizontalAlignment="Right"
-                            Margin="8" Padding="2" Background="Transparent"
-                            BorderThickness="0" CornerRadius="6"
-                            Command="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).OpenScoreMenuCommand}"
-                            CommandParameter="{Binding}"
-                            IsVisible="{Binding Score, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <Button.Effect>
-                            <DropShadowEffect BlurRadius="4" Color="#AA000000" OffsetX="0" OffsetY="1"/>
-                        </Button.Effect>
-                        <Button.Flyout>
-                            <MenuFlyout ItemsSource="{Binding $parent[UserControl].DataContext.AvailableScores}"
-                                        FlyoutPresenterClasses="ScoreFlyout"
-                                        Opened="ScoreMenu_Opened"/>
-                        </Button.Flyout>
-                        <StackPanel Orientation="Horizontal" Spacing="2">
-                            <StackPanel Orientation="Horizontal" Spacing="1"
-                                        IsVisible="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=1:MyList}"/>
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=2:MyList}"/>
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=3:MyList}"/>
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=4:MyList}"/>
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=5:MyList}"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="3"
-                                        IsVisible="{Binding !#animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
-                                <material:MaterialIcon Kind="Star" Width="13" Height="13" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Score}" FontSize="11" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Bottom overlay info -->
-                    <StackPanel VerticalAlignment="Bottom" Margin="10,0,10,8" Spacing="2">
-                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold"
-                                   MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                   LineHeight="15" Foreground="{DynamicResource CinematicTitleForeground}">
-                            <TextBlock.Effect>
-                                <DropShadowEffect BlurRadius="4" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
-                            </TextBlock.Effect>
-                        </TextBlock>
-                        <TextBlock Text="{Binding RussianTitle}" FontSize="10"
-                                   MaxLines="1" TextTrimming="CharacterEllipsis"
-                                   LineHeight="13" Foreground="{DynamicResource CinematicSubtitleForeground}"
-                                   IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <TextBlock.Effect>
-                                <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
-                            </TextBlock.Effect>
-                        </TextBlock>
-
-                        <!-- Thin progress bar -->
-                        <Border Height="3" Margin="0,5,0,3"
-                                Background="{DynamicResource CinematicProgressBarBg}"
-                                CornerRadius="1.5" ClipToBounds="True">
-                            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                <Border Background="#E53935"
-                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                        CornerRadius="1.5" RenderTransformOrigin="0%,0%"
-                                        IsVisible="{Binding ShowAiredProgressBar}">
-                                    <Border.RenderTransform>
-                                        <ScaleTransform ScaleX="{Binding AiredValueFraction}"/>
-                                    </Border.RenderTransform>
-                                </Border>
-                                <Border Background="{DynamicResource SystemAccentColor}"
-                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                        CornerRadius="1.5" RenderTransformOrigin="0%,0%">
-                                    <Border.RenderTransform>
-                                        <ScaleTransform ScaleX="{Binding ProgressValueFraction}"/>
-                                    </Border.RenderTransform>
-                                </Border>
-                            </Panel>
-                        </Border>
-
-                        <!-- Progress text centered -->
-                        <Grid ColumnDefinitions="*, Auto, Auto, Auto, *" VerticalAlignment="Center">
-                            <Button Grid.Column="1" Classes="ProgressStep"
-                                    IsVisible="{Binding CanEditProgress}"
-                                    Command="{Binding $parent[UserControl].DataContext.DecrementProgressCommand}"
-                                    CommandParameter="{Binding}">
-                                <material:MaterialIcon Kind="Minus" Width="13" Height="13" Foreground="{DynamicResource CinematicMinusForeground}"/>
-                            </Button>
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="3"
-                                        VerticalAlignment="Center" Margin="3,0">
-                                <TextBlock Text="{Binding ProgressPart}" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource CinematicProgressForeground}" IsVisible="{Binding ShowProgress}">
-                                    <TextBlock.Effect>
-                                        <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
-                                    </TextBlock.Effect>
-                                </TextBlock>
-                                <TextBlock Text="{Binding TotalPart}" FontSize="11" Foreground="{DynamicResource CinematicProgressDimForeground}">
-                                    <TextBlock.Effect>
-                                        <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
-                                    </TextBlock.Effect>
-                                </TextBlock>
-                            </StackPanel>
-                            <Button Grid.Column="3" Classes="ProgressStep"
-                                    IsVisible="{Binding CanEditProgress}"
-                                    Command="{Binding $parent[UserControl].DataContext.IncrementProgressCommand}"
-                                    CommandParameter="{Binding}">
-                                <material:MaterialIcon Kind="Plus" Width="13" Height="13"
-                                                      Foreground="{DynamicResource SystemAccentColor}"/>
-                            </Button>
-                        </Grid>
-                    </StackPanel>
-                </Panel>
+                </Border>
             </Border>
         </DataTemplate>
 
@@ -303,9 +136,9 @@
                         <!-- Badges on poster -->
                         <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left"
                                     Margin="5" Orientation="Vertical" Spacing="3">
-                            <Border Classes="Badge" Background="{Binding AiringBadgeColor}"
-                                    IsVisible="{Binding AiringBadgeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                <TextBlock Text="{Binding AiringBadgeText}"
+                            <Border Classes="Badge" Background="{Binding Presentation.AiringBadgeColor}"
+                                    IsVisible="{Binding Presentation.AiringBadgeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <TextBlock Text="{Binding Presentation.AiringBadgeText}"
                                            FontSize="8" Foreground="White" FontWeight="SemiBold"/>
                             </Border>
                             <Border Classes="Badge" Background="#2E7D32"
@@ -336,20 +169,9 @@
                                                 FlyoutPresenterClasses="ScoreFlyout"
                                                 Opened="ScoreMenu_Opened"/>
                                 </Button.Flyout>
-                                <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <StackPanel Orientation="Horizontal" Spacing="1"
-                                                IsVisible="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
-                                        <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=1:MyList}"/>
-                                        <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=2:MyList}"/>
-                                        <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=3:MyList}"/>
-                                        <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=4:MyList}"/>
-                                        <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=5:MyList}"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Spacing="3"
-                                                IsVisible="{Binding !#animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
-                                        <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding Score}" FontSize="11" Foreground="{DynamicResource SystemBaseHighColor}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                    <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Score}" FontSize="11" Foreground="{DynamicResource SystemBaseHighColor}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -372,16 +194,16 @@
                                 <Border Background="#E53935"
                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                         CornerRadius="2" RenderTransformOrigin="0%,0%"
-                                        IsVisible="{Binding ShowAiredProgressBar}">
+                                        IsVisible="{Binding Presentation.ShowAiredProgressBar}">
                                     <Border.RenderTransform>
-                                        <ScaleTransform ScaleX="{Binding AiredValueFraction}"/>
+                                        <ScaleTransform ScaleX="{Binding Presentation.AiredValueFraction}"/>
                                     </Border.RenderTransform>
                                 </Border>
                                 <Border Background="{DynamicResource SystemAccentColor}"
                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                         CornerRadius="2" RenderTransformOrigin="0%,0%">
                                     <Border.RenderTransform>
-                                        <ScaleTransform ScaleX="{Binding ProgressValueFraction}"/>
+                                        <ScaleTransform ScaleX="{Binding Presentation.ProgressValueFraction}"/>
                                     </Border.RenderTransform>
                                 </Border>
                             </Panel>
@@ -390,23 +212,23 @@
                         <!-- Controls row -->
                         <Grid Grid.Row="4" ColumnDefinitions="Auto, Auto, *, Auto" VerticalAlignment="Center">
                             <Button Grid.Column="0" Classes="ProgressStep"
-                                    IsVisible="{Binding CanEditProgress}"
+                                    IsVisible="{Binding Presentation.CanEditProgress}"
                                     Command="{Binding $parent[UserControl].DataContext.DecrementProgressCommand}"
                                     CommandParameter="{Binding}">
                                 <material:MaterialIcon Kind="Minus" Width="14" Height="14" Opacity="0.75"/>
                             </Button>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
                                         VerticalAlignment="Center" Margin="4,0">
-                                <TextBlock Text="{Binding ProgressPart}" FontSize="12" FontWeight="SemiBold"
+                                <TextBlock Text="{Binding Presentation.ProgressPart}" FontSize="12" FontWeight="SemiBold"
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource SystemBaseHighColor}"
-                                           IsVisible="{Binding ShowProgress}"/>
-                                <TextBlock Text="{Binding TotalPart}" FontSize="12"
+                                           IsVisible="{Binding Presentation.ShowProgress}"/>
+                                <TextBlock Text="{Binding Presentation.TotalPart}" FontSize="12"
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource SystemBaseMediumColor}"/>
                             </StackPanel>
                             <Button Grid.Column="3" Classes="ProgressStep"
-                                    IsVisible="{Binding CanEditProgress}"
+                                    IsVisible="{Binding Presentation.CanEditProgress}"
                                     Command="{Binding $parent[UserControl].DataContext.IncrementProgressCommand}"
                                     CommandParameter="{Binding}">
                                 <material:MaterialIcon Kind="Plus" Width="14" Height="14"
@@ -438,9 +260,9 @@
                     <!-- Top-Left: airing pills (always visible) -->
                     <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left"
                                 Margin="8" Orientation="Horizontal" Spacing="4">
-                        <Border Classes="Badge" Background="{Binding AiringBadgeColor}"
-                                IsVisible="{Binding AiringBadgeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <TextBlock Text="{Binding AiringBadgeText}"
+                        <Border Classes="Badge" Background="{Binding Presentation.AiringBadgeColor}"
+                                IsVisible="{Binding Presentation.AiringBadgeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock Text="{Binding Presentation.AiringBadgeText}"
                                        FontSize="9" Foreground="White" FontWeight="SemiBold"/>
                         </Border>
                         <Border Classes="Badge" Background="#2E7D32"
@@ -465,20 +287,9 @@
                                         FlyoutPresenterClasses="ScoreFlyout"
                                         Opened="ScoreMenu_Opened"/>
                         </Button.Flyout>
-                        <StackPanel Orientation="Horizontal" Spacing="2">
-                            <StackPanel Orientation="Horizontal" Spacing="1"
-                                        IsVisible="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=1:MyList}"/>
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=2:MyList}"/>
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=3:MyList}"/>
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=4:MyList}"/>
-                                <material:MaterialIcon Width="12" Height="12" Foreground="{Binding Score, Converter={StaticResource StarColorConverter}}" Kind="{Binding Score, Converter={StaticResource StarKindConverter}, ConverterParameter=5:MyList}"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="3"
-                                        IsVisible="{Binding !#animeListRoot.((vm:AnimeListViewModel)DataContext).UseFiveStarRating}">
-                                <material:MaterialIcon Kind="Star" Width="13" Height="13" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Score}" FontSize="11" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="3">
+                            <material:MaterialIcon Kind="Star" Width="13" Height="13" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Score}" FontSize="11" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
@@ -509,16 +320,16 @@
                                     <Border Background="#E53935"
                                             HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                             CornerRadius="1.5" RenderTransformOrigin="0%,0%"
-                                            IsVisible="{Binding ShowAiredProgressBar}">
+                                            IsVisible="{Binding Presentation.ShowAiredProgressBar}">
                                         <Border.RenderTransform>
-                                            <ScaleTransform ScaleX="{Binding AiredValueFraction}"/>
+                                            <ScaleTransform ScaleX="{Binding Presentation.AiredValueFraction}"/>
                                         </Border.RenderTransform>
                                     </Border>
                                     <Border Background="{DynamicResource SystemAccentColor}"
                                             HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                             CornerRadius="1.5" RenderTransformOrigin="0%,0%">
                                         <Border.RenderTransform>
-                                            <ScaleTransform ScaleX="{Binding ProgressValueFraction}"/>
+                                            <ScaleTransform ScaleX="{Binding Presentation.ProgressValueFraction}"/>
                                         </Border.RenderTransform>
                                     </Border>
                                 </Panel>
@@ -526,9 +337,9 @@
 
                             <!-- Progress text -->
                             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding ProgressPart}" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="White" IsVisible="{Binding ShowProgress}"/>
-                                <TextBlock Text="{Binding TotalPart}" FontSize="11" Foreground="#70FFFFFF"/>
+                                <TextBlock Text="{Binding Presentation.ProgressPart}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="White" IsVisible="{Binding Presentation.ShowProgress}"/>
+                                <TextBlock Text="{Binding Presentation.TotalPart}" FontSize="11" Foreground="#70FFFFFF"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -571,14 +382,18 @@
             <Setter Property="Background" Value="#EE000000"/>
         </Style>
 
-        <!-- â•â•â• Card shell: soft, shadowed, with smooth hover lift â•â•â• -->
+        <!-- ═══ Card shell: soft, shadowed, with smooth hover lift ═══ -->
         <Style Selector="Border.AnimeCard">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundFillDefault}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="BorderThickness" Value="0"/>
         </Style>
+        
+        <Style Selector="Border.FloatingMagCard">
+            <Setter Property="BoxShadow" Value="{DynamicResource CardBoxShadow}"/>
+        </Style>
 
-        <!-- â•â•â• Reveal-on-scroll: ÐºÐ°Ñ€Ñ‚Ð¾Ñ‡ÐºÐ° fade+slide-up Ð¿Ñ€Ð¸ Ð¿Ð¾ÑÐ²Ð»ÐµÐ½Ð¸Ð¸ Ð² viewport â•â•â• -->
+        <!-- ═══ Reveal-on-scroll: карточка fade+slide-up при появлении в viewport ═══ -->
         <Style Selector="Border.revealItem">
             <Setter Property="Opacity" Value="0"/>
             <Setter Property="RenderTransform" Value="translate(0,20px)"/>

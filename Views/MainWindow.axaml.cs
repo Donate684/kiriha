@@ -45,6 +45,12 @@ public partial class MainWindow : Window
     {
         base.OnKeyDown(e);
 
+        if (e.Key == Key.F11)
+        {
+            var lab = new CardLabWindow();
+            lab.Show(this);
+            e.Handled = true;
+        }
     }
 
     /// <summary>

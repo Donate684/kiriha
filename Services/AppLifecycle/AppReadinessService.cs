@@ -1,0 +1,102 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Kiriha.Core;
+using Kiriha.Services.Data;
+using Kiriha.Services.Tracking;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Serilog;
+
+namespace Kiriha.Services.AppLifecycle;
+
+public sealed class AppReadinessService
+{
+    private readonly IServiceProvider _serviceProvider;
+    private readonly TaskCompletionSource _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly object _gate = new();
+    private Task? _startupTask;
+    private AppReadinessState _state = AppReadinessState.NotStarted;
+
+    public AppReadinessService(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    public event EventHandler<AppReadinessState>? StateChanged;
+
+    public AppReadinessState State
+    {
+        get
+        {
+            lock (_gate) return _state;
+        }
+    }
+
+    public Task ReadyTask => _readyTcs.Task;
+
+    public Task StartAsync()
+    {
+        lock (_gate)
+        {
+            _startupTask ??= StartCoreAsync();
+            return _startupTask;
+        }
+    }
+
+    private async Task StartCoreAsync()
+    {
+        SetState(AppReadinessState.Starting);
+
+        try
+        {
+            var databaseInitializer = _serviceProvider.GetRequiredService<DatabaseInitializer>();
+            await databaseInitializer.InitializeAsync();
+            await databaseInitializer.InitializationTask;
+
+            var animeService = _serviceProvider.GetRequiredService<AnimeService>();
+            await animeService.InitializeAsync();
+            await animeService.InitializationTask;
+
+            _serviceProvider.GetRequiredService<NotificationService>();
+            _serviceProvider.GetRequiredService<DiscordService>().Initialize();
+            await _serviceProvider.GetRequiredService<SmtcService>().StartAsync();
+            _serviceProvider.GetRequiredService<MaintenanceService>().Start();
+
+            foreach (var hosted in _serviceProvider.GetServices<IHostedService>())
+            {
+                try
+                {
+                    await hosted.StartAsync(CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to start hosted service {Type}", hosted.GetType().Name);
+                }
+            }
+
+            if (_serviceProvider.GetRequiredService<SettingsService>().Current.System.KeepPlayerProcessAlive)
+                PlayerProcessBridge.StartResident();
+
+            SetState(AppReadinessState.Ready);
+            _readyTcs.TrySetResult();
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "App readiness failed during startup");
+            SetState(AppReadinessState.Failed);
+            _readyTcs.TrySetException(ex);
+        }
+    }
+
+    private void SetState(AppReadinessState state)
+    {
+        lock (_gate)
+        {
+            if (_state == state) return;
+            _state = state;
+        }
+
+        StateChanged?.Invoke(this, state);
+    }
+}

@@ -10,8 +10,6 @@
 
     <UserControl.Resources>
         <conv:LocConverter x:Key="LocConverter"/>
-        <conv:StarColorConverter x:Key="StarColorConverter"/>
-        <conv:StarKindConverter x:Key="StarKindConverter"/>
         <conv:AdultColorConverter x:Key="AdultColorConverter"/>
         <conv:AdultIconConverter x:Key="AdultIconConverter"/>
         <conv:StatusToColorConverter x:Key="StatusToColorConverter"/>
@@ -34,22 +32,9 @@
                         <!-- Score overlay on poster -->
                         <Border VerticalAlignment="Top" HorizontalAlignment="Right" 
                                 Background="#CC000000" CornerRadius="0,0,0,8" Padding="5,3">
-                            <StackPanel Orientation="Horizontal" Spacing="3">
-                                <!-- 5 Stars -->
-                                <StackPanel Orientation="Horizontal" Spacing="1"
-                                            IsVisible="{Binding $parent[UserControl].DataContext.UseFiveStarRating}">
-                                    <material:MaterialIcon Width="9" Height="9" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=1:Seasons}"/>
-                                    <material:MaterialIcon Width="9" Height="9" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=2:Seasons}"/>
-                                    <material:MaterialIcon Width="9" Height="9" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=3:Seasons}"/>
-                                    <material:MaterialIcon Width="9" Height="9" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=4:Seasons}"/>
-                                    <material:MaterialIcon Width="9" Height="9" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=5:Seasons}"/>
-                                </StackPanel>
-                                <!-- 10-point -->
-                                <StackPanel Orientation="Horizontal" Spacing="2"
-                                            IsVisible="{Binding !$parent[UserControl].DataContext.UseFiveStarRating}">
-                                    <material:MaterialIcon Kind="Star" Width="10" Height="10" Foreground="Gold" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <material:MaterialIcon Kind="Star" Width="10" Height="10" Foreground="Gold" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
                     </Panel>
@@ -114,7 +99,7 @@
                         </Grid>
 
                         <!-- Middle: Synopsis (Compacted) -->
-                        <TextBlock Grid.Row="1" Text="{Binding DisplaySynopsis}" FontSize="12" Opacity="0.6" 
+                        <TextBlock Grid.Row="1" Text="{Binding Presentation.DisplaySynopsis}" FontSize="12" Opacity="0.6"
                                    TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Margin="0,8,0,8" MaxLines="2"
                                    VerticalAlignment="Top"/>
 

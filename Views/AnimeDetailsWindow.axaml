@@ -21,8 +21,6 @@
 
     <Window.Resources>
         <conv:LocConverter x:Key="LocConverter"/>
-        <conv:StarColorConverter x:Key="StarColorConverter"/>
-        <conv:StarKindConverter x:Key="StarKindConverter"/>
         <conv:RatingConverter x:Key="RatingConverter"/>
         <conv:FilePathToBitmapConverter x:Key="FilePathToBitmapConverter"/>
         <conv:IntToBooleanConverter x:Key="IntToBoolConverter"/>
@@ -179,20 +177,10 @@
                                 </TextBlock.IsVisible>
                             </TextBlock>
                             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                                <Panel>
-                                    <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding Settings.Current.UI.UseFiveStarRating}">
-                                        <material:MaterialIcon Width="14" Height="14" Foreground="{Binding Anime.MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding Anime.MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=1:Seasons}"/>
-                                        <material:MaterialIcon Width="14" Height="14" Foreground="{Binding Anime.MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding Anime.MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=2:Seasons}"/>
-                                        <material:MaterialIcon Width="14" Height="14" Foreground="{Binding Anime.MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding Anime.MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=3:Seasons}"/>
-                                        <material:MaterialIcon Width="14" Height="14" Foreground="{Binding Anime.MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding Anime.MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=4:Seasons}"/>
-                                        <material:MaterialIcon Width="14" Height="14" Foreground="{Binding Anime.MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding Anime.MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=5:Seasons}"/>
-                                        <TextBlock Text="{Binding Anime.MeanScore, StringFormat='({0})'}" FontSize="11" Foreground="#80FFFFFF" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding !Settings.Current.UI.UseFiveStarRating}">
-                                        <material:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="Gold" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding Anime.MeanScore}" FontWeight="SemiBold" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Panel>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <material:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="Gold" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Anime.MeanScore}" FontWeight="SemiBold" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
+                                </StackPanel>
                                 <Border Width="1" Height="12" Background="#40FFFFFF" VerticalAlignment="Center"/>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <material:MaterialIcon Kind="Television" Width="12" Height="12" Foreground="#80FFFFFF" VerticalAlignment="Center"/>
@@ -441,16 +429,7 @@
                                                           CornerRadius="6" HorizontalAlignment="Stretch" FontSize="12">
                                                     <ComboBox.ItemTemplate>
                                                         <DataTemplate x:DataType="models:RatingOption">
-                                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                                <TextBlock Text="{Binding Value}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="12" MinWidth="12"/>
-                                                                <StackPanel Orientation="Horizontal" Spacing="1" VerticalAlignment="Center" IsVisible="{Binding $parent[Window].((vm:AnimeDetailsViewModel)DataContext).Settings.Current.UI.UseFiveStarRating}">
-                                                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Value, Converter={StaticResource StarColorConverter}, ConverterParameter=MyList}" Kind="{Binding Value, Converter={StaticResource StarKindConverter}, ConverterParameter=1:MyList}"/>
-                                                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Value, Converter={StaticResource StarColorConverter}, ConverterParameter=MyList}" Kind="{Binding Value, Converter={StaticResource StarKindConverter}, ConverterParameter=2:MyList}"/>
-                                                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Value, Converter={StaticResource StarColorConverter}, ConverterParameter=MyList}" Kind="{Binding Value, Converter={StaticResource StarKindConverter}, ConverterParameter=3:MyList}"/>
-                                                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Value, Converter={StaticResource StarColorConverter}, ConverterParameter=MyList}" Kind="{Binding Value, Converter={StaticResource StarKindConverter}, ConverterParameter=4:MyList}"/>
-                                                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding Value, Converter={StaticResource StarColorConverter}, ConverterParameter=MyList}" Kind="{Binding Value, Converter={StaticResource StarKindConverter}, ConverterParameter=5:MyList}"/>
-                                                                </StackPanel>
-                                                            </StackPanel>
+                                                            <TextBlock Text="{Binding Display}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="12"/>
                                                         </DataTemplate>
                                                     </ComboBox.ItemTemplate>
                                                 </ComboBox>

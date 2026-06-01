@@ -358,7 +358,7 @@ public class AnimeService
         if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None) 
             item.Status = nextStatus.Value;
 
-        await _userAnimeRepo.UpdateAsync(item);
+        await _userAnimeRepo.UpdateProgressAsync(item, nextProgress, nextStatus);
         await _syncManager.EnqueueUpdateAsync(item.Id, nextProgress, nextStatus);
         
         return true;
@@ -395,7 +395,7 @@ public class AnimeService
     public async Task SetScoreAsync(AnimeItem item, int score)
     {
         item.Score = score.ToString();
-        await _userAnimeRepo.UpdateAsync(item);
+        await _userAnimeRepo.UpdateScoreAsync(item, item.Score);
         await _syncManager.EnqueueUpdateAsync(item.Id, item.Progress, score: score);
         _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, item.Progress, "ScoreSet", score.ToString());
     }

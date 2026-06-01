@@ -15,8 +15,8 @@
         <conv:StatusToColorConverter x:Key="StatusToColorConverter"/>
         <conv:StatusNotNoneConverter x:Key="StatusNotNoneConverter"/>
         <conv:StatusNoneConverter x:Key="StatusNoneConverter"/>
-        <conv:RatingConverter x:Key="RatingConverter"/>
         <conv:LocConverter x:Key="LocConverter"/>
+        <conv:IntToBooleanConverter x:Key="IntToBoolConverter"/>
 
         <ControlTemplate x:Key="PosterLoadingTemplate">
             <Panel Background="{DynamicResource SubtleFillColorSecondary}">
@@ -112,30 +112,113 @@
                             <TextBlock Grid.Column="0" Text="{Binding Type, Converter={StaticResource LocConverter}}"
                                        FontSize="10" Opacity="0.6" VerticalAlignment="Center"
                                        Foreground="{DynamicResource SystemBaseHighColor}"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
-                                <!-- 5 Stars -->
-                                <StackPanel Orientation="Horizontal" Spacing="1"
-                                            VerticalAlignment="Center"
-                                            IsVisible="{Binding $parent[UserControl].DataContext.UseFiveStarRating}">
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=1:Seasons}"/>
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=2:Seasons}"/>
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=3:Seasons}"/>
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=4:Seasons}"/>
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=5:Seasons}"/>
-                                </StackPanel>
-
-                                <!-- 10-point -->
-                                <StackPanel Orientation="Horizontal" Spacing="3"
-                                            VerticalAlignment="Center"
-                                            IsVisible="{Binding !$parent[UserControl].DataContext.UseFiveStarRating}">
-                                    <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{DynamicResource SystemBaseHighColor}" VerticalAlignment="Center"/>
-                                </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SystemBaseHighColor}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Grid>
                     </Grid>
                 </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- ═══════════ VARIANT C: Floating Magazine ═══════════ -->
+        <DataTemplate x:Key="CardTemplateFloatingMagazine" x:DataType="models:AnimeItem">
+            <Border Classes="AnimeCard revealItem FloatingMagCard" Margin="4" Width="158" Height="325" ClipToBounds="False"
+                    CornerRadius="10" Background="{DynamicResource CardBackgroundFillSecondary}"
+                    BorderBrush="{DynamicResource DividerStrokeColorDefault}" BorderThickness="1">
+                <Border CornerRadius="10" ClipToBounds="True">
+                <Grid RowDefinitions="210, *">
+                    <!-- Poster -->
+                    <Panel Grid.Row="0" Background="Transparent" DoubleTapped="Poster_DoubleTapped">
+                        <TemplatedControl Template="{DynamicResource PosterLoadingTemplate}"/>
+                        <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill"/>
+
+                        <!-- Top gradient for badge readability -->
+                        <Border VerticalAlignment="Top" Height="52" IsHitTestVisible="False">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                    <GradientStop Color="#66000000" Offset="0"/>
+                                    <GradientStop Color="#00000000" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+
+                        <!-- Top-Left Badges (Status & Hide) -->
+                        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Margin="6" Spacing="4">
+                            <!-- Status badge -->
+                            <Border Classes="Badge" HorizontalAlignment="Left" Margin="2"
+                                    IsVisible="{Binding Status, Converter={StaticResource StatusNotNoneConverter}}"
+                                    Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}">
+                                <TextBlock Text="{Binding Status, Converter={StaticResource LocConverter}}"
+                                         FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                            </Border>
+
+                            <!-- Hide / Un-hide button -->
+                            <Border Classes="HideBtn" Classes.confirming="{Binding IsHideConfirming}"
+                                    HorizontalAlignment="Left" Margin="2" Tapped="HideBtn_Tapped"
+                                    ToolTip.Tip="{DynamicResource l.filters.options.hide_tooltip}">
+                                <Border.IsVisible>
+                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                        <Binding Path="Status" Converter="{StaticResource StatusNoneConverter}"/>
+                                        <Binding Path="IsHiddenInSeasons"/>
+                                    </MultiBinding>
+                                </Border.IsVisible>
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <material:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" Foreground="White" IsVisible="{Binding !IsHiddenInSeasons}"/>
+                                    <material:MaterialIcon Kind="EyeOutline" Width="14" Height="14" Foreground="White" IsVisible="{Binding IsHiddenInSeasons}"/>
+                                    <TextBlock IsVisible="{Binding IsHideConfirming}" FontSize="10" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center">
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{x:Static conv:HideConfirmTextConverter.Instance}">
+                                                <Binding Path="IsHiddenInSeasons"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Panel>
+
+                    <!-- Bottom Info -->
+                    <StackPanel Grid.Row="1" Margin="11,10,11,12" Spacing="8">
+                        <StackPanel Spacing="2" Height="36" VerticalAlignment="Top">
+                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                       MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       LineHeight="15" Foreground="{DynamicResource SystemBaseHighColor}"/>
+                            <TextBlock Text="{Binding RussianTitle}" FontSize="10"
+                                       MaxLines="1" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       LineHeight="13" Foreground="{DynamicResource SystemBaseMediumColor}" Opacity="0.85"
+                                       IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+
+                        <!-- Info Badges (Type, Score, Episodes) -->
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,6" VerticalAlignment="Bottom">
+                            <!-- Type Badge -->
+                            <Border Background="{DynamicResource PillBgBrush}" CornerRadius="5" Padding="5,2" VerticalAlignment="Center"
+                                    IsVisible="{Binding Type, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <TextBlock Text="{Binding Type, Converter={StaticResource LocConverter}}"
+                                           FontSize="9" Foreground="{DynamicResource PillFgPurpleBrush}" FontWeight="Medium"/>
+                            </Border>
+
+                            <!-- Score Badge -->
+                            <Border Background="{DynamicResource PillBgBrush}" CornerRadius="5" Padding="5,2" VerticalAlignment="Center"
+                                    IsVisible="{Binding MeanScore, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                    <material:MaterialIcon Kind="Star" Width="10" Height="10" Foreground="{DynamicResource PillFgGoldBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding MeanScore}" FontSize="9" FontWeight="Medium" Foreground="{DynamicResource PillFgGoldBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Episodes Badge -->
+                            <Border Background="{DynamicResource PillBgBrush}" CornerRadius="5" Padding="5,2" VerticalAlignment="Center"
+                                    IsVisible="{Binding TotalEpisodes, Converter={StaticResource IntToBoolConverter}}">
+                                <TextBlock Text="{Binding TotalEpisodes, StringFormat='{}{0} эп'}" FontSize="9" FontWeight="Medium" Foreground="{DynamicResource PillFgGrayBrush}"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+                </Border>
             </Border>
         </DataTemplate>
 
@@ -225,29 +308,14 @@
                                     <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
                                 </TextBlock.Effect>
                             </TextBlock>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
-                                <!-- 5 Stars -->
-                                <StackPanel Orientation="Horizontal" Spacing="1"
-                                            VerticalAlignment="Center"
-                                            IsVisible="{Binding $parent[UserControl].DataContext.UseFiveStarRating}">
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=1:Seasons}"/>
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=2:Seasons}"/>
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=3:Seasons}"/>
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=4:Seasons}"/>
-                                    <material:MaterialIcon Width="11" Height="11" Foreground="{Binding MeanScore, Converter={StaticResource StarColorConverter}, ConverterParameter=Seasons}" Kind="{Binding MeanScore, Converter={StaticResource StarKindConverter}, ConverterParameter=5:Seasons}"/>
-                                </StackPanel>
-                                <!-- 10-point -->
-                                <StackPanel Orientation="Horizontal" Spacing="3"
-                                            VerticalAlignment="Center"
-                                            IsVisible="{Binding !$parent[UserControl].DataContext.UseFiveStarRating}">
-                                    <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{DynamicResource CinematicTitleForeground}" VerticalAlignment="Center">
-                                        <TextBlock.Effect>
-                                            <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
-                                        </TextBlock.Effect>
-                                    </TextBlock>
-                                </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource CinematicTitleForeground}" VerticalAlignment="Center">
+                                    <TextBlock.Effect>
+                                        <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
+                                    </TextBlock.Effect>
+                                </TextBlock>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
@@ -262,6 +330,10 @@
             <Setter Property="Background" Value="{DynamicResource CardBackgroundFillDefault}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <Style Selector="Border.FloatingMagCard">
+            <Setter Property="BoxShadow" Value="{DynamicResource CardBoxShadow}"/>
         </Style>
 
         <!-- ═══ Reveal-on-scroll ═══ -->

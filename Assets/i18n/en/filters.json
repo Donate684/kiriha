@@ -22,8 +22,6 @@
   },
   "score": {
     "label": "Score",
-    "simplified": "Simplified Score",
-    "simplified_sub": "1-5+ scale instead of 10-point",
     "masterpiece": "Masterpiece",
     "excellent": "Excellent",
     "very_good": "Very Good",

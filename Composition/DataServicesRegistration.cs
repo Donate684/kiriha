@@ -2,6 +2,7 @@ using System;
 using Kiriha.Core;
 using Kiriha.Services;
 using Kiriha.Services.Api;
+using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
 using Kiriha.Services.Data.Repositories;
@@ -41,6 +42,7 @@ internal static class DataServicesRegistration
         });
 
         services.AddSingleton<SettingsService>();
+        services.AddSingleton<AppReadinessService>();
         services.AddSingleton<DatabaseInitializer>();
         services.AddSingleton<DatabaseMaintenance>();
         services.AddSingleton<CacheCleanupService>();

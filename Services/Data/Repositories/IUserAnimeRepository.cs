@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Models;
+using Kiriha.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -24,6 +27,8 @@ public interface IUserAnimeRepository
     Task<List<AnimeItem>> GetAllAsync();
     Task UpsertAsync(AnimeItem item);
     Task UpdateAsync(AnimeItem item);
+    Task UpdateProgressAsync(AnimeItem item, int progress, UserAnimeStatus? status = null);
+    Task UpdateScoreAsync(AnimeItem item, string score);
     Task UpdateMetadataAsync(AnimeItem item);
     Task DeleteAsync(int id);
 
@@ -41,7 +46,10 @@ public interface IUserAnimeRepository
 
 public sealed class UserAnimeRepository : IUserAnimeRepository
 {
+    private static readonly TimeSpan ProgressCheckpointInterval = TimeSpan.FromSeconds(10);
+
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
+    private long _lastProgressCheckpointTicks;
 
     public UserAnimeRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
@@ -99,24 +107,66 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
         Log.Information("Successfully saved {Title} to database", item.Title);
     }
 
-    public async Task UpdateMetadataAsync(AnimeItem item)
+    public async Task UpdateProgressAsync(AnimeItem item, int progress, UserAnimeStatus? status = null)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        var existing = await context.UserAnime.FirstOrDefaultAsync(x => x.Id == item.Id);
-        if (existing == null)
+
+        var shouldUpdateStatus = status.HasValue && status.Value != UserAnimeStatus.None;
+        var affected = shouldUpdateStatus
+            ? await context.UserAnime
+                .Where(x => x.Id == item.Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.Progress, progress)
+                    .SetProperty(x => x.Status, status!.Value))
+            : await context.UserAnime
+                .Where(x => x.Id == item.Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.Progress, progress));
+
+        if (affected == 0)
         {
-            Log.Debug("Skipping metadata-only update for non-user anime {Title} (ID: {Id})", item.Title, item.Id);
+            Log.Warning("Attempted to update progress for non-existent anime {Title} (ID: {Id})", item.Title, item.Id);
+            await UpsertAsync(item);
             return;
         }
 
-        existing.RussianTitle = item.RussianTitle;
-        existing.RussianSynopsis = item.RussianSynopsis;
-        existing.EnglishTitle = item.EnglishTitle;
-        existing.JapaneseTitle = item.JapaneseTitle;
-        existing.AlternativeTitles = new List<string>(item.AlternativeTitles);
+        await CheckpointProgressWriteAsync(context, item);
+    }
 
-        context.UserAnime.Update(existing);
-        await context.SaveChangesAsync();
+    public async Task UpdateScoreAsync(AnimeItem item, string score)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var affected = await context.UserAnime
+            .Where(x => x.Id == item.Id)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.Score, score));
+
+        if (affected == 0)
+        {
+            Log.Warning("Attempted to update score for non-existent anime {Title} (ID: {Id})", item.Title, item.Id);
+            await UpsertAsync(item);
+        }
+    }
+
+    public async Task UpdateMetadataAsync(AnimeItem item)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var alternativeTitles = new List<string>(item.AlternativeTitles);
+        var affected = await context.UserAnime
+            .Where(x => x.Id == item.Id)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.RussianTitle, item.RussianTitle)
+                .SetProperty(x => x.RussianSynopsis, item.RussianSynopsis)
+                .SetProperty(x => x.EnglishTitle, item.EnglishTitle)
+                .SetProperty(x => x.JapaneseTitle, item.JapaneseTitle)
+                .SetProperty(x => x.AlternativeTitles, alternativeTitles));
+
+        if (affected == 0)
+        {
+            Log.Debug("Skipping metadata-only update for non-user anime {Title} (ID: {Id})", item.Title, item.Id);
+        }
     }
 
     public async Task DeleteAsync(int id)
@@ -196,5 +246,19 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
             .Where(x => !string.IsNullOrEmpty(x.LocalPosterPath))
             .Select(x => x.LocalPosterPath!)
             .ToListAsync();
+    }
+
+    private async Task CheckpointProgressWriteAsync(AppDbContext context, AnimeItem item)
+    {
+        var nowTicks = DateTime.UtcNow.Ticks;
+        var lastTicks = Interlocked.Read(ref _lastProgressCheckpointTicks);
+        if (lastTicks != 0 && nowTicks - lastTicks < ProgressCheckpointInterval.Ticks)
+            return;
+
+        if (Interlocked.CompareExchange(ref _lastProgressCheckpointTicks, nowTicks, lastTicks) != lastTicks)
+            return;
+
+        try { await context.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(PASSIVE);"); }
+        catch (System.Exception ex) { Log.Warning(ex, "wal_checkpoint(PASSIVE) failed after updating progress for {Title}", item.Title); }
     }
 }

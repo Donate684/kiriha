@@ -183,32 +183,7 @@ public sealed class AppStartupCoordinator
 
     private async Task InitializeAppServicesAsync()
     {
-        await Task.Run(() => _serviceProvider.GetRequiredService<DatabaseInitializer>().InitializeAsync());
-
-        var animeService = _serviceProvider.GetRequiredService<AnimeService>();
-        _ = _serviceProvider.GetRequiredService<IBackgroundTaskSupervisor>()
-            .Run("AnimeService.Initialize", _ => animeService.InitializeAsync());
-
-        _serviceProvider.GetRequiredService<NotificationService>();
-        _serviceProvider.GetRequiredService<DiscordService>().Initialize();
-        await _serviceProvider.GetRequiredService<SmtcService>().StartAsync();
-        _serviceProvider.GetRequiredService<MaintenanceService>().Start();
-
-        foreach (var hosted in _serviceProvider.GetServices<Microsoft.Extensions.Hosting.IHostedService>())
-        {
-            try
-            {
-                await hosted.StartAsync(System.Threading.CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to start hosted service {Type}", hosted.GetType().Name);
-            }
-        }
-
-        if (_serviceProvider.GetRequiredService<SettingsService>().Current.System.KeepPlayerProcessAlive)
-            PlayerProcessBridge.StartResident();
-
+        await _serviceProvider.GetRequiredService<AppReadinessService>().StartAsync();
         ShowPendingCrashReport();
     }
 

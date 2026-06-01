@@ -29,12 +29,13 @@ public partial class SeasonalView : UserControl
     // ═══ Card style switching ═══
     private int _currentCardStyle = 1; // 0=Classic, 1=Cinematic
     private static readonly string[] CardTemplateKeys =
-        { "CardTemplateClassic", "CardTemplateCinematic" };
+        { "CardTemplateClassic", "CardTemplateCinematic", "CardTemplateFloatingMagazine" };
 
     private static readonly (double w, double h)[] LayoutParams =
     {
         (163, 310),  // Classic
         (163, 275),  // Cinematic
+        (166, 335),  // Floating Magazine
     };
 
     public SeasonalView()

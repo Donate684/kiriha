@@ -285,6 +285,7 @@
                         <ComboBox Grid.Column="1" VerticalAlignment="Center" SelectedIndex="{Binding SelectedCardStyle}" Width="160" CornerRadius="6">
                             <ComboBoxItem Content="Стандартный"/>
                             <ComboBoxItem Content="Обновлённый"/>
+                            <ComboBoxItem Content="Floating Magazine"/>
                         </ComboBox>
                     </Grid>
                     <Border Classes="Divider"/>
@@ -328,14 +329,6 @@
                         IsVisible="{Binding ElementName=Nav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=1}">
                     <TextBlock Classes="PageTitle" Text="{DynamicResource l.settings.sections.appearance}"/>
 
-                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                            <TextBlock Classes="Title" Text="{DynamicResource l.filters.score.label}"/>
-                            <TextBlock Classes="Sub" Text="{DynamicResource l.filters.score.simplified_sub}"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding UseFiveStarRating}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
-                    </Grid>
-                    <Border Classes="Divider" IsVisible="{Binding IsMicaSupported}"/>
                     <Grid Classes="Row" ColumnDefinitions="*,Auto" IsVisible="{Binding IsMicaSupported}">
                         <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                             <TextBlock Classes="Title" Text="{DynamicResource l.settings.mica.title}"/>

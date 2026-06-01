@@ -30,7 +30,6 @@ public class AppSettings
         public string SeasonalSortBy { get; set; } = Constants.Sorting.Popularity;
         public string ListSortBy { get; set; } = Constants.Sorting.Title;
         public List<string> SeasonalStatusFilters { get; set; } = new() { "All" };
-        public bool UseFiveStarRating { get; set; } = false;
         public bool ShowNsfw { get; set; } = false;
         public bool ListShowNsfw { get; set; } = false;
         public bool IsPaneOpen { get; set; } = true;

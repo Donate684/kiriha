@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,9 +55,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
         };
     }
 
-    public ObservableCollection<AnimeItem> SearchResults { get; } = new();
-
-    public bool UseFiveStarRating => _settingsService.Current.UI.UseFiveStarRating;
+    public BulkObservableCollection<AnimeItem> SearchResults { get; } = new();
 
     private CancellationTokenSource? _searchCts;
     private bool _isDisposed;
@@ -168,9 +165,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
                     filtered = filtered.Where(x => x.Status == UserAnimeStatus.None);
                 }
 
-                var finalResults = filtered.ToList();
-
-                foreach(var r in finalResults) SearchResults.Add(r);
+                SearchResults.Reset(filtered);
             }
         }
         catch (OperationCanceledException) { }

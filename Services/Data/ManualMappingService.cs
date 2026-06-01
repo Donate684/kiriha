@@ -40,7 +40,8 @@ public class ManualMappingService
 
     public bool TryGetMapping(string normalizedTitle, out int malId)
     {
-        if (_manualMappings.TryGetValue(normalizedTitle, out malId) && malId > 0)
+        var key = AnimeStringHelper.Normalize(normalizedTitle);
+        if (_manualMappings.TryGetValue(key, out malId) && malId > 0)
             return true;
         malId = 0;
         return false;
@@ -48,7 +49,8 @@ public class ManualMappingService
 
     public bool IsNegativelyMapped(string normalizedTitle)
     {
-        return _manualMappings.TryGetValue(normalizedTitle, out int id) && id == NegativeMappingId;
+        var key = AnimeStringHelper.Normalize(normalizedTitle);
+        return _manualMappings.TryGetValue(key, out int id) && id == NegativeMappingId;
     }
 
     public void AddMapping(string title, int malId)
@@ -138,6 +140,7 @@ public class ManualMappingService
 
     public async Task FlushAsync()
     {
+        _saveDebouncer.CancelPending();
         await SaveMappingsAsync();
     }
 }

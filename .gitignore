@@ -9,6 +9,7 @@ Releases/
 *.suo
 
 TestResults/
+artifacts/
 *.trx
 *.coverage
 *.coveragexml

@@ -22,8 +22,6 @@
   },
   "score": {
     "label": "Оценка",
-    "simplified": "Упрощённая оценка",
-    "simplified_sub": "Шкала 1–5+ вместо 10-балльной",
     "masterpiece": "Шедевр",
     "excellent": "Отлично",
     "very_good": "Очень хорошо",

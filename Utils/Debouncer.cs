@@ -42,6 +42,17 @@ public class Debouncer : IDisposable
         }
     }
 
+    public void CancelPending()
+    {
+        lock (_lock)
+        {
+            if (_isDisposed) return;
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+        }
+    }
+
     private async Task ExecuteAsync(CancellationToken token)
     {
         try

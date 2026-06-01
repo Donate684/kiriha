@@ -90,31 +90,20 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         UserAnimeStatus.PlanToWatch
     };
 
-    public System.Collections.Generic.IEnumerable<RatingOption> AvailableScores => Settings.Current.UI.UseFiveStarRating
-        ? new[] 
-        { 
-            RatingHelper.GetRatingOption("-"), 
-            RatingHelper.GetRatingOption("10"), 
-            RatingHelper.GetRatingOption("9"), 
-            RatingHelper.GetRatingOption("7"), 
-            RatingHelper.GetRatingOption("5"), 
-            RatingHelper.GetRatingOption("3"), 
-            RatingHelper.GetRatingOption("1") 
-        }
-        : new[] 
-        { 
-            RatingHelper.GetRatingOption("-"), 
-            RatingHelper.GetRatingOption("10"), 
-            RatingHelper.GetRatingOption("9"), 
-            RatingHelper.GetRatingOption("8"), 
-            RatingHelper.GetRatingOption("7"), 
-            RatingHelper.GetRatingOption("6"), 
-            RatingHelper.GetRatingOption("5"), 
-            RatingHelper.GetRatingOption("4"), 
-            RatingHelper.GetRatingOption("3"), 
-            RatingHelper.GetRatingOption("2"), 
-            RatingHelper.GetRatingOption("1") 
-        };
+    public System.Collections.Generic.IEnumerable<RatingOption> AvailableScores => new[] 
+    { 
+        RatingHelper.GetRatingOption("-"), 
+        RatingHelper.GetRatingOption("10"), 
+        RatingHelper.GetRatingOption("9"), 
+        RatingHelper.GetRatingOption("8"), 
+        RatingHelper.GetRatingOption("7"), 
+        RatingHelper.GetRatingOption("6"), 
+        RatingHelper.GetRatingOption("5"), 
+        RatingHelper.GetRatingOption("4"), 
+        RatingHelper.GetRatingOption("3"), 
+        RatingHelper.GetRatingOption("2"), 
+        RatingHelper.GetRatingOption("1") 
+    };
     
     public string CombinedAltTitles
     {

@@ -54,6 +54,7 @@ public class SettingsService : IDisposable
             if (loaded == null)
             {
                 SetCurrent(new AppSettings());
+                MarkAllSectionsChanged();
             }
             else
             {
@@ -68,6 +69,7 @@ public class SettingsService : IDisposable
         {
             Log.Error(ex, "Error loading settings");
             SetCurrent(new AppSettings());
+            MarkAllSectionsChanged();
         }
     }
 
@@ -125,6 +127,9 @@ public class SettingsService : IDisposable
 
     private void InternalSaveSync()
     {
+        if (CanSkipSave())
+            return;
+
         EnsureDirectory();
         var save = PrepareJsonForSave();
         var json = EncryptForSave(save.Settings);
@@ -135,6 +140,9 @@ public class SettingsService : IDisposable
 
     private async Task InternalSaveAsync()
     {
+        if (CanSkipSave())
+            return;
+
         EnsureDirectory();
         var save = PrepareJsonForSave();
         var json = EncryptForSave(save.Settings);
@@ -261,6 +269,35 @@ public class SettingsService : IDisposable
         if (!string.Equals(before.Torrents, after.Torrents, StringComparison.Ordinal)) _torrentsVersion++;
         if (!string.Equals(before.Api, after.Api, StringComparison.Ordinal)) _apiVersion++;
         if (!string.Equals(before.CustomLinks, after.CustomLinks, StringComparison.Ordinal)) _customLinksVersion++;
+    }
+
+    private void MarkAllSectionsChanged()
+    {
+        lock (_stateLock)
+        {
+            _uiVersion++;
+            _systemVersion++;
+            _playerVersion++;
+            _torrentsVersion++;
+            _apiVersion++;
+            _customLinksVersion++;
+        }
+    }
+
+    private bool CanSkipSave()
+    {
+        if (!File.Exists(_settingsPath))
+            return false;
+
+        lock (_stateLock)
+        {
+            return _uiVersion == 0
+                && _systemVersion == 0
+                && _playerVersion == 0
+                && _torrentsVersion == 0
+                && _apiVersion == 0
+                && _customLinksVersion == 0;
+        }
     }
 
     private static string SerializeSection<T>(T value) =>
@@ -390,6 +427,7 @@ public class SettingsService : IDisposable
     {
         try
         {
+            _debouncer.CancelPending();
             SaveImmediate();
         }
         catch (Exception ex)

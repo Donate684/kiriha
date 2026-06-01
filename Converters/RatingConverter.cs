@@ -2,8 +2,6 @@ using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
 using Kiriha.Models;
-using Kiriha.Services.Data;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Kiriha.Converters;
 
@@ -13,9 +11,6 @@ public class RatingConverter : IValueConverter
     {
         if (value is not string scoreStr || string.IsNullOrWhiteSpace(scoreStr)) 
             return RatingHelper.GetRatingOption("-");
-            
-        var useFive = App.Services.GetRequiredService<SettingsService>().Current.UI.UseFiveStarRating;
-        if (!useFive) return scoreStr;
 
         return RatingHelper.GetRatingOption(scoreStr);
     }
