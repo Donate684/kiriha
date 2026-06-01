@@ -22,4 +22,4 @@ logs/
 *.log
 
 apikeys.json
-mpv/
+/mpv/
