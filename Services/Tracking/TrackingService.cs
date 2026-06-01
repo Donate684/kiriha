@@ -312,7 +312,7 @@ public class TrackingService : IDisposable
                 return;
             }
 
-            // Snapshot the user list on UI thread Ã¢â‚¬â€ ObservableCollection is not thread-safe
+            // Snapshot the user list on UI thread — ObservableCollection is not thread-safe
             // and MappingService enumerates it lazily multiple times.
             var userList = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(
                 () => _animeService.Collection.ToList());

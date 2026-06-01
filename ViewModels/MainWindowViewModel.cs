@@ -38,7 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     private readonly SeasonalViewModel _seasonalViewModel;
     private readonly AnalyticsViewModel _analyticsViewModel;
     
-    // IViewModelFactory delivers a fresh transient instance on each navigation Ã¢â‚¬â€
+    // IViewModelFactory delivers a fresh transient instance on each navigation —
     // see DI registrations: WelcomeViewModel and SearchViewModel are AddTransient.
     private readonly IViewModelFactory _viewModelFactory;
     

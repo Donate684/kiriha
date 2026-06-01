@@ -21,7 +21,7 @@ public static class AppInfo
 
     /// <summary>
     /// HTTP User-Agent for every Kiriha-originated request.
-    /// Format: "Kiriha/&lt;version&gt;" Ã¢â‚¬â€ short, parseable, identifiable in upstream logs.
+    /// Format: "Kiriha/&lt;version&gt;" — short, parseable, identifiable in upstream logs.
     /// </summary>
     public static string UserAgent { get; } = $"{Constants.System.AppName}/{Version}";
 
@@ -33,7 +33,7 @@ public static class AppInfo
             var info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
             if (!string.IsNullOrWhiteSpace(info))
             {
-                // InformationalVersion sometimes carries a "+commit" build metadata suffix Ã¢â‚¬â€
+                // InformationalVersion sometimes carries a "+commit" build metadata suffix —
                 // strip it so the UA looks like "Kiriha/0.2.0", not "Kiriha/0.2.0+abc123".
                 var plus = info.IndexOf('+');
                 return plus >= 0 ? info.Substring(0, plus) : info;

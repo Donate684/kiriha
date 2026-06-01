@@ -14,7 +14,7 @@ namespace Kiriha.Core;
 /// extracts the host, attempts to download <c>/favicon.ico</c> and
 /// <c>/favicon.png</c> from the site root, and caches the result locally
 /// under <see cref="PathHelper.GetCustomIconsPath"/>. Returns the local file
-/// path on success, or <c>null</c> when nothing usable was retrieved Ã¢â‚¬â€ in
+/// path on success, or <c>null</c> when nothing usable was retrieved — in
 /// that case the UI falls back to the default globe icon.
 ///
 /// Cache key is the host name, so two custom links pointing at the same site
@@ -38,7 +38,7 @@ public static class FaviconService
 
     /// <summary>
     /// Tries to fetch a favicon for the host of <paramref name="urlTemplate"/>.
-    /// Placeholders in the template are tolerated Ã¢â‚¬â€ they're stripped before
+    /// Placeholders in the template are tolerated — they're stripped before
     /// parsing so e.g. <c>https://x.com/?q={title}</c> still yields host
     /// <c>x.com</c>.
     /// </summary>

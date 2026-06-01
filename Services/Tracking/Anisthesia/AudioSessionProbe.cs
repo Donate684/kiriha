@@ -14,7 +14,7 @@ namespace Kiriha.Services.Tracking.Anisthesia;
 internal enum AudioState
 {
     Unknown = -1,
-    Inactive = 0, // session is silent Ã¢â‚¬â€ paused, muted internally, or quiet scene
+    Inactive = 0, // session is silent — paused, muted internally, or quiet scene
     Active = 1,   // session is currently producing samples
     Expired = 2,  // session ended (process exited / device removed)
 }
@@ -36,7 +36,7 @@ internal static class AudioSessionProbe
     /// Returns the current <see cref="AudioState"/> of the audio session
     /// owned by <paramref name="pid"/>, or <see cref="AudioState.Unknown"/>
     /// when no such session exists or the query fails. Safe to call on
-    /// non-Windows platforms (returns Unknown). Thread-safe Ã¢â‚¬â€ each call
+    /// non-Windows platforms (returns Unknown). Thread-safe — each call
     /// instantiates fresh COM objects and releases them before returning.
     /// </summary>
     public static AudioState GetStateForPid(uint pid)
@@ -104,10 +104,10 @@ internal static class AudioSessionProbe
         }
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ──────────────────────────────────────────────────────────────────
     // CoreAudio COM interop. Only the minimal surface we need to walk
     // from the default endpoint to per-session state is declared here.
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ──────────────────────────────────────────────────────────────────
 
     private static readonly Guid CLSID_MMDeviceEnumerator =
         new("BCDE0395-E52F-467C-8E3D-C4579291692E");
@@ -125,7 +125,7 @@ internal static class AudioSessionProbe
         [PreserveSig]
         int GetDefaultAudioEndpoint(EDataFlow dataFlow, ERole role, out IMMDevice ppDevice);
 
-        // Remaining methods omitted Ã¢â‚¬â€ we only need the default endpoint.
+        // Remaining methods omitted — we only need the default endpoint.
     }
 
     [ComImport]
@@ -182,7 +182,7 @@ internal static class AudioSessionProbe
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IAudioSessionControl2
     {
-        // IAudioSessionControl predecessors Ã¢â‚¬â€ keep v-table aligned.
+        // IAudioSessionControl predecessors — keep v-table aligned.
         int GetState(out int retVal);
         int GetDisplayName(out IntPtr retVal);
         int SetDisplayName(string value, ref Guid eventContext);

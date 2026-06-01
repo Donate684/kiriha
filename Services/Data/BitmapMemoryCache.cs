@@ -64,7 +64,7 @@ public sealed class BitmapMemoryCache
         }
         catch
         {
-            // GPU upload failures, OOM, format mismatch Ã¢â‚¬â€ fall back to a fresh decode.
+            // GPU upload failures, OOM, format mismatch — fall back to a fresh decode.
             return false;
         }
         finally
@@ -86,7 +86,7 @@ public sealed class BitmapMemoryCache
     /// <summary>
     /// Extracts pixels from a freshly-decoded Bitmap and promotes them to L1.
     /// Best-effort: silently no-ops if the source format is unknown or pixel
-    /// extraction fails Ã¢â‚¬â€ the encoded-bytes layer still gives most of the win.
+    /// extraction fails — the encoded-bytes layer still gives most of the win.
     /// </summary>
     public void StorePixelsFrom(string path, int decodeWidth, Bitmap bmp)
     {

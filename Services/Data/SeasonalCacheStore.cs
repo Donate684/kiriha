@@ -23,7 +23,7 @@ namespace Kiriha.Services.Data;
 /// Rationale: <see cref="Kiriha.ViewModels.SeasonalViewModel"/> already
 /// implements stale-while-revalidate over an in-memory cache. Persisting that
 /// cache across restarts gives a near-instant first paint of the seasonal
-/// view Ã¢â‚¬â€ fresh data still flows in the background a beat later.
+/// view — fresh data still flows in the background a beat later.
 /// </summary>
 public sealed class SeasonalCacheStore
 {
@@ -69,7 +69,7 @@ public sealed class SeasonalCacheStore
                 var info = new FileInfo(file);
                 if (info.LastWriteTimeUtc < threshold)
                 {
-                    // Expired Ã¢â‚¬â€ best-effort delete so the directory doesn't
+                    // Expired — best-effort delete so the directory doesn't
                     // accumulate decades of stale seasons.
                     try { info.Delete(); } catch { }
                     continue;
@@ -87,7 +87,7 @@ public sealed class SeasonalCacheStore
             catch (Exception ex)
             {
                 Log.Debug(ex, "SeasonalCacheStore: failed to load {File}", file);
-                // Corrupt file Ã¢â‚¬â€ drop it so we don't keep tripping on it.
+                // Corrupt file — drop it so we don't keep tripping on it.
                 try { File.Delete(file); } catch { }
             }
         }

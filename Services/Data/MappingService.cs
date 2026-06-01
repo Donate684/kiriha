@@ -151,7 +151,7 @@ public class MappingService
             string.Equals(x.RussianTitle, searchTitle, StringComparison.OrdinalIgnoreCase));
 
         // Don't fall back to the bare title when a higher season was explicitly
-        // parsed from the filename ("2nd Season", "S02", etc.) Ã¢â‚¬â€ otherwise we'd
+        // parsed from the filename ("2nd Season", "S02", etc.) — otherwise we'd
         // happily match e.g. "Sousou no Frieren 2nd Season - 01" to the S1 entry
         // in the user list. Let SearchOnMalAsync handle these cases instead.
         if (localMatch == null && searchTitle != cleanTitle && parsedSeason <= 1)
@@ -267,7 +267,7 @@ public class MappingService
         }
         catch (Exception ex)
         {
-            // Cache miss on error Ã¢â‚¬â€ fall through to live API. Don't let a
+            // Cache miss on error — fall through to live API. Don't let a
             // transient DB hiccup break title resolution.
             Log.Debug(ex, "MappingService: MAL search cache lookup failed for {Query}", normQuery);
         }

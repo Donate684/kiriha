@@ -17,7 +17,7 @@ namespace Kiriha.Services.Data;
 /// is owned by a single class instead of scattered across the file.
 ///
 /// Lifecycle: invoked from <see cref="MaintenanceService"/> on its own daily
-/// cadence Ã¢â‚¬â€ never block the UI thread on this. VACUUM is gated on
+/// cadence — never block the UI thread on this. VACUUM is gated on
 /// freelist size or a 7-day clock to avoid rewriting the whole DB on every run.
 /// </summary>
 public sealed class DatabaseMaintenance
@@ -114,7 +114,7 @@ public sealed class DatabaseMaintenance
             // 6. ANALYZE is cheap and always useful for the query planner.
             await context.Database.ExecuteSqlRawAsync("ANALYZE;");
 
-            // 7. VACUUM is expensive (rewrites the whole DB) Ã¢â‚¬â€ only run when there is
+            // 7. VACUUM is expensive (rewrites the whole DB) — only run when there is
             //    real fragmentation OR no more than once per week. VACUUM also resets
             //    journal_mode to 'delete', so we re-apply WAL afterwards.
             if (await ShouldVacuumAsync(context))

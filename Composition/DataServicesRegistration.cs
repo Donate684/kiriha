@@ -47,7 +47,7 @@ internal static class DataServicesRegistration
         services.AddSingleton<DatabaseMaintenance>();
         services.AddSingleton<CacheCleanupService>();
 
-        // Per-aggregate repositories. Replaces the monolithic DatabaseService Ã¢â‚¬â€
+        // Per-aggregate repositories. Replaces the monolithic DatabaseService —
         // every consumer now depends on the narrowest interface that covers its
         // queries, so a future swap of the storage layer can happen one
         // aggregate at a time.

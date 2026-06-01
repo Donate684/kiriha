@@ -55,7 +55,7 @@ public class ShikiApiService : ITrackerService
 
     public async Task<SyncOutcome> UpdateProgressAsync(int animeId, int episodes, UserAnimeStatus? status = null, int? score = null, bool? isRewatching = null, int? rewatchCount = null, CancellationToken ct = default)
     {
-        // No tokens at all Ã¢â‚¬â€ user disabled the tracker. Nothing to retry.
+        // No tokens at all — user disabled the tracker. Nothing to retry.
         if (_settingsService.Current.Api.Shiki == null) return SyncOutcome.PermanentFailure;
 
         if (_settingsService.Current.Api.Shiki.UserId == null)
@@ -170,7 +170,7 @@ public class ShikiApiService : ITrackerService
         if (!string.IsNullOrEmpty(token))
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        // Routed through ShikiHttp so the .net Ã¢â€¡â€ž .rip geo-redirect / 404
+        // Routed through ShikiHttp so the .net ⇄ .rip geo-redirect / 404
         // dance is handled transparently with method+body+auth preserved.
         return await ShikiHttp.SendShikiAsync(_httpClient, request, _hostResolver, ct);
     }

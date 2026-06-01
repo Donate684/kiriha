@@ -19,8 +19,8 @@ namespace Kiriha.Services.Data;
 ///     treats the existing schema as already-applied instead of trying to
 ///     re-create tables and failing.
 ///   * WAL pragmas applied in a single batched statement (one round-trip on
-///     cold start). <c>synchronous=NORMAL</c> is the safe-default for WAL Ã¢â‚¬â€
-///     durable across process kill Ã¢â‚¬â€ and <c>wal_autocheckpoint=200</c> caps
+///     cold start). <c>synchronous=NORMAL</c> is the safe-default for WAL —
+///     durable across process kill — and <c>wal_autocheckpoint=200</c> caps
 ///     how much the WAL can outgrow the main file before being folded back.
 /// </summary>
 public sealed class DatabaseInitializer
@@ -86,7 +86,7 @@ public sealed class DatabaseInitializer
     /// </summary>
     private static async Task AdoptLegacyEnsureCreatedDatabaseAsync(AppDbContext context)
     {
-        // sqlite_master is the canonical place to check for table existence Ã¢â‚¬â€ cheaper
+        // sqlite_master is the canonical place to check for table existence — cheaper
         // than a probe SELECT and works on a fresh connection without prepared-statement
         // caching surprises.
         var historyExists = await TableExistsAsync(context, "__EFMigrationsHistory");

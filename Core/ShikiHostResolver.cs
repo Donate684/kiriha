@@ -7,7 +7,7 @@ namespace Kiriha.Core;
 /// <summary>
 /// Per-session cache of "which Shikimori host actually answers right now" for
 /// the fork realm. The Shikimori fan fork keeps adding new domains to dodge
-/// regional blocks (<c>.net</c>, <c>.rip</c>, <c>.fi</c>, Ã¢â‚¬Â¦) Ã¢â‚¬â€ all serve the
+/// regional blocks (<c>.net</c>, <c>.rip</c>, <c>.fi</c>, …) — all serve the
 /// same backend, all share OAuth tokens. <see cref="ShikiHttp"/> probes for
 /// a working host on first failure and pins the result here so subsequent
 /// calls skip the discovery round-trip.
@@ -17,14 +17,14 @@ namespace Kiriha.Core;
 /// (<c>shikimori.&lt;tld&gt;</c>), so a brand-new fork domain that we learn
 /// about via a redirect Location header is accepted without a code change.
 /// The hard-coded <see cref="KnownForkHosts"/> list only seeds the
-/// <em>404-fallback probe order</em> Ã¢â‚¬â€ when the server doesn't redirect at
+/// <em>404-fallback probe order</em> — when the server doesn't redirect at
 /// all and we need to guess. Adding a new domain to that list is a single
 /// line change.
 /// </para>
 ///
 /// <para>
 /// <see cref="ShikiMirror.One"/> (<c>shikimori.one</c>) is a SEPARATE OAuth
-/// realm and is never aliased into the fork Ã¢â‚¬â€ tokens minted for one realm
+/// realm and is never aliased into the fork — tokens minted for one realm
 /// are worthless on the other.
 /// </para>
 /// </summary>
@@ -32,7 +32,7 @@ public sealed class ShikiHostResolver
 {
     // Anything that *looks like* shikimori.<tld>. We trust this for redirect
     // Locations (the server itself is telling us where to go) but never for
-    // arbitrary user input Ã¢â‚¬â€ the only place this is consulted is inside
+    // arbitrary user input — the only place this is consulted is inside
     // SendShikiAsync, which already gates on the request having originated
     // from a Shiki host of its own.
     private static readonly Regex ShikiHostPattern =
@@ -44,7 +44,7 @@ public sealed class ShikiHostResolver
     /// Known fork hosts to try when the server returns a silent 404 (no
     /// redirect Location to follow). Order = probe order. Adding a new domain
     /// here is the only code change needed when the fork spawns yet another
-    /// circumvention domain Ã¢â‚¬â€ recognition via <see cref="ShikiHostPattern"/>
+    /// circumvention domain — recognition via <see cref="ShikiHostPattern"/>
     /// already handles redirects to any new <c>shikimori.&lt;tld&gt;</c>.
     /// </summary>
     public static readonly IReadOnlyList<string> KnownForkHosts = new[]
@@ -82,7 +82,7 @@ public sealed class ShikiHostResolver
 
     /// <summary>
     /// Records that <paramref name="toHost"/> is the working host for its
-    /// realm. Replaces any previous pin Ã¢â‚¬â€ this is what makes VPN toggling
+    /// realm. Replaces any previous pin — this is what makes VPN toggling
     /// cheap: every successful re-discovery costs exactly the one round-trip
     /// that found it, and never again until the next switch.
     /// Returns false (no-op) for non-fork hosts or cross-realm pairs.
@@ -116,7 +116,7 @@ public sealed class ShikiHostResolver
         string.Equals(host, OriginalHost, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// True for any Shikimori host that is NOT the original Ã¢â‚¬â€ i.e. any fork
+    /// True for any Shikimori host that is NOT the original — i.e. any fork
     /// domain (<c>.net</c>, <c>.rip</c>, <c>.fi</c>, and whatever they invent
     /// next). Trusts the regex; the caller must already have established
     /// that the host came from a legitimate Shikimori interaction.

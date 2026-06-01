@@ -9,10 +9,10 @@ namespace Kiriha.Services.Api;
 
 /// <summary>
 /// Shikimori-aware HTTP send wrapper that handles the multi-domain fork
-/// (<c>.net</c>, <c>.rip</c>, <c>.fi</c>, Ã¢â‚¬Â¦).
+/// (<c>.net</c>, <c>.rip</c>, <c>.fi</c>, …).
 /// 
 /// <para>
-/// Two failure modes are observed in the wild Ã¢â‚¬â€ depending on the user's IP,
+/// Two failure modes are observed in the wild — depending on the user's IP,
 /// either the server 301/302-redirects to the "right" Shikimori domain, or it
 /// silently returns 404 from the wrong domain without any redirect at all
 /// (regional blocking circumvention is implemented inconsistently).
@@ -23,7 +23,7 @@ namespace Kiriha.Services.Api;
 ///   <list type="number">
 ///     <item>Auto-redirect on the underlying HttpClient is OFF (see DI registration);
 ///     we follow 3xx manually so that POST stays POST, the request body is
-///     re-sent, and Authorization survives the cross-host hop Ã¢â‚¬â€ none of which
+///     re-sent, and Authorization survives the cross-host hop — none of which
 ///     <see cref="HttpClient"/> does by default. Any
 ///     <c>shikimori.&lt;tld&gt;</c> Location is accepted on the spot, so the
 ///     fork can spin up new domains tomorrow without a code change.</item>
@@ -58,14 +58,14 @@ internal static class ShikiHttp
             var response = await client.SendAsync(request, ct).ConfigureAwait(false);
             var code = (int)response.StatusCode;
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ Scenario A: explicit redirect Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+            // ── Scenario A: explicit redirect ────────────────────────────────
             if (code is 301 or 302 or 307 or 308 && response.Headers.Location is not null)
             {
                 var target = new Uri(request.RequestUri!, response.Headers.Location);
 
-                // Only follow Shikimori Ã¢â€ â€™ Shikimori redirects within the same
-                // realm. Anything else (e.g. .one Ã¢â€ â€™ .net) is a misconfiguration
-                // we MUST NOT silently fix up Ã¢â‚¬â€ tokens wouldn't transfer.
+                // Only follow Shikimori → Shikimori redirects within the same
+                // realm. Anything else (e.g. .one → .net) is a misconfiguration
+                // we MUST NOT silently fix up — tokens wouldn't transfer.
                 if (!ShikiHostResolver.IsShikiHost(target.Host))
                 {
                     return response;
@@ -86,7 +86,7 @@ internal static class ShikiHttp
                 continue;
             }
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ Scenario B: silent 404 on an API path Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+            // ── Scenario B: silent 404 on an API path ────────────────────────
             // Walk the known fork hosts and retry against each. The first one
             // that answers with anything but 404 wins and gets pinned. If they
             // ALL 404, it's a genuine "not found" and we surface the last
@@ -126,7 +126,7 @@ internal static class ShikiHttp
                 }
 
                 // Every known fork host returned 404. Surface the last one as
-                // the "real" response Ã¢â‚¬â€ caller will treat it as a normal 404.
+                // the "real" response — caller will treat it as a normal 404.
                 return lastResponse ?? response;
             }
 

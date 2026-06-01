@@ -130,7 +130,7 @@ public class MaintenanceService : IDisposable
 
             if (found)
             {
-                // Fire OS toast as soon as we know an update is available Ã¢â‚¬â€ this is the
+                // Fire OS toast as soon as we know an update is available — this is the
                 // earliest signal and works even if the user has the window minimised to tray.
                 if (!string.IsNullOrEmpty(_updateService.NewVersion))
                     _notificationService.NotifyAppUpdate(_updateService.NewVersion!);

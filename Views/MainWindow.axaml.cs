@@ -25,7 +25,7 @@ public partial class MainWindow : Window
     private const double DefaultHeight = 720;
 
     // Cached "normal-state" geometry. We never persist values captured while
-    // the window is Minimized/Maximized Ã¢â‚¬â€ those would clobber the size the
+    // the window is Minimized/Maximized — those would clobber the size the
     // user actually wants to come back to.
     private double _lastNormalWidth = DefaultWidth;
     private double _lastNormalHeight = DefaultHeight;
@@ -55,7 +55,7 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// Drives window dragging and double-click maximize on the custom title
-    /// bar. Hooked on the root Grid in MainWindow.axaml Ã¢â‚¬â€ relies on event
+    /// bar. Hooked on the root Grid in MainWindow.axaml — relies on event
     /// bubbling: clicks that land on a Button/ListBoxItem inside the bar are
     /// already marked Handled by those controls and never reach us, so only
     /// "empty" title-bar pixels trigger a move.
@@ -115,14 +115,14 @@ public partial class MainWindow : Window
 
         // Now that the platform impl exists, Screens is populated. Push the
         // window back onto a visible monitor if the saved position points at a
-        // display that's no longer connected (laptop dock, RDP, Ã¢â‚¬Â¦).
+        // display that's no longer connected (laptop dock, RDP, …).
         EnsureOnScreen();
 
         // Set the OS-level window text directly so taskbar peek / Alt-Tab /
         // Task Manager show "Kiriha". Going through Window.Title would also
         // make Avalonia render the string into the extended client area
         // (visually overlapping our custom sidebar branding). WM_SETTEXT
-        // bypasses the Avalonia binding Ã¢â‚¬â€ Avalonia keeps Title="" and won't
+        // bypasses the Avalonia binding — Avalonia keeps Title="" and won't
         // overwrite our native value because the property never changes.
         SetNativeTitle("Kiriha");
     }
@@ -148,7 +148,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        // Persist whichever placement we have right now. Always Ã¢â‚¬â€ we want the
+        // Persist whichever placement we have right now. Always — we want the
         // size to survive both real exit and hide-to-tray.
         SavePlacement();
 
@@ -235,7 +235,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Applies the previously persisted size/position/maximized state, falling
     /// back to centred defaults on first run. Called once from the constructor
-    /// Ã¢â‚¬â€ before the window is shown Ã¢â‚¬â€ so Avalonia honours the values without
+    /// — before the window is shown — so Avalonia honours the values without
     /// any visible "resize after open" jank.
     /// </summary>
     private void RestorePlacement()
@@ -249,8 +249,8 @@ public partial class MainWindow : Window
             var height = placement.Height > 0 ? placement.Height : DefaultHeight;
 
             // Hard floor against corrupted settings shrinking the window to
-            // a 0Ãƒâ€”0 strip. Doesn't restrict the user's manual resize at
-            // runtime Ã¢â‚¬â€ XAML has no MinWidth/MinHeight, so the live window is
+            // a 0×0 strip. Doesn't restrict the user's manual resize at
+            // runtime — XAML has no MinWidth/MinHeight, so the live window is
             // freely resizable down to whatever the OS allows.
             const double safetyFloorWidth = 200;
             const double safetyFloorHeight = 150;
@@ -265,7 +265,7 @@ public partial class MainWindow : Window
             if (placement.X.HasValue && placement.Y.HasValue)
             {
                 // Switch to manual placement only when we actually have a
-                // saved position Ã¢â‚¬â€ otherwise the XAML-declared CenterScreen
+                // saved position — otherwise the XAML-declared CenterScreen
                 // behaviour kicks in for first-run users.
                 WindowStartupLocation = WindowStartupLocation.Manual;
                 var pt = new PixelPoint(placement.X.Value, placement.Y.Value);
@@ -291,12 +291,12 @@ public partial class MainWindow : Window
     ///
     /// <list type="bullet">
     ///   <item><description>Saved position points at a screen that's no longer
-    ///   connected Ã¢â‚¬â€ the title bar would be invisible. We re-centre on the
+    ///   connected — the title bar would be invisible. We re-centre on the
     ///   primary monitor.</description></item>
-    ///   <item><description>Default 1100Ãƒâ€”720 DIPs doesn't fit the work area at
-    ///   high DPI scaling (e.g. a 2560Ãƒâ€”1440 monitor at 200% gives only
-    ///   ~1280Ãƒâ€”680 usable DIPs, so the bottom of the window Ã¢â‚¬â€ and the resize
-    ///   grip Ã¢â‚¬â€ fall off the screen). We shrink the window to fit with a
+    ///   <item><description>Default 1100×720 DIPs doesn't fit the work area at
+    ///   high DPI scaling (e.g. a 2560×1440 monitor at 200% gives only
+    ///   ~1280×680 usable DIPs, so the bottom of the window — and the resize
+    ///   grip — fall off the screen). We shrink the window to fit with a
     ///   safety margin and then re-centre.</description></item>
     /// </list>
     ///
@@ -347,7 +347,7 @@ public partial class MainWindow : Window
 
             // Now check whether the title bar is reachable. We require at
             // least 80px of the title bar to be inside the work area on both
-            // axes Ã¢â‚¬â€ anything less and Windows hit-testing won't let the user
+            // axes — anything less and Windows hit-testing won't let the user
             // grab and move the window.
             var winWidthPx = (int)Math.Ceiling(clampedWidth * scaling);
             var winHeightPx = (int)Math.Ceiling(clampedHeight * scaling);
@@ -399,7 +399,7 @@ public partial class MainWindow : Window
                 }
 
                 // Only treat Maximized as a sticky state. Minimized is transient
-                // (tray, taskbar) Ã¢â‚¬â€ restoring as Minimized on next launch would be
+                // (tray, taskbar) — restoring as Minimized on next launch would be
                 // confusing.
                 placement.Maximized = WindowState == WindowState.Maximized;
             }, save: false);

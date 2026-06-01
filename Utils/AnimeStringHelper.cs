@@ -71,7 +71,7 @@ public static class AnimeStringHelper
     // Hot-path memoization. MappingService normalizes the same title (and each
     // of x.Title / x.EnglishTitle / x.RussianTitle) repeatedly during one
     // matching attempt; Anisthesia strategies normalize the same window title
-    // every detection tick. Capped at 2048 entries ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â way more than the unique
+    // every detection tick. Capped at 2048 entries — way more than the unique
     // title set of any realistic session.
     private static readonly LruStringMemoizer<string> _normalizeCache = new(2048);
 

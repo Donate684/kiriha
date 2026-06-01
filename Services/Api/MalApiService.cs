@@ -20,7 +20,7 @@ namespace Kiriha.Services.Api;
 
 public class MalApiService : ITrackerService, IDisposable
 {
-    // Resolved once from Constants ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no parallel const that can drift from the URL
+    // Resolved once from Constants — no parallel const that can drift from the URL
     // wired into the IHttpClientFactory "MalClient" registration.
     private static readonly string MalBaseUrl = Constants.Api.Mal.BaseUrl;
     
@@ -172,7 +172,7 @@ public class MalApiService : ITrackerService, IDisposable
 
     public async Task<SyncOutcome> RemoveAnimeAsync(int animeId, CancellationToken ct = default)
     {
-        // MAL returns 404 if the anime is already not on the list ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â treat as Success so
+        // MAL returns 404 if the anime is already not on the list — treat as Success so
         // a redundant Remove doesn't get queued forever after the user deleted it via web.
         var outcome = await SendRequestAsync(
             () => new HttpRequestMessage(HttpMethod.Delete, MalBaseUrl + $"anime/{animeId}/my_list_status"),
@@ -224,7 +224,7 @@ public class MalApiService : ITrackerService, IDisposable
 
     private Task<SyncOutcome> SendPatchAsync(string url, List<KeyValuePair<string, string>> values, CancellationToken ct)
     {
-        // Factory ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â the value collection is captured once, but the HttpRequestMessage
+        // Factory — the value collection is captured once, but the HttpRequestMessage
         // is rebuilt per attempt so a 401-retry can re-issue the same logical request
         // without tripping HttpClient's "request already sent" guard.
         return SendRequestAsync(
@@ -233,7 +233,7 @@ public class MalApiService : ITrackerService, IDisposable
     }
 
     /// <summary>
-    /// Sends a request through the MAL pipeline with automatic 401ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢refreshÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢retry.
+    /// Sends a request through the MAL pipeline with automatic 401→refresh→retry.
     /// </summary>
     /// <param name="requestFactory">
     /// Builds a fresh <see cref="HttpRequestMessage"/> per attempt. We need this
@@ -250,7 +250,7 @@ public class MalApiService : ITrackerService, IDisposable
         if (statusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             // Server-side token revocation, or the local IsExpired heuristic missed
-            // a clock skew. Force a refresh and retry exactly once ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â looping further
+            // a clock skew. Force a refresh and retry exactly once — looping further
             // would just hammer the auth endpoint with an invalid refresh token.
             Log.Information("MalApiService: 401 on first attempt; forcing token refresh and retrying once");
             token = await EnsureValidTokenAsync(ct, forceRefresh: true);
@@ -282,7 +282,7 @@ public class MalApiService : ITrackerService, IDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            // Network / DNS / TLS failures are transient ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â caller maps null ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ TransientFailure.
+            // Network / DNS / TLS failures are transient — caller maps null → TransientFailure.
             Log.Warning(ex, "MalApiService: SendOnceAsync failed ({Method} {Uri})", request.Method, request.RequestUri);
             return null;
         }
@@ -297,7 +297,7 @@ public class MalApiService : ITrackerService, IDisposable
         if ((int)status >= 200 && (int)status < 300) return SyncOutcome.Success;
         // 5xx + 408 + 429 are explicitly retriable. Note: ResilientHttpHandler already
         // burned through its retries for 5xx/429, so seeing one here means the server
-        // is *still* misbehaving ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â still classify as Transient so SyncManager backs off
+        // is *still* misbehaving — still classify as Transient so SyncManager backs off
         // on a longer timescale (minutes) than the handler's seconds-scale retries.
         if ((int)status >= 500 || status == System.Net.HttpStatusCode.RequestTimeout || status == System.Net.HttpStatusCode.TooManyRequests)
         {
@@ -345,7 +345,7 @@ public class MalApiService : ITrackerService, IDisposable
                 return newTokens.AccessToken;
             }
 
-            // Transient errors should not nuke the user's tokens ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â but a sustained streak
+            // Transient errors should not nuke the user's tokens — but a sustained streak
             // (revoked refresh, deleted MAL app, etc.) means the saved token is dead weight.
             _refreshFailures++;
             if (_refreshFailures >= MaxRefreshFailures)

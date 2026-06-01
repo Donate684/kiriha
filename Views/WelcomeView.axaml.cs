@@ -17,7 +17,7 @@ public partial class WelcomeView : UserControl
     /// Composes the version line from the localized prefix
     /// (<c>l.common.version_prefix</c>) and the runtime build version
     /// (<see cref="AppInfo.Version"/>) so Welcome and About can never drift
-    /// out of sync. Falls back gracefully if the resource is missing Ã¢â‚¬â€
+    /// out of sync. Falls back gracefully if the resource is missing —
     /// still surfaces the actual version, which is the bit that matters.
     /// </summary>
     private void UpdateVersionLabel()

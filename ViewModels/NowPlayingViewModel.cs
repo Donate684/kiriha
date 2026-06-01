@@ -190,7 +190,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
             MatchedAnime = suggestion;
             IsManuallyMapped = true;
             await _trackingService.ManualMapAsync(suggestion.Id);
-            // Ensure it stays set Ã¢â‚¬â€ background AnimeMatched will eventually arrive
+            // Ensure it stays set — background AnimeMatched will eventually arrive
             // with the same id and clear _pendingManualMatchId from OnAnimeMatched.
             MatchedAnime = suggestion;
             IsManuallyMapped = true;
@@ -278,7 +278,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
     {
         // Suppress intermediate events while a manual selection is in flight.
         // - null: a transient "clearing previous match" event before MappingService re-resolves
-        // - different id: stale background match for a previous media Ã¢â‚¬â€ would clobber UI choice
+        // - different id: stale background match for a previous media — would clobber UI choice
         // We let through the matching id so we can clear the pending guard below.
         var pending = _pendingManualMatchId;
         if (pending != 0 && (anime == null || anime.Id != pending)) return;
@@ -295,7 +295,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
                 LogDetection(CurrentMedia ?? new ParsedMedia { AnimeTitle = anime.Title }, UIUtils.GetLoc("scrobbler.status.matched"));
 
                 // Force fetch + apply Russian metadata if enabled and missing.
-                // EnsureLocalizedAsync handles the cache-miss Ã¢â€ â€™ API fetch path
+                // EnsureLocalizedAsync handles the cache-miss → API fetch path
                 // AND copies meta.Russian/Description into the AnimeItem; the
                 // previous code only called RefreshMetadata() which raises
                 // PropertyChanged but never wrote the fetched values, so the

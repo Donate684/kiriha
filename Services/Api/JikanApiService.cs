@@ -16,17 +16,17 @@ namespace Kiriha.Services.Api;
 
 /// <summary>
 /// Freshness policy for <see cref="JikanApiService.GetEpisodeListAsync"/>.
-/// Jikan is rate-limited (1 RPS) and the per-page round-trip is Ã¢â€°Â¥ 1.1 s, so
+/// Jikan is rate-limited (1 RPS) and the per-page round-trip is ≥ 1.1 s, so
 /// long-running shows can take tens of seconds to refresh. Letting callers
 /// pick a freshness window lets us skip the live call entirely when the
 /// underlying data couldn't possibly have changed.
 /// </summary>
 public enum EpisodeFreshness
 {
-    /// <summary>12-hour TTL Ã¢â‚¬â€ appropriate for currently-airing series whose
+    /// <summary>12-hour TTL — appropriate for currently-airing series whose
     /// list grows roughly weekly.</summary>
     Default,
-    /// <summary>Effectively infinite TTL Ã¢â‚¬â€ appropriate for finished_airing
+    /// <summary>Effectively infinite TTL — appropriate for finished_airing
     /// series whose episode list is immutable once a series ends.</summary>
     Completed,
     /// <summary>Bypass cache; always hit the live API.</summary>
@@ -55,7 +55,7 @@ public class JikanApiService
 
     // In-memory TTL cache for the /forum endpoint. Forum is only consulted as
     // a fallback signal for currently-airing shows, so a process-lifetime cache
-    // is enough Ã¢â‚¬â€ no need to persist across restarts. Keyed by MAL ID; value is
+    // is enough — no need to persist across restarts. Keyed by MAL ID; value is
     // (latestEpisodeOrNull, fetchedAtUtc).
     private readonly ConcurrentDictionary<int, (int? Value, DateTime FetchedAt)> _forumCache = new();
 
@@ -70,7 +70,7 @@ public class JikanApiService
     {
         // Conditional GET via HttpConditionalCache + Jikan-specific throttle.
         // The throttle (60 rpm) is enforced for *every* network call regardless of
-        // 200/304 Ã¢â‚¬â€ Jikan counts conditional GETs against the same budget.
+        // 200/304 — Jikan counts conditional GETs against the same budget.
         var bytes = await _httpCache.SendAsync(
             requestFactory: innerCt =>
             {
@@ -191,16 +191,16 @@ public class JikanApiService
     /// official episode list and Shikimori metadata.
     ///
     /// Cache policy:
-    ///   * <see cref="EpisodeFreshness.Default"/>     Ã¢â‚¬â€ 12 h TTL (in-memory).
-    ///   * <see cref="EpisodeFreshness.Completed"/>   Ã¢â‚¬â€ short-circuits to null
+    ///   * <see cref="EpisodeFreshness.Default"/>     — 12 h TTL (in-memory).
+    ///   * <see cref="EpisodeFreshness.Completed"/>   — short-circuits to null
     ///     without hitting the network: completed series gain no value from
     ///     forum scraping and we don't want to burn the 1 RPS budget on them.
-    ///   * <see cref="EpisodeFreshness.ForceRefresh"/> Ã¢â‚¬â€ bypasses the gate.
+    ///   * <see cref="EpisodeFreshness.ForceRefresh"/> — bypasses the gate.
     /// </summary>
     public async Task<int?> GetLatestEpisodeFromForumAsync(int malId, EpisodeFreshness freshness, CancellationToken ct = default)
     {
         // Forum is only meaningful for currently-airing shows. For Completed
-        // we skip the round-trip entirely Ã¢â‚¬â€ the episode list cache (infinite
+        // we skip the round-trip entirely — the episode list cache (infinite
         // TTL) already has the canonical answer.
         if (freshness == EpisodeFreshness.Completed) return null;
 

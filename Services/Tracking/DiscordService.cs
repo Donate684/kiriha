@@ -95,7 +95,7 @@ public class DiscordService : IDisposable
                 Timestamps = timestamps
             };
 
-            // Discord Rich Presence allows at most 2 buttons per presence Ã¢â‚¬â€ that's a hard
+            // Discord Rich Presence allows at most 2 buttons per presence — that's a hard
             // SDK limit, not ours, so a third row (e.g. Anilist/AniDB) isn't possible here.
             var buttons = new List<Button>();
             if (!string.IsNullOrEmpty(malUrl)) buttons.Add(new Button { Label = "MyAnimeList", Url = malUrl });

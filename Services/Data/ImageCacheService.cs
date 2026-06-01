@@ -93,7 +93,7 @@ public class ImageCacheService : IDisposable
         if (string.IsNullOrEmpty(localPath) || !File.Exists(localPath)) return null;
 
         // L1 fast path: pre-decoded pixels rented as a fresh WriteableBitmap.
-        // Each caller gets an INDEPENDENT instance Ã¢â‚¬â€ required because
+        // Each caller gets an INDEPENDENT instance — required because
         // AsyncImageLoader.AdvancedImage disposes the "previous" Source on
         // rebind (recycling in ItemsRepeater), so a shared bitmap would die
         // on neighbour cards. See BitmapMemoryCache for full rationale.
@@ -105,7 +105,7 @@ public class ImageCacheService : IDisposable
         {
             return await Task.Run(() =>
             {
-                // Re-check L1 Ã¢â‚¬â€ another caller may have populated it while we
+                // Re-check L1 — another caller may have populated it while we
                 // waited on the decode semaphore.
                 if (_memCache.TryRentBitmap(localPath, decodeWidth, out var rented2) && rented2 != null)
                     return rented2;

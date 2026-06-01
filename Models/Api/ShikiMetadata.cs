@@ -28,7 +28,7 @@ public class ShikiMetadata
     public DateTime? NextEpisodeAt { get; set; }
 
     /// <summary>
-    /// UTC timestamp of the last successful upsert. EF-only column Ã¢â‚¬â€
+    /// UTC timestamp of the last successful upsert. EF-only column —
     /// not part of the Shikimori response, so <see cref="JsonIgnoreAttribute"/>
     /// keeps deserializers from clobbering it on round-trip. Used by
     /// <c>ShikiMetadataService</c> to honour TTL for currently-airing shows

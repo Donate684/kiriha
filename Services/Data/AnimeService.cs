@@ -220,7 +220,7 @@ public class AnimeService
     {
         var apiMap = apiList.ToDictionary(x => x.Id);
         
-        // Snapshot Collection on UI thread ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ObservableCollection is not thread-safe and a
+        // Snapshot Collection on UI thread — ObservableCollection is not thread-safe and a
         // background ToList() can race with concurrent UI iteration / Add.
         
         var existingMap = currentItems.ToDictionary(x => x.Id);

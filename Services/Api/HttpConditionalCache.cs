@@ -28,7 +28,7 @@ public readonly record struct HttpCacheResult(byte[]? Body, HttpStatusCode? Stat
 /// <see cref="HttpCacheEntry"/> (table <c>http_response_cache</c>, 30 d TTL).
 ///
 /// Usage: build a fresh <see cref="HttpRequestMessage"/> per call (with all
-/// caller-specific headers Ã¢â‚¬â€ User-Agent, auth, etc.) inside
+/// caller-specific headers — User-Agent, auth, etc.) inside
 /// <c>requestFactory</c>. The helper attaches <c>If-None-Match</c> /
 /// <c>If-Modified-Since</c> from the cache, sends the request, replays the
 /// cached body on <c>304 Not Modified</c>, and persists fresh <c>200</c>
@@ -38,7 +38,7 @@ public readonly record struct HttpCacheResult(byte[]? Body, HttpStatusCode? Stat
 /// same auth context (no per-call user-specific fields, or fields that the
 /// caller already overrides downstream from a separate user store).
 ///
-/// Persist is fire-and-forget Ã¢â‚¬â€ a transient DB hiccup costs at most one
+/// Persist is fire-and-forget — a transient DB hiccup costs at most one
 /// extra full payload on the next call.
 /// </summary>
 public sealed class HttpConditionalCache
@@ -99,7 +99,7 @@ public sealed class HttpConditionalCache
 
     /// <summary>
     /// Same as <see cref="SendAsync"/> but returns the full <see cref="HttpCacheResult"/>
-    /// so callers can distinguish e.g. 404 (terminal Ã¢â‚¬â€ anime not on the source)
+    /// so callers can distinguish e.g. 404 (terminal — anime not on the source)
     /// from a transient network error.
     /// </summary>
     public async Task<HttpCacheResult> SendForResultAsync(
@@ -117,12 +117,12 @@ public sealed class HttpConditionalCache
 
         if (cached != null)
         {
-            // Both validators are independent Ã¢â‚¬â€ sending both lets the server
+            // Both validators are independent — sending both lets the server
             // pick whichever it currently honours.
             if (!string.IsNullOrEmpty(cached.ETag))
             {
                 try { request.Headers.IfNoneMatch.Add(EntityTagHeaderValue.Parse(cached.ETag)); }
-                catch { /* malformed stored ETag Ã¢â‚¬â€ ignore and refetch */ }
+                catch { /* malformed stored ETag — ignore and refetch */ }
             }
             if (!string.IsNullOrEmpty(cached.LastModified)
                 && DateTimeOffset.TryParse(cached.LastModified, out var lm))
@@ -141,7 +141,7 @@ public sealed class HttpConditionalCache
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            // Network blip Ã¢â‚¬â€ serve stale cache rather than failing the call.
+            // Network blip — serve stale cache rather than failing the call.
             if (cached != null)
             {
                 Log.Debug(ex, "{Tag}: network error, serving stale cache for {Url}", _logTag, fullUrl);
@@ -160,8 +160,8 @@ public sealed class HttpConditionalCache
 
             if (!response.IsSuccessStatusCode)
             {
-                // 4xx/5xx without a usable replay Ã¢â‚¬â€ propagate the failure with
-                // the status code so callers can react (e.g. 404 Ã¢â€ â€™ sentinel).
+                // 4xx/5xx without a usable replay — propagate the failure with
+                // the status code so callers can react (e.g. 404 → sentinel).
                 Log.Debug("{Tag}: {Url} returned {Status}", _logTag, fullUrl, response.StatusCode);
                 return new HttpCacheResult(null, response.StatusCode, FromCache: false);
             }

@@ -10,9 +10,9 @@ namespace Kiriha.Models.Entities;
 ///
 /// Used by <see cref="Kiriha.Services.Api.JikanApiService.GetEpisodeListAsync"/>
 /// to gate live API calls behind a freshness window:
-///   * Currently-airing: 12 h sliding TTL Ã¢â‚¬â€ episode lists barely change
+///   * Currently-airing: 12 h sliding TTL — episode lists barely change
 ///     between weekly broadcasts, so re-fetching every poll is pure waste.
-///   * Finished airing: effectively infinite Ã¢â‚¬â€ the episode list is immutable
+///   * Finished airing: effectively infinite — the episode list is immutable
 ///     once a series ends; new specials get separate MAL entries.
 /// </summary>
 [Table("episode_list_meta")]

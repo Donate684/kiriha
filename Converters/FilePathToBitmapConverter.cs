@@ -23,7 +23,7 @@ public class FilePathToBitmapConverter : IValueConverter
         try
         {
             // Stream-based ctor avoids holding a file handle on the icon file
-            // after the bitmap is decoded Ã¢â‚¬â€ important because the user may
+            // after the bitmap is decoded — important because the user may
             // overwrite or delete the file later.
             using var stream = File.OpenRead(path);
             return new Bitmap(stream);

@@ -4,8 +4,8 @@ using Avalonia.Controls;
 namespace Kiriha.Utils;
 
 /// <summary>
-/// AttachedProperty-ÃÂ¾ÃÂ±Ã‘â€˜Ã‘â‚¬Ã‘â€šÃÂºÃÂ° ÃÂ½ÃÂ°ÃÂ´ <see cref="SmoothScrollBehavior"/>:
-/// <c>u:SmoothScroll.IsEnabled="True"</c> ÃÂ½ÃÂ° ÃÂ»Ã‘Å½ÃÂ±ÃÂ¾ÃÂ¼ ScrollViewer.
+/// AttachedProperty-обёртка над <see cref="SmoothScrollBehavior"/>:
+/// <c>u:SmoothScroll.IsEnabled="True"</c> на любом ScrollViewer.
 /// </summary>
 public static class SmoothScroll
 {

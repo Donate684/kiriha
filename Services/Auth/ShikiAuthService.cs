@@ -82,8 +82,8 @@ public class ShikiAuthService
 
         try
         {
-            // ShikiHttp transparently follows the .net Ã¢â€¡â€ž .rip geo-redirect
-            // while preserving the POST body Ã¢â‚¬â€ without it, the form fields
+            // ShikiHttp transparently follows the .net ⇄ .rip geo-redirect
+            // while preserving the POST body — without it, the form fields
             // would be dropped and the server would return an empty token
             // payload, surfacing as "login succeeded but app stays empty".
             var response = await ShikiHttp.SendShikiAsync(_httpClient, request, _hostResolver, CancellationToken.None);

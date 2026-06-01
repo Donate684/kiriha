@@ -41,7 +41,7 @@ public class RssFeedService
     /// Conditional GET for a Nyaa RSS URL. Nyaa returns ETag / Last-Modified
     /// for both the global feed and per-query search RSS, so a 304 round-trip
     /// is essentially free body-wise. The 30-day http_response_cache TTL means
-    /// even after a long offline gap we still get correct data ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â the conditional
+    /// even after a long offline gap we still get correct data — the conditional
     /// GET validates against the origin every call.
     /// </summary>
     private async Task<XDocument?> FetchRssAsync(string url, CancellationToken ct)
@@ -128,7 +128,7 @@ public class RssFeedService
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase))
             return null;
 
-        // Range pattern: NN-MM, NN~MM, NNÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“MM, NN..MM where both sides are 1-3 digit
+        // Range pattern: NN-MM, NN~MM, NN–MM, NN..MM where both sides are 1-3 digit
         // episode numbers. Restricted to a leading word boundary + non-resolution
         // context so we don't reject "1080p" / "S01E05" by accident.
         if (System.Text.RegularExpressions.Regex.IsMatch(title,
@@ -161,7 +161,7 @@ public class RssFeedService
     /// is found / the anime is not currently waiting for an episode.
     ///
     /// Caller (typically <c>AiringInfoService</c>) decides whether to trust the
-    /// value ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â e.g. capping it by schedule+1 to reject hallucinated/junk hits.
+    /// value — e.g. capping it by schedule+1 to reject hallucinated/junk hits.
     /// This method intentionally does not mutate the AnimeItem or fire
     /// notifications, so all airing-state writes flow through one path.
     /// </summary>
@@ -190,7 +190,7 @@ public class RssFeedService
                 if (string.IsNullOrEmpty(title)) continue;
 
                 int? epNum = ExtractSingleEpisodeNumber(title);
-                if (epNum == null) continue; // batch / range / multi-ep ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â skip
+                if (epNum == null) continue; // batch / range / multi-ep — skip
 
                 var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
                 var animeTitle = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle)?.Value;
@@ -268,7 +268,7 @@ public class RssFeedService
     {
         // Gate: only hit Nyaa if at least one watching anime is actually awaiting a new episode
         // (NextEpisodeAt is null or already passed). Otherwise torrents have nothing new for us.
-        // Snapshot on UI thread ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ObservableCollection is not thread-safe.
+        // Snapshot on UI thread — ObservableCollection is not thread-safe.
         var awaitingEpisode = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             _animeService.Collection.Any(NeedsNyaaCheck));
         if (!awaitingEpisode)
@@ -287,7 +287,7 @@ public class RssFeedService
             var items = doc.Descendants("item").ToList();
 
             // Get only ongoing/watching items to save resources.
-            // Snapshot on UI thread ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ObservableCollection is not thread-safe.
+            // Snapshot on UI thread — ObservableCollection is not thread-safe.
             var activeAnime = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                 _animeService.Collection
                     .Where(x => x.Status == UserAnimeStatus.Watching || x.Status == UserAnimeStatus.PlanToWatch)
@@ -313,7 +313,7 @@ public class RssFeedService
                 var resolution = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementVideoResolution)?.Value;
                 var group = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementReleaseGroup)?.Value;
 
-                // Single-episode releases only ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â batches / ranges return null and
+                // Single-episode releases only — batches / ranges return null and
                 // are surfaced as torrent rows but not used to bump EpisodesAired.
                 var nyaaNs = XNamespace.Get("https://nyaa.si/xmlns/nyaa");
                 var infoHash = item.Element(nyaaNs + "infoHash")?.Value;

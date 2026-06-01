@@ -35,7 +35,7 @@ public static class CrashReporter
         }
         catch (Exception ex)
         {
-            // Crashing while reporting a crash Ã¢â‚¬â€ just log and move on.
+            // Crashing while reporting a crash — just log and move on.
             Log.Error(ex, "CrashReporter: Failed to write crash snapshot");
         }
     }

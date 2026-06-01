@@ -18,7 +18,7 @@ public static class TaskExtensions
         }
         catch (OperationCanceledException)
         {
-            // Expected cancellation Ã¢â‚¬â€ no need to log as error
+            // Expected cancellation — no need to log as error
         }
         catch (Exception ex)
         {

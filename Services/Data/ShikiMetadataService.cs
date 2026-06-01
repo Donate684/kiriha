@@ -58,18 +58,18 @@ public class ShikiMetadataService : IDisposable
     /// Returns Shikimori metadata for <paramref name="animeId"/>, fetching from
     /// the API on miss. <paramref name="maxAge"/> bounds the cache freshness:
     /// when the persisted entry is older, we re-fetch (the conditional GET via
-    /// <see cref="HttpConditionalCache"/> makes this cheap Ã¢â‚¬â€ usually 304).
+    /// <see cref="HttpConditionalCache"/> makes this cheap — usually 304).
     /// Pass <c>null</c> to accept any age (default for completed shows).
     ///
-    /// <paramref name="onFetched"/> is invoked on every successful return Ã¢â‚¬â€
-    /// cache hit or fresh fetch Ã¢â‚¬â€ so periodic syncs (e.g. AiringInfoService's
+    /// <paramref name="onFetched"/> is invoked on every successful return —
+    /// cache hit or fresh fetch — so periodic syncs (e.g. AiringInfoService's
     /// Shiki fallback) keep applying current values to the UI.
     /// </summary>
     public async Task<ShikiMetadata?> GetOrFetchMetadataAsync(int animeId, TimeSpan? maxAge = null, Func<ShikiMetadata, Task>? onFetched = null)
     {
         var cached = await _metadataRepo.GetAsync(animeId);
         // When a TTL is requested, treat both genuinely-old entries and pre-TTL
-        // legacy rows (FetchedAt == default after the schema migration) as stale Ã¢â‚¬â€
+        // legacy rows (FetchedAt == default after the schema migration) as stale —
         // otherwise a user's existing metadata would skip the airing refresh
         // forever. The first successful upsert stamps a real timestamp and
         // normal TTL semantics take over.
@@ -105,7 +105,7 @@ public class ShikiMetadataService : IDisposable
                 return fetched;
             }
 
-            // Live fetch failed but we still have a stale entry Ã¢â‚¬â€ better to
+            // Live fetch failed but we still have a stale entry — better to
             // return it than nothing, the caller can apply best-effort.
             if (cached != null)
             {
@@ -157,7 +157,7 @@ public class ShikiMetadataService : IDisposable
                 return new ShikiMetadata { Id = animeId, Russian = "", Description = "" };
             }
 
-            if (result.Body == null) return null; // transient failure Ã¢â‚¬â€ retry next tick
+            if (result.Body == null) return null; // transient failure — retry next tick
 
             return System.Text.Json.JsonSerializer.Deserialize<ShikiMetadata>(result.Body);
         }
@@ -171,7 +171,7 @@ public class ShikiMetadataService : IDisposable
 
     /// <summary>
     /// Shikimori rate limit: 5 RPS. We pace at 250 ms between requests
-    /// (Ã¢â€°Ë†4 RPS) to leave headroom for transient bursts.
+    /// (≈4 RPS) to leave headroom for transient bursts.
     /// </summary>
     private async Task ShikiThrottleAsync(CancellationToken ct)
     {
@@ -208,7 +208,7 @@ public class ShikiMetadataService : IDisposable
             var meta = await _metadataRepo.GetAsync(item.Id);
             if (meta != null)
             {
-                // ApplyMetadata mutates ObservableObject properties Ã¢â‚¬â€ dispatch to UI thread.
+                // ApplyMetadata mutates ObservableObject properties — dispatch to UI thread.
                 bool changed = await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => ApplyMetadata(item, meta));
                 if (changed) await _userAnimeRepo.UpdateMetadataAsync(item);
                 localizedCount++;
@@ -263,7 +263,7 @@ public class ShikiMetadataService : IDisposable
     /// from the Shikimori metadata cache, fetching from the API on miss.
     /// Mirrors the per-item path inside <see cref="LocalizeItemsAsync"/> so
     /// callers (e.g. NowPlaying) get the same write-through-and-persist
-    /// behaviour without rolling their own apply logic Ã¢â‚¬â€ bare
+    /// behaviour without rolling their own apply logic — bare
     /// <c>AnimeItem.RefreshMetadata()</c> only raises PropertyChanged, it
     /// does NOT copy fetched fields into the item.
     /// </summary>

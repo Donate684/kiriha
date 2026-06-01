@@ -97,7 +97,7 @@ public class AnisthesiaService : IDisposable
 
                     // Reconcile the strategy's optimistic IsPlaying=true against
                     // the audio session state. WindowTitleStrategy and HandleEnumerationStrategy
-                    // can't tell pause from play on their own Ã¢â‚¬â€ the player process
+                    // can't tell pause from play on their own — the player process
                     // and the open file handle look identical in both cases. The
                     // audio session, however, goes Inactive within ~1 s of pause
                     // for every mainstream player, so we treat that as the
@@ -107,7 +107,7 @@ public class AnisthesiaService : IDisposable
                     {
                         if (_lastTrackedPid != 0 && _lastTrackedPid != detected.Pid)
                         {
-                            // The user switched to a different player instance Ã¢â‚¬â€
+                            // The user switched to a different player instance —
                             // drop the previous tracker so we don't carry over
                             // its Inactive streak.
                             _pauseDetector.Forget(_lastTrackedPid);

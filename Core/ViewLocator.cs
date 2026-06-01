@@ -21,7 +21,7 @@ namespace Kiriha.Core;
 /// only ever shown via a directly-constructed <see cref="Window"/> (e.g.
 /// <see cref="AnimeDetailsViewModel"/>, <see cref="CrashReportViewModel"/>,
 /// <see cref="MainWindowViewModel"/>, <see cref="PlayerSelectionViewModel"/>)
-/// are intentionally absent Ã¢â‚¬â€ they don't participate in DataTemplate routing.
+/// are intentionally absent — they don't participate in DataTemplate routing.
 /// </summary>
 public class ViewLocator : IDataTemplate
 {
@@ -45,7 +45,7 @@ public class ViewLocator : IDataTemplate
     {
         if (param is null) return null;
         if (Map.TryGetValue(param.GetType(), out var factory)) return factory();
-        // Fall back to a visible diagnostic instead of throwing Ã¢â‚¬â€ keeping
+        // Fall back to a visible diagnostic instead of throwing — keeping
         // parity with the old reflective behaviour so a missed registration
         // doesn't crash the shell.
         return new TextBlock { Text = "ViewLocator: no view registered for " + param.GetType().FullName };

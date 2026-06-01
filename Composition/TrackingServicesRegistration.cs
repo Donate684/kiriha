@@ -22,7 +22,7 @@ namespace Kiriha.Composition;
 /// inject it directly when they need API-specific operations) and under
 /// <see cref="ITrackerService"/> via a <c>sp.GetRequiredService</c> resolver
 /// so <c>IEnumerable&lt;ITrackerService&gt;</c> consumers see the SAME singleton
-/// instance Ã¢â‚¬â€ registering the implementation twice would create two parallel
+/// instance — registering the implementation twice would create two parallel
 /// instances and silently double the rate-limit budget.
 /// </summary>
 internal static class TrackingServicesRegistration
@@ -31,7 +31,7 @@ internal static class TrackingServicesRegistration
     {
         services.AddTransient<ResilientHttpHandler>();
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MyAnimeList Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // --- MyAnimeList ---
         services.AddHttpClient("MalClient", c => { c.BaseAddress = new Uri(Constants.Api.Mal.BaseUrl); })
                 .AddHttpMessageHandler<ResilientHttpHandler>();
 
@@ -48,14 +48,14 @@ internal static class TrackingServicesRegistration
 
         services.AddSingleton<ITrackerService>(sp => sp.GetRequiredService<MalApiService>());
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Shikimori Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // --- Shikimori ---
         // No BaseAddress: ShikiApiService resolves the endpoint per-call from settings
         // (shikimori.one vs shikimori.net) and always passes absolute URLs.
         //
         // AllowAutoRedirect = false is critical: shikimori.net and shikimori.rip
         // are the same site behind two domains (regional-blocking workaround),
         // and the server geo-redirects between them. HttpClient's built-in
-        // follower would (a) downgrade POST Ã¢â€ â€™ GET and drop the body, and
+        // follower would (a) downgrade POST -> GET and drop the body, and
         // (b) strip the Authorization header on the cross-host hop. ShikiHttp
         // re-implements the follow with method/body/auth preserved and pins
         // the resolved host in ShikiHostResolver for the rest of the session.
@@ -83,7 +83,7 @@ internal static class TrackingServicesRegistration
 
         services.AddSingleton<ITrackerService>(sp => sp.GetRequiredService<ShikiApiService>());
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Jikan / AniList Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // --- Jikan / AniList ---
         services.AddSingleton<JikanApiService>();
         services.AddHttpClient("AniListClient")
                 .AddHttpMessageHandler<ResilientHttpHandler>();
@@ -92,11 +92,11 @@ internal static class TrackingServicesRegistration
                 sp.GetRequiredService<IHttpClientFactory>().CreateClient("AniListClient"),
                 sp.GetRequiredService<IHttpCacheRepository>()));
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ RSS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // --- RSS ---
         services.AddHttpClient("RssClient", c => c.DefaultRequestHeaders.Add("User-Agent", AppInfo.UserAgent));
         services.AddSingleton<RssFeedService>();
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Cross-tracker orchestration Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // --- Cross-tracker orchestration ---
         services.AddSingleton<SmtcService>(sp => new SmtcService(sp.GetRequiredService<SettingsService>()));
         services.AddSingleton<DiscordService>();
         services.AddSingleton<AnisthesiaService>();

@@ -14,16 +14,16 @@ namespace Kiriha.Utils;
 ///     GetIdFromTitleAsync, SearchOnMalAsync).
 ///   * Anisthesia detection strategies (WindowTitle / HandleEnumeration) parse
 ///     the same title every detection tick.
-/// A single parse is several milliseconds; multiplied by N files Ãƒâ€” M ticks it
+/// A single parse is several milliseconds; multiplied by N files × M ticks it
 /// shows up clearly in CPU profiles.
 ///
-/// The returned list MUST be treated as read-only Ã¢â‚¬â€ it is shared across all
+/// The returned list MUST be treated as read-only — it is shared across all
 /// callers. Every existing call site only enumerates / uses FirstOrDefault, so
 /// this is safe today; the IReadOnlyList signature enforces it going forward.
 /// </summary>
 public static class AnimeParseCache
 {
-    // 2048 entries Ãƒâ€” ~32 elements Ãƒâ€” ~80 bytes Ã¢â€°Ë† ~5 MB worst case, but in
+    // 2048 entries × ~32 elements × ~80 bytes ≈ ~5 MB worst case, but in
     // practice element values are short strings and entries are tiny.
     private static readonly LruStringMemoizer<IReadOnlyList<Element>> _cache = new(2048);
 
