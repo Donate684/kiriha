@@ -11,9 +11,7 @@ public sealed class PlayerPlaybackController
 
     public event EventHandler? FileLoaded;
     public event EventHandler<MpvPlaybackEndedEventArgs>? PlaybackEnded;
-    public event Action<double>? TimePositionChanged;
-    public event Action<double>? DurationChanged;
-    public event Action<bool>? PauseChanged;
+    public event Action<PlaybackState>? PlaybackStateChanged;
 
     public bool HasPlayer => _player != null;
 
@@ -24,9 +22,7 @@ public sealed class PlayerPlaybackController
         _player = player;
         _player.FileLoaded += OnFileLoaded;
         _player.PlaybackEnded += OnPlaybackEnded;
-        _player.TimePositionChanged += OnTimePositionChanged;
-        _player.DurationChanged += OnDurationChanged;
-        _player.PauseChanged += OnPauseChanged;
+        _player.PlaybackStateChanged += OnPlaybackStateChanged;
     }
 
     public void Detach()
@@ -36,9 +32,7 @@ public sealed class PlayerPlaybackController
 
         _player.FileLoaded -= OnFileLoaded;
         _player.PlaybackEnded -= OnPlaybackEnded;
-        _player.TimePositionChanged -= OnTimePositionChanged;
-        _player.DurationChanged -= OnDurationChanged;
-        _player.PauseChanged -= OnPauseChanged;
+        _player.PlaybackStateChanged -= OnPlaybackStateChanged;
         _player = null;
     }
 
@@ -56,6 +50,7 @@ public sealed class PlayerPlaybackController
     public void SetTrack(string type, string id) => _player?.SetTrack(type, id);
     public void SetOptionString(string name, string value) => _player?.SetOptionString(name, value);
     public double GetDuration() => _player?.GetDuration() ?? 0;
+    public PlaybackState GetPlaybackState() => _player?.GetPlaybackState() ?? new PlaybackState(0, 0, false, false, false);
     public string GetRuntimeVideoInfo() => _player?.GetRuntimeVideoInfo() ?? "hwdec: -, interop: -, vo: -, context: -, decoder: -";
     public void SetScreenshotOptions(
         string directory,
@@ -140,7 +135,5 @@ public sealed class PlayerPlaybackController
 
     private void OnFileLoaded(object? sender, EventArgs e) => FileLoaded?.Invoke(sender, e);
     private void OnPlaybackEnded(object? sender, MpvPlaybackEndedEventArgs e) => PlaybackEnded?.Invoke(sender, e);
-    private void OnTimePositionChanged(double time) => TimePositionChanged?.Invoke(time);
-    private void OnDurationChanged(double duration) => DurationChanged?.Invoke(duration);
-    private void OnPauseChanged(bool isPaused) => PauseChanged?.Invoke(isPaused);
+    private void OnPlaybackStateChanged(PlaybackState state) => PlaybackStateChanged?.Invoke(state);
 }

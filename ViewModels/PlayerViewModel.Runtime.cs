@@ -21,9 +21,7 @@ public partial class PlayerViewModel
         _playback.Attach(player);
         _playback.FileLoaded += OnPlayerFileLoaded;
         _playback.PlaybackEnded += OnPlayerPlaybackEnded;
-        _playback.TimePositionChanged += OnPlayerTimePositionChanged;
-        _playback.DurationChanged += OnPlayerDurationChanged;
-        _playback.PauseChanged += OnPlayerPauseChanged;
+        _playback.PlaybackStateChanged += OnPlayerPlaybackStateChanged;
         _playback.SetVolume(Volume);
         _playback.SetSpeed(PlaybackSpeed);
         _playback.SetAudioNormalization(NormalizeAudio);
@@ -89,8 +87,7 @@ public partial class PlayerViewModel
 
     private void RefreshDurationFromPlayer()
     {
-        if (_timeline.TrySetDuration(_playback.GetDuration(), out var snapshot))
-            ApplyTimelineSnapshot(snapshot);
+        ApplyPlaybackState(_playback.GetPlaybackState());
     }
 
     private async Task UpdateTracksAsync()

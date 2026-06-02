@@ -142,9 +142,7 @@ public partial class PlayerViewModel
         Overlay.Dispose();
         _playback.FileLoaded -= OnPlayerFileLoaded;
         _playback.PlaybackEnded -= OnPlayerPlaybackEnded;
-        _playback.TimePositionChanged -= OnPlayerTimePositionChanged;
-        _playback.DurationChanged -= OnPlayerDurationChanged;
-        _playback.PauseChanged -= OnPlayerPauseChanged;
+        _playback.PlaybackStateChanged -= OnPlayerPlaybackStateChanged;
         _playback.Detach();
         _statePublisher.PublishClosed();
         _statePublisher.Dispose();
@@ -192,27 +190,25 @@ public partial class PlayerViewModel
         });
     }
 
-    private void OnPlayerTimePositionChanged(double time)
+    private void OnPlayerPlaybackStateChanged(PlaybackState state)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (_timeline.TryApplyPlayerTime(time, out var snapshot))
-                ApplyTimelineSnapshot(snapshot);
-        });
+        Dispatcher.UIThread.Post(() => ApplyPlaybackState(state));
     }
 
-    private void OnPlayerDurationChanged(double duration)
+    private void ApplyPlaybackState(PlaybackState state)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (_timeline.TrySetDuration(duration, out var snapshot))
-                ApplyTimelineSnapshot(snapshot);
-        });
-    }
+        PlayerTimelineSnapshot? snapshot = null;
 
-    private void OnPlayerPauseChanged(bool isPaused)
-    {
-        Dispatcher.UIThread.Post(() => IsPlaying = !isPaused);
+        if (state.Duration > 0 && _timeline.TrySetDuration(state.Duration, out var durationSnapshot))
+            snapshot = durationSnapshot;
+
+        if (_timeline.TryApplyPlayerTime(state.Position, out var positionSnapshot))
+            snapshot = positionSnapshot;
+
+        if (snapshot.HasValue)
+            ApplyTimelineSnapshot(snapshot.Value);
+
+        IsPlaying = state.IsPlaying;
     }
 
     private void RefreshMpvRuntimeInfo()

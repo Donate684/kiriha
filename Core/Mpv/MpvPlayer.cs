@@ -11,6 +11,8 @@ public class MpvPlayer : IDisposable
     private const ulong TimePositionPropertyId = 1;
     private const ulong DurationPropertyId = 2;
     private const ulong PausePropertyId = 3;
+    private const ulong SeekablePropertyId = 4;
+    private const ulong IdleActivePropertyId = 5;
     private const string AudioNormalizationFilter = "loudnorm=I=-16:TP=-1.5:LRA=11";
 
     private readonly object _gate = new();
@@ -28,9 +30,7 @@ public class MpvPlayer : IDisposable
     public event EventHandler? FileLoaded;
     public event EventHandler<MpvPlaybackEndedEventArgs>? PlaybackEnded;
     public event Action? RenderUpdateRequested;
-    public event Action<double>? TimePositionChanged;
-    public event Action<double>? DurationChanged;
-    public event Action<bool>? PauseChanged;
+    public event Action<PlaybackState>? PlaybackStateChanged;
 
     public MpvPlayer(MpvOptions? options = null)
     {
@@ -291,6 +291,14 @@ public class MpvPlayer : IDisposable
     public double GetTimePosition()
     {
         return _propertyCache.TimePosition;
+    }
+
+    public PlaybackState GetPlaybackState()
+    {
+        if (_propertyCache.Duration <= 0)
+            _ = GetDuration();
+
+        return _propertyCache.PlaybackState;
     }
 
     public double GetDuration()
@@ -704,6 +712,8 @@ public class MpvPlayer : IDisposable
         {
             case LibMpvNative.MPV_EVENT_FILE_LOADED:
                 InvalidateRuntimeVideoInfo();
+                if (_propertyCache.TryUpdateLoaded(true))
+                    PublishPlaybackState();
                 FileLoaded?.Invoke(this, EventArgs.Empty);
                 break;
 
@@ -711,6 +721,8 @@ public class MpvPlayer : IDisposable
                 var endFile = mpvEvent.Data == IntPtr.Zero
                     ? new MpvEventEndFile()
                     : Marshal.PtrToStructure<MpvEventEndFile>(mpvEvent.Data);
+                if (_propertyCache.TryUpdatePlaybackEnded())
+                    PublishPlaybackState();
                 PlaybackEnded?.Invoke(this, new MpvPlaybackEndedEventArgs(endFile.Reason, endFile.Error));
                 break;
 
@@ -725,6 +737,8 @@ public class MpvPlayer : IDisposable
         Check(LibMpvNative.mpv_observe_property(_mpvHandle, TimePositionPropertyId, "time-pos", LibMpvNative.MPV_FORMAT_DOUBLE), "observe time position");
         Check(LibMpvNative.mpv_observe_property(_mpvHandle, DurationPropertyId, "duration", LibMpvNative.MPV_FORMAT_DOUBLE), "observe duration");
         Check(LibMpvNative.mpv_observe_property(_mpvHandle, PausePropertyId, "pause", LibMpvNative.MPV_FORMAT_FLAG), "observe pause");
+        Check(LibMpvNative.mpv_observe_property(_mpvHandle, SeekablePropertyId, "seekable", LibMpvNative.MPV_FORMAT_FLAG), "observe seekable");
+        Check(LibMpvNative.mpv_observe_property(_mpvHandle, IdleActivePropertyId, "idle-active", LibMpvNative.MPV_FORMAT_FLAG), "observe idle active");
     }
 
     private static void UnobservePlaybackProperties(IntPtr handle)
@@ -732,6 +746,8 @@ public class MpvPlayer : IDisposable
         LibMpvNative.mpv_unobserve_property(handle, TimePositionPropertyId);
         LibMpvNative.mpv_unobserve_property(handle, DurationPropertyId);
         LibMpvNative.mpv_unobserve_property(handle, PausePropertyId);
+        LibMpvNative.mpv_unobserve_property(handle, SeekablePropertyId);
+        LibMpvNative.mpv_unobserve_property(handle, IdleActivePropertyId);
     }
 
     private void ConfigureScreenshots(
@@ -802,21 +818,38 @@ public class MpvPlayer : IDisposable
             case TimePositionPropertyId when property.Format == LibMpvNative.MPV_FORMAT_DOUBLE:
                 var timePosition = Marshal.PtrToStructure<double>(property.Data);
                 if (_propertyCache.TryUpdateTimePosition(timePosition))
-                    TimePositionChanged?.Invoke(timePosition);
+                    PublishPlaybackState();
                 break;
 
             case DurationPropertyId when property.Format == LibMpvNative.MPV_FORMAT_DOUBLE:
                 var duration = Marshal.PtrToStructure<double>(property.Data);
                 if (_propertyCache.TryUpdateDuration(duration))
-                    DurationChanged?.Invoke(duration);
+                    PublishPlaybackState();
                 break;
 
             case PausePropertyId when property.Format == LibMpvNative.MPV_FORMAT_FLAG:
                 var isPaused = Marshal.ReadInt32(property.Data) != 0;
                 if (_propertyCache.TryUpdatePause(isPaused))
-                    PauseChanged?.Invoke(isPaused);
+                    PublishPlaybackState();
+                break;
+
+            case SeekablePropertyId when property.Format == LibMpvNative.MPV_FORMAT_FLAG:
+                var isSeekable = Marshal.ReadInt32(property.Data) != 0;
+                if (_propertyCache.TryUpdateSeekable(isSeekable))
+                    PublishPlaybackState();
+                break;
+
+            case IdleActivePropertyId when property.Format == LibMpvNative.MPV_FORMAT_FLAG:
+                var isIdleActive = Marshal.ReadInt32(property.Data) != 0;
+                if (_propertyCache.TryUpdateLoaded(!isIdleActive))
+                    PublishPlaybackState();
                 break;
         }
+    }
+
+    private void PublishPlaybackState()
+    {
+        PlaybackStateChanged?.Invoke(_propertyCache.PlaybackState);
     }
 }
 

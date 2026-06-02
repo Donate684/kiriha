@@ -13,6 +13,8 @@ internal sealed class MpvPropertyCache
     private double _lastPublishedTimePosition;
     private double _lastDuration;
     private bool _lastPause = true;
+    private bool _lastSeekable;
+    private bool _lastLoaded;
     private DateTime _lastTimePositionEventUtc = DateTime.MinValue;
     private string _runtimeVideoInfo;
     private DateTime _runtimeVideoInfoRefreshedUtc = DateTime.MinValue;
@@ -63,6 +65,17 @@ internal sealed class MpvPropertyCache
             lock (_gate)
             {
                 return _runtimeVideoInfo;
+            }
+        }
+    }
+
+    public PlaybackState PlaybackState
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return CreatePlaybackState();
             }
         }
     }
@@ -140,4 +153,46 @@ internal sealed class MpvPropertyCache
             return true;
         }
     }
+
+    public bool TryUpdateSeekable(bool isSeekable)
+    {
+        lock (_gate)
+        {
+            if (isSeekable == _lastSeekable)
+                return false;
+
+            _lastSeekable = isSeekable;
+            return true;
+        }
+    }
+
+    public bool TryUpdateLoaded(bool isLoaded)
+    {
+        lock (_gate)
+        {
+            if (isLoaded == _lastLoaded)
+                return false;
+
+            _lastLoaded = isLoaded;
+            return true;
+        }
+    }
+
+    public bool TryUpdatePlaybackEnded()
+    {
+        lock (_gate)
+        {
+            var changed = !_lastPause;
+            _lastPause = true;
+            return changed;
+        }
+    }
+
+    private PlaybackState CreatePlaybackState() =>
+        new(
+            _lastTimePosition,
+            _lastDuration,
+            !_lastPause,
+            _lastSeekable,
+            _lastLoaded);
 }
