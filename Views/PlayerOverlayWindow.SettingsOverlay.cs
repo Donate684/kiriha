@@ -58,6 +58,9 @@ public partial class PlayerOverlayWindow
         if (this.FindControl<Border>("SettingsOverlayBackdrop") is { } backdrop)
             backdrop.IsVisible = true;
 
+        if (DataContext is PlayerViewModel vm)
+            vm.SetMpvRuntimeDiagnosticsVisible(true);
+
         ShowControls();
     }
 
@@ -65,6 +68,9 @@ public partial class PlayerOverlayWindow
     {
         if (this.FindControl<Border>("SettingsOverlayBackdrop") is { } backdrop)
             backdrop.IsVisible = false;
+
+        if (DataContext is PlayerViewModel vm)
+            vm.SetMpvRuntimeDiagnosticsVisible(false);
     }
 
     private bool IsSettingsOverlayVisible()

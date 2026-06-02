@@ -24,6 +24,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     private readonly PlayerTimelinePreviewController _timelinePreview;
     private DispatcherTimer? _timer;
     private bool _isApplyingSettings;
+    private bool _mpvRuntimeDiagnosticsVisible;
 
     public PlayerOverlayViewModel Overlay { get; } = new();
 

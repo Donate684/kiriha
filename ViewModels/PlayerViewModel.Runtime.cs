@@ -72,7 +72,19 @@ public partial class PlayerViewModel
             RefreshDurationFromPlayer();
 
         _statePublisher.Publish();
-        RefreshMpvRuntimeInfo();
+        if (_mpvRuntimeDiagnosticsVisible)
+            RefreshMpvRuntimeInfo();
+    }
+
+    public void SetMpvRuntimeDiagnosticsVisible(bool visible)
+    {
+        if (_mpvRuntimeDiagnosticsVisible == visible)
+            return;
+
+        _mpvRuntimeDiagnosticsVisible = visible;
+
+        if (visible)
+            RefreshMpvRuntimeInfo();
     }
 
     private void ShowOsd(string message, string detail = "")
