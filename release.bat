@@ -54,7 +54,7 @@ if errorlevel 1 (
 echo.
 echo === [3/5] dotnet publish ===
 if exist publish rmdir /s /q publish
-dotnet publish -c Release --runtime win-x64 --self-contained true -p:PublishReadyToRun=true -o ./publish
+dotnet publish Kiriha.csproj -c Release --runtime win-x64 --self-contained true -p:PublishReadyToRun=true -o ./publish
 if errorlevel 1 (
     echo ERROR: dotnet publish failed.
     pause
