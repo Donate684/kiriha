@@ -12,7 +12,7 @@ public partial class PlayerWindow : Window
 {
     private MpvPlayer? _player;
     private PlayerOverlayWindow? _overlay;
-    private bool _initialVideoLoaded;
+    private PlayerLoadingPipeline? _loadingPipeline;
 
     public MpvPlayer? Player => _player;
     
@@ -39,14 +39,21 @@ public partial class PlayerWindow : Window
 
             if (DataContext is PlayerViewModel vm)
             {
-                vm.Initialize(_player);
+                _loadingPipeline = new PlayerLoadingPipeline(vm, VideoHost);
             }
 
             _overlay = new PlayerOverlayWindow(this);
             _overlay.Show(this);
 
             VideoHost.RenderContextReady += OnVideoRenderContextReady;
-            VideoHost.Player = _player;
+            if (_loadingPipeline != null)
+            {
+                _loadingPipeline.AttachPlayer(_player);
+            }
+            else
+            {
+                VideoHost.Player = _player;
+            }
         }
         catch (Exception ex)
         {
@@ -56,12 +63,7 @@ public partial class PlayerWindow : Window
 
     private void OnVideoRenderContextReady(object? sender, EventArgs e)
     {
-        if (_initialVideoLoaded || _player == null || DataContext is not PlayerViewModel vm)
-            return;
-
-        _initialVideoLoaded = true;
-        Log.Information("Loading video: {Url}", vm.VideoUrl);
-        vm.LoadVideo(vm.VideoUrl);
+        _loadingPipeline?.MarkRenderContextReady();
     }
 
     protected override void OnResized(WindowResizedEventArgs e)
@@ -76,6 +78,7 @@ public partial class PlayerWindow : Window
 
         _overlay?.Close();
         _overlay = null;
+        _loadingPipeline = null;
 
         base.OnClosed(e);
 
