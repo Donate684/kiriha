@@ -240,7 +240,7 @@ public partial class PlayerViewModel
     {
         var normalized = NormalizeMpvOption(value, "auto");
         SaveMpvOption(x => x.MpvHwdec = normalized);
-        _player?.SetOptionString("hwdec", normalized);
+        _playback.SetOptionString("hwdec", normalized);
         RefreshMpvRuntimeInfo();
     }
     partial void OnMpvVideoOutputChanged(string value) =>
@@ -278,36 +278,36 @@ public partial class PlayerViewModel
 
     private void ApplyScreenshotOptions()
     {
-        _player?.SetScreenshotOptions(
+        _settingsApplier.ApplyScreenshot(new PlayerScreenshotOptions(
             ScreenshotDirectory,
             ScreenshotFormat,
             ScreenshotPngCompression,
             ScreenshotQuality,
-            ScreenshotHighBitDepth);
+            ScreenshotHighBitDepth));
     }
 
     private void ApplyTrackLanguagePreferences()
     {
-        _player?.SetTrackLanguagePreferences(
+        _settingsApplier.ApplyTrackLanguagePreferences(new PlayerTrackLanguageOptions(
             NormalizeLanguageList(PreferredAudioLanguages, "Japanese,jpn,ja"),
-            NormalizeLanguageList(PreferredSubtitleLanguages, "Russian,rus,ru"));
+            NormalizeLanguageList(PreferredSubtitleLanguages, "Russian,rus,ru")));
     }
 
     private void ApplyVideoProcessingOptions()
     {
-        _player?.SetVideoProcessingOptions(
+        _settingsApplier.ApplyVideoProcessing(new PlayerVideoProcessingOptions(
             NormalizeMpvOption(MpvScale, "ewa_lanczossharp"),
             NormalizeMpvOption(MpvChromaScale, "ewa_lanczossharp"),
             NormalizeMpvOption(MpvDitherDepth, "auto"),
             MpvCorrectDownscaling,
             MpvDeband,
             Math.Clamp(MpvDebandIterations, 0, 16),
-            Math.Clamp(MpvDebandThreshold, 0, 4096));
+            Math.Clamp(MpvDebandThreshold, 0, 4096)));
     }
 
     private void ApplySubtitleStyleOverride()
     {
-        _player?.SetSubtitleStyleOverride(
+        _settingsApplier.ApplySubtitleStyle(new PlayerSubtitleStyleOptions(
             SubtitleStyleOverrideEnabled,
             NormalizeMpvOption(SubtitleFont, "Candara Bold"),
             Math.Clamp(SubtitleFontSize, 1, 300),
@@ -319,7 +319,7 @@ public partial class PlayerViewModel
             NormalizeSubtitleAlignment(SubtitleAlignY, "bottom"),
             NormalizeSubtitleAlignment(SubtitleAlignX, "center"),
             Math.Clamp(SubtitleMarginY, 0, 500),
-            SubtitleScaleByWindow);
+            SubtitleScaleByWindow));
     }
 
     private static string NormalizeScreenshotDirectory(string? value)

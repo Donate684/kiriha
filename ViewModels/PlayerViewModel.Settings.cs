@@ -141,7 +141,7 @@ public partial class PlayerViewModel
     public void ApplyExternalMetadata(PlayerMediaMetadata metadata)
     {
         ApplyMetadata(metadata);
-        _stateClient.Publish(CreatePlayerState());
+        _statePublisher.Publish();
     }
 
     public bool MatchesOriginalTitle(string originalTitle)

@@ -18,30 +18,27 @@ public partial class PlayerViewModel
 {
     public void Initialize(MpvPlayer player)
     {
-        _player = player;
-        _player.FileLoaded += OnPlayerFileLoaded;
-        _player.PlaybackEnded += OnPlayerPlaybackEnded;
-        _player.TimePositionChanged += OnPlayerTimePositionChanged;
-        _player.DurationChanged += OnPlayerDurationChanged;
-        _player.PauseChanged += OnPlayerPauseChanged;
-        _player.SetVolume(Volume);
-        _player.SetSpeed(PlaybackSpeed);
-        _player.SetAudioNormalization(NormalizeAudio);
+        _playback.Attach(player);
+        _playback.FileLoaded += OnPlayerFileLoaded;
+        _playback.PlaybackEnded += OnPlayerPlaybackEnded;
+        _playback.TimePositionChanged += OnPlayerTimePositionChanged;
+        _playback.DurationChanged += OnPlayerDurationChanged;
+        _playback.PauseChanged += OnPlayerPauseChanged;
+        _playback.SetVolume(Volume);
+        _playback.SetSpeed(PlaybackSpeed);
+        _playback.SetAudioNormalization(NormalizeAudio);
         ApplyTrackLanguagePreferences();
         ApplyVideoProcessingOptions();
         ApplyScreenshotOptions();
         ApplySubtitleStyleOverride();
-        _thumbnailer ??= CreateThumbnailer();
-        WarmUpThumbnailer();
+        _timelinePreview.Initialize();
+        _timelinePreview.WarmUp(VideoUrl);
         
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _timer.Tick += OnTimerTick;
         _timer.Start();
 
-        _osdTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.4) };
-        _osdTimer.Tick += OnOsdTimerTick;
-
-        _ = _stateClient.ConnectAsync();
+        _statePublisher.Connect();
     }
 
     public void LoadVideo(string videoUrl)
@@ -52,56 +49,37 @@ public partial class PlayerViewModel
         if (!string.Equals(VideoUrl, videoUrl, StringComparison.Ordinal))
             VideoUrl = videoUrl;
 
-        CurrentTime = 0;
-        Duration = 0;
-        CurrentTimeString = "00:00";
-        DurationString = "--:--";
+        ApplyTimelineSnapshot(_timeline.Reset());
         IsPlaying = PlayerAutoPlay;
 
-        if (_player == null)
+        if (!_playback.HasPlayer)
             return;
 
         if (!PlayerAutoPlay)
-            _player.Pause();
+            _playback.Pause();
 
-        _player.Load(videoUrl);
+        _playback.Load(videoUrl);
 
         if (PlayerAutoPlay)
-            _player.Play();
+            _playback.Play();
 
-        _stateClient.Publish(CreatePlayerState());
+        _statePublisher.Publish();
     }
-
-    private DateTime _lastSeekTime = DateTime.MinValue;
 
     private void OnTimerTick(object? sender, EventArgs e)
     {
-        if (_player == null) return;
+        if (!_playback.HasPlayer) return;
 
         if (Duration <= 0)
             RefreshDurationFromPlayer();
 
-        _stateClient.Publish(CreatePlayerState());
+        _statePublisher.Publish();
         RefreshMpvRuntimeInfo();
     }
 
     private void ShowOsd(string message, string detail = "")
     {
-        OsdMessage = message;
-        OsdDetail = detail;
-        IsOsdVisible = true;
-
-        if (_osdTimer == null)
-            return;
-
-        _osdTimer.Stop();
-        _osdTimer.Start();
-    }
-
-    private void OnOsdTimerTick(object? sender, EventArgs e)
-    {
-        _osdTimer?.Stop();
-        IsOsdVisible = false;
+        Overlay.ShowOsd(message, detail);
     }
 
     public void UpdateTracks()
@@ -111,35 +89,17 @@ public partial class PlayerViewModel
 
     private void RefreshDurationFromPlayer()
     {
-        var duration = _player?.GetDuration() ?? 0;
-        if (duration <= 0 || Math.Abs(duration - Duration) <= 0.01)
-            return;
-
-        Duration = duration;
-        DurationString = FormatTime(duration);
+        if (_timeline.TrySetDuration(_playback.GetDuration(), out var snapshot))
+            ApplyTimelineSnapshot(snapshot);
     }
 
     private async Task UpdateTracksAsync()
     {
-        var player = _player;
-        if (player == null)
+        var result = await _playback.GetTracksAndChaptersAsync();
+        if (result == null)
             return;
 
-        List<TrackInfo> tracks;
-        List<ChapterInfo> chapters;
-        try
-        {
-            (tracks, chapters) = await Task.Run(() => (player.GetTracks(), player.GetChapters()));
-        }
-        catch (Exception ex)
-        {
-            Serilog.Log.Debug(ex, "Failed to refresh mpv tracks");
-            return;
-        }
-
-        if (_player != player)
-            return;
-
+        var (tracks, chapters) = result.Value;
         AudioTracks.Clear();
         SubtitleTracks.Clear();
 
@@ -160,9 +120,9 @@ public partial class PlayerViewModel
     [RelayCommand]
     private async Task SelectTrack(TrackInfo track)
     {
-        if (_player != null && track != null)
+        if (_playback.HasPlayer && track != null)
         {
-            _player.SetTrack(track.Type, track.Id);
+            _playback.SetTrack(track.Type, track.Id);
             await Task.Delay(120);
             UpdateTracks();
             ShowOsd(track.Type == "sub" ? "Субтитры" : "Аудио", track.DisplayName);
@@ -171,26 +131,24 @@ public partial class PlayerViewModel
 
     public void BeginScrub()
     {
-        _isScrubbing = true;
+        _timeline.BeginScrub();
     }
 
     public void EndScrub()
     {
-        if (_player != null)
+        if (_playback.HasPlayer)
         {
-            _player.Seek(CurrentTime);
-            _lastSeekTime = DateTime.Now;
+            var snapshot = _timeline.EndScrub(CurrentTime);
+            _playback.Seek(snapshot.CurrentTime);
+            ApplyTimelineSnapshot(snapshot);
         }
-        _isScrubbing = false;
     }
 
     // Called when CurrentTime is changed via UI while scrubbing
     partial void OnCurrentTimeChanged(double value)
     {
-        if (_isScrubbing)
-        {
-            CurrentTimeString = TimeSpan.FromSeconds(value).ToString(@"hh\:mm\:ss");
-        }
+        if (_timeline.IsScrubbing)
+            ApplyTimelineSnapshot(_timeline.UpdateScrubTime(value));
     }
 
     partial void OnVolumeChanged(double value)
@@ -202,9 +160,9 @@ public partial class PlayerViewModel
             OnPropertyChanged(nameof(IsMuted));
         }
 
-        if (_player != null)
+        if (_playback.HasPlayer)
         {
-            _player.SetVolume(value);
+            _playback.SetVolume(value);
         }
 
         if (!_isApplyingSettings && RememberPlayerVolume && _settingsService != null)
@@ -219,7 +177,7 @@ public partial class PlayerViewModel
     partial void OnPlaybackSpeedChanged(double value)
     {
         var speed = Math.Clamp(value, 0.1, 4.0);
-        _player?.SetSpeed(speed);
+        _playback.SetSpeed(speed);
 
         if (!_isApplyingSettings && _settingsService != null)
         {
@@ -232,7 +190,7 @@ public partial class PlayerViewModel
 
     partial void OnNormalizeAudioChanged(bool value)
     {
-        _player?.SetAudioNormalization(value);
+        _playback.SetAudioNormalization(value);
 
         if (_isApplyingSettings || _settingsService == null) return;
         _settingsService.Update(settings => settings.Player.NormalizeAudio = value, SettingsSection.Player);
@@ -240,17 +198,17 @@ public partial class PlayerViewModel
 
     partial void OnIsMutedChanged(bool value)
     {
-        if (_player == null) return;
+        if (!_playback.HasPlayer) return;
         
         if (value)
         {
             _previousVolume = Volume;
-            _player.SetVolume(0);
+            _playback.SetVolume(0);
             ShowOsd("Звук", "выключен");
         }
         else
         {
-            _player.SetVolume(Volume);
+            _playback.SetVolume(Volume);
             ShowOsd("Звук", $"{Math.Clamp(Volume, 0, 100):0}%");
         }
     }

@@ -37,19 +37,19 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 IsHitTestVisible="False"
-                IsVisible="{Binding IsOsdVisible}">
+                IsVisible="{Binding Overlay.IsOsdVisible}">
             <StackPanel Spacing="3">
-                <TextBlock Text="{Binding OsdMessage}"
+                <TextBlock Text="{Binding Overlay.OsdMessage}"
                            Foreground="White"
                            FontSize="15"
                            FontWeight="SemiBold"
                            TextAlignment="Center"/>
-                <TextBlock Text="{Binding OsdDetail}"
+                <TextBlock Text="{Binding Overlay.OsdDetail}"
                            Foreground="#CCFFFFFF"
                            FontSize="22"
                            FontWeight="Bold"
                            TextAlignment="Center"
-                           IsVisible="{Binding OsdDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                           IsVisible="{Binding Overlay.OsdDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             </StackPanel>
         </Border>
 
@@ -164,9 +164,9 @@
                         ZIndex="20">
                     <Border Width="236"
                             Height="160"
-                            Canvas.Left="{Binding TimelinePreviewLeft}"
+                             Canvas.Left="{Binding Overlay.TimelinePreviewLeft}"
                             Canvas.Top="-164"
-                            IsVisible="{Binding IsTimelinePreviewVisible}"
+                             IsVisible="{Binding Overlay.IsTimelinePreviewVisible}"
                             Background="#F0181818"
                             BorderBrush="#40FFFFFF"
                             BorderThickness="1"
@@ -179,13 +179,13 @@
                                     Background="#FF050505"
                                     CornerRadius="5"
                                     ClipToBounds="True">
-                                <Image Source="{Binding TimelinePreviewImage}"
+                                <Image Source="{Binding Overlay.TimelinePreviewImage}"
                                        Stretch="Uniform"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                             </Border>
                             <TextBlock Grid.Row="1"
-                                       Text="{Binding TimelinePreviewTime}"
+                                       Text="{Binding Overlay.TimelinePreviewTime}"
                                        Foreground="White"
                                        FontSize="12"
                                        FontWeight="SemiBold"

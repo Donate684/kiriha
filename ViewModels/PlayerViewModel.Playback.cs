@@ -19,12 +19,12 @@ public partial class PlayerViewModel
     [RelayCommand]
     private void TogglePlayPause()
     {
-        if (_player == null) return;
+        if (!_playback.HasPlayer) return;
         
         if (IsPlaying)
-            _player.Pause();
+            _playback.Pause();
         else
-            _player.Play();
+            _playback.Play();
             
         IsPlaying = !IsPlaying;
     }
@@ -38,13 +38,13 @@ public partial class PlayerViewModel
     [RelayCommand]
     private void CycleSubtitle()
     {
-        _player?.CycleSubtitle();
+        _playback.CycleSubtitle();
     }
 
     [RelayCommand]
     private void CycleAudio()
     {
-        _player?.CycleAudio();
+        _playback.CycleAudio();
     }
 
     [RelayCommand]
@@ -56,14 +56,14 @@ public partial class PlayerViewModel
     [RelayCommand]
     public void MoveSubtitleUp()
     {
-        _player?.AdjustSubtitlePosition(-1);
+        _playback.AdjustSubtitlePosition(-1);
         ShowOsd("Субтитры", "выше");
     }
 
     [RelayCommand]
     public void MoveSubtitleDown()
     {
-        _player?.AdjustSubtitlePosition(1);
+        _playback.AdjustSubtitlePosition(1);
         ShowOsd("Субтитры", "ниже");
     }
 
@@ -75,7 +75,7 @@ public partial class PlayerViewModel
 
     public void TakeScreenshot(bool includeSubtitles)
     {
-        _player?.TakeScreenshot(includeSubtitles, ScreenshotResolution?.Value ?? "video");
+        _playback.TakeScreenshot(includeSubtitles, ScreenshotResolution?.Value ?? "video");
         ShowOsd("Скриншот", includeSubtitles ? "с субтитрами" : "без субтитров");
     }
 
@@ -95,25 +95,21 @@ public partial class PlayerViewModel
     [RelayCommand]
     private void Skip(object parameter)
     {
-        if (_player != null && parameter != null && int.TryParse(parameter.ToString(), out int seconds))
+        if (_playback.HasPlayer && parameter != null && int.TryParse(parameter.ToString(), out int seconds))
         {
-            double newTime = Math.Max(0, Math.Min(Duration, CurrentTime + seconds));
-            _player.Seek(newTime);
-            CurrentTime = newTime;
-            CurrentTimeString = TimeSpan.FromSeconds(newTime).ToString(@"hh\:mm\:ss");
-            _lastSeekTime = DateTime.Now;
+            var snapshot = _timeline.SeekTo(CurrentTime + seconds);
+            _playback.Seek(snapshot.CurrentTime);
+            ApplyTimelineSnapshot(snapshot);
         }
     }
 
     public void SeekTo(double time)
     {
-        if (_player != null)
+        if (_playback.HasPlayer)
         {
-            double newTime = Math.Max(0, Math.Min(Duration, time));
-            _player.Seek(newTime);
-            CurrentTime = newTime;
-            CurrentTimeString = TimeSpan.FromSeconds(newTime).ToString(@"hh\:mm\:ss");
-            _lastSeekTime = DateTime.Now;
+            var snapshot = _timeline.SeekTo(time);
+            _playback.Seek(snapshot.CurrentTime);
+            ApplyTimelineSnapshot(snapshot);
         }
     }
 
@@ -128,127 +124,30 @@ public partial class PlayerViewModel
         Volume = Math.Clamp(Volume + delta, 0, 100);
     }
 
-    public async void ShowTimelinePreview(double timeSeconds, double left)
+    public void ShowTimelinePreview(double timeSeconds, double left)
     {
-        if (Duration <= 0 || string.IsNullOrWhiteSpace(VideoUrl) || !File.Exists(VideoUrl))
-        {
-            HideTimelinePreview();
-            return;
-        }
-
-        TimelinePreviewLeft = Math.Max(0, left);
-        TimelinePreviewTime = FormatTime(timeSeconds);
-        IsTimelinePreviewVisible = true;
-
-        var thumbnailer = _thumbnailer;
-        if (thumbnailer == null)
-            return;
-
-        var bucket = MpvThumbnailer.GetCacheBucket(timeSeconds);
-        if (bucket == _timelinePreviewBucket && TimelinePreviewImage != null)
-            return;
-
-        _timelinePreviewBucket = bucket;
-        var requestId = ++_thumbnailRequestId;
-        _thumbnailCts?.Cancel();
-        _thumbnailCts?.Dispose();
-        _thumbnailCts = new CancellationTokenSource();
-        var token = _thumbnailCts.Token;
-
-        try
-        {
-            var path = await thumbnailer.GetThumbnailAsync(VideoUrl, timeSeconds, token);
-            if (token.IsCancellationRequested || requestId != _thumbnailRequestId || string.IsNullOrWhiteSpace(path))
-                return;
-
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                if (requestId != _thumbnailRequestId || !File.Exists(path))
-                    return;
-
-                if (string.Equals(_timelinePreviewImagePath, path, StringComparison.Ordinal))
-                    return;
-
-                TimelinePreviewImage?.Dispose();
-                TimelinePreviewImage = new Bitmap(path);
-                _timelinePreviewImagePath = path;
-            });
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        catch (Exception ex)
-        {
-            Serilog.Log.Debug(ex, "Failed to show timeline preview");
-        }
+        _timelinePreview.Show(VideoUrl, Duration, timeSeconds, left);
     }
 
     public void HideTimelinePreview()
     {
-        _thumbnailRequestId++;
-        _timelinePreviewBucket = -1;
-        _thumbnailCts?.Cancel();
-        IsTimelinePreviewVisible = false;
+        _timelinePreview.Hide();
     }
 
     public void Dispose()
     {
-        _thumbnailCts?.Cancel();
-        _thumbnailCts?.Dispose();
-        _thumbnailCts = null;
-        _thumbnailWarmUpCts?.Cancel();
-        _thumbnailWarmUpCts?.Dispose();
-        _thumbnailWarmUpCts = null;
-        TimelinePreviewImage?.Dispose();
-        TimelinePreviewImage = null;
-        _timelinePreviewImagePath = null;
-        _thumbnailer?.Dispose();
-        _thumbnailer = null;
+        _timelinePreview.Dispose();
         _timer?.Stop();
         _timer = null;
-        _osdTimer?.Stop();
-        _osdTimer = null;
-        if (_player != null)
-        {
-            _player.FileLoaded -= OnPlayerFileLoaded;
-            _player.PlaybackEnded -= OnPlayerPlaybackEnded;
-            _player.TimePositionChanged -= OnPlayerTimePositionChanged;
-            _player.DurationChanged -= OnPlayerDurationChanged;
-            _player.PauseChanged -= OnPlayerPauseChanged;
-        }
-        _player = null;
-        _stateClient.PublishClosed();
-        _stateClient.Dispose();
-    }
-
-    private static MpvThumbnailer? CreateThumbnailer()
-    {
-        try
-        {
-            return new MpvThumbnailer();
-        }
-        catch (Exception ex)
-        {
-            Serilog.Log.Debug(ex, "Timeline thumbnailer is unavailable");
-            return null;
-        }
-    }
-
-    private void WarmUpThumbnailer()
-    {
-        var thumbnailer = _thumbnailer;
-        if (thumbnailer == null || string.IsNullOrWhiteSpace(VideoUrl) || !File.Exists(VideoUrl))
-            return;
-
-        _thumbnailWarmUpCts?.Cancel();
-        _thumbnailWarmUpCts?.Dispose();
-        _thumbnailWarmUpCts = new CancellationTokenSource();
-        _ = thumbnailer.WarmUpAsync(VideoUrl, _thumbnailWarmUpCts.Token)
-            .ContinueWith(task =>
-            {
-                if (task.Exception != null)
-                    Serilog.Log.Debug(task.Exception, "Failed to warm up timeline thumbnailer");
-            }, TaskContinuationOptions.OnlyOnFaulted);
+        Overlay.Dispose();
+        _playback.FileLoaded -= OnPlayerFileLoaded;
+        _playback.PlaybackEnded -= OnPlayerPlaybackEnded;
+        _playback.TimePositionChanged -= OnPlayerTimePositionChanged;
+        _playback.DurationChanged -= OnPlayerDurationChanged;
+        _playback.PauseChanged -= OnPlayerPauseChanged;
+        _playback.Detach();
+        _statePublisher.PublishClosed();
+        _statePublisher.Dispose();
     }
 
     private Kiriha.Models.Api.InternalPlayerState CreatePlayerState()
@@ -276,8 +175,8 @@ public partial class PlayerViewModel
             RefreshDurationFromPlayer();
             UpdateTracks();
             RefreshMpvRuntimeInfo();
-            WarmUpThumbnailer();
-            _stateClient.Publish(CreatePlayerState());
+            _timelinePreview.WarmUp(VideoUrl);
+            _statePublisher.Publish();
         });
     }
 
@@ -289,7 +188,7 @@ public partial class PlayerViewModel
         Dispatcher.UIThread.Post(() =>
         {
             IsPlaying = false;
-            _stateClient.Publish(CreatePlayerState());
+            _statePublisher.Publish();
         });
     }
 
@@ -297,14 +196,8 @@ public partial class PlayerViewModel
     {
         Dispatcher.UIThread.Post(() =>
         {
-            if (_isScrubbing || (DateTime.Now - _lastSeekTime).TotalMilliseconds <= 500)
-                return;
-
-            if (Math.Abs(time - CurrentTime) > 0.5)
-            {
-                CurrentTime = time;
-                CurrentTimeString = FormatTime(time);
-            }
+            if (_timeline.TryApplyPlayerTime(time, out var snapshot))
+                ApplyTimelineSnapshot(snapshot);
         });
     }
 
@@ -312,11 +205,8 @@ public partial class PlayerViewModel
     {
         Dispatcher.UIThread.Post(() =>
         {
-            if (duration <= 0 || Math.Abs(duration - Duration) <= 0.01)
-                return;
-
-            Duration = duration;
-            DurationString = FormatTime(duration);
+            if (_timeline.TrySetDuration(duration, out var snapshot))
+                ApplyTimelineSnapshot(snapshot);
         });
     }
 
@@ -327,12 +217,17 @@ public partial class PlayerViewModel
 
     private void RefreshMpvRuntimeInfo()
     {
-        if (_player == null)
+        if (!_playback.HasPlayer)
             return;
 
-        MpvRuntimeInfo = _player.GetRuntimeVideoInfo();
+        MpvRuntimeInfo = _playback.GetRuntimeVideoInfo();
     }
 
-    private static string FormatTime(double seconds) =>
-        TimeSpan.FromSeconds(Math.Max(0, seconds)).ToString(@"hh\:mm\:ss");
+    private void ApplyTimelineSnapshot(PlayerTimelineSnapshot snapshot)
+    {
+        CurrentTime = snapshot.CurrentTime;
+        Duration = snapshot.Duration;
+        CurrentTimeString = snapshot.CurrentTimeString;
+        DurationString = snapshot.DurationString;
+    }
 }

@@ -2,9 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,18 +17,15 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 {
     private readonly IPlayerMediaMetadataResolver? _metadataResolver;
     private readonly SettingsService? _settingsService;
-    private readonly InternalPlayerStateClient _stateClient = new();
-    private MpvPlayer? _player;
+    private readonly PlayerPlaybackController _playback = new();
+    private readonly PlayerStatePublisher _statePublisher;
+    private readonly PlayerTimelineService _timeline = new();
+    private readonly PlayerSettingsApplier _settingsApplier;
+    private readonly PlayerTimelinePreviewController _timelinePreview;
     private DispatcherTimer? _timer;
-    private DispatcherTimer? _osdTimer;
-    private MpvThumbnailer? _thumbnailer;
-    private CancellationTokenSource? _thumbnailCts;
-    private CancellationTokenSource? _thumbnailWarmUpCts;
-    private int _thumbnailRequestId;
-    private int _timelinePreviewBucket = -1;
-    private string? _timelinePreviewImagePath;
-    private bool _isScrubbing = false;
     private bool _isApplyingSettings;
+
+    public PlayerOverlayViewModel Overlay { get; } = new();
 
     public System.Collections.ObjectModel.ObservableCollection<TrackInfo> AudioTracks { get; } = new();
     public System.Collections.ObjectModel.ObservableCollection<TrackInfo> SubtitleTracks { get; } = new();
@@ -147,14 +141,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _mpvGpuApi = "auto";
     [ObservableProperty] private string _mpvGpuContext = "auto";
     [ObservableProperty] private string _mpvRuntimeInfo = "hwdec: -, interop: -, vo: -, context: -, decoder: -";
-    [ObservableProperty] private bool _isOsdVisible = false;
-    [ObservableProperty] private string _osdMessage = string.Empty;
-    [ObservableProperty] private string _osdDetail = string.Empty;
-    [ObservableProperty] private bool _isTimelinePreviewVisible = false;
-    [ObservableProperty] private Bitmap? _timelinePreviewImage;
-    [ObservableProperty] private string _timelinePreviewTime = string.Empty;
-    [ObservableProperty] private double _timelinePreviewLeft = 0;
-    
+
     private int? _animeId;
     private bool _isInitializing;
 
@@ -167,6 +154,9 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _isInitializing = true;
         _metadataResolver = metadataResolver;
         _settingsService = settingsService;
+        _statePublisher = new PlayerStatePublisher(CreatePlayerState);
+        _settingsApplier = new PlayerSettingsApplier(_playback);
+        _timelinePreview = new PlayerTimelinePreviewController(Overlay);
         ApplyPlayerSettings();
         ApplyMetadata(metadata ?? metadataResolver?.Resolve(videoUrl) ?? PlayerMediaMetadata.FromVideoPath(videoUrl));
         
