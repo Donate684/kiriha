@@ -20,8 +20,8 @@ public partial class PlayerOverlayWindow
 {
     private void DisableLegacySettingsFlyout()
     {
-        if (this.FindControl<Button>("SettingsButton") is { } settingsButton)
-            settingsButton.Flyout = null;
+        if (_settingsButton != null)
+            _settingsButton.Flyout = null;
     }
 
     protected override void OnClosed(EventArgs e)
@@ -31,15 +31,14 @@ public partial class PlayerOverlayWindow
         RemoveHandler(DragDrop.DropEvent, OnDrop);
         RemoveHandler(KeyDownEvent, OnOverlayKeyDown);
 
-        var slider = this.FindControl<Slider>("TimelineSlider");
-        if (slider != null)
+        if (_timelineSlider != null)
         {
-            slider.RemoveHandler(PointerPressedEvent, OnSliderPointerPressed);
-            slider.RemoveHandler(PointerReleasedEvent, OnSliderPointerReleased);
+            _timelineSlider.RemoveHandler(PointerPressedEvent, OnSliderPointerPressed);
+            _timelineSlider.RemoveHandler(PointerReleasedEvent, OnSliderPointerReleased);
         }
 
-        if (this.FindControl<Button>("ScreenshotButton") is { } screenshotButton)
-            screenshotButton.RemoveHandler(PointerReleasedEvent, OnScreenshotButtonPointerReleased);
+        if (_screenshotButton != null)
+            _screenshotButton.RemoveHandler(PointerReleasedEvent, OnScreenshotButtonPointerReleased);
 
         if (_subscribedViewModel != null)
         {
@@ -90,17 +89,12 @@ public partial class PlayerOverlayWindow
 
     private void UpdateCornerRounding()
     {
-        var closeBtn = this.FindControl<Button>("CloseButton");
-        var maximizeIcon = this.FindControl<TextBlock>("MaximizeIcon");
-        var topBar = this.FindControl<Border>("TopBar");
-        var bottomBar = this.FindControl<Border>("BottomBar");
-        
         bool isFullscreen = WindowState == WindowState.FullScreen;
         bool isEdgeToEdge = isFullscreen || WindowState == WindowState.Maximized;
 
-        if (maximizeIcon != null)
+        if (_maximizeIcon != null)
         {
-            maximizeIcon.Text = isFullscreen
+            _maximizeIcon.Text = isFullscreen
                 ? "\uE923"
                 : "\uE922";
         }
@@ -113,19 +107,19 @@ public partial class PlayerOverlayWindow
         }
 
         // Remove rounded corner from the close button so it stays flush
-        if (closeBtn != null)
+        if (_closeButton != null)
         {
-            closeBtn.CornerRadius = isEdgeToEdge ? new CornerRadius(0) : new CornerRadius(0, 8, 0, 0);
+            _closeButton.CornerRadius = isEdgeToEdge ? new CornerRadius(0) : new CornerRadius(0, 8, 0, 0);
         }
 
         // Remove rounded corners from the Top and Bottom shadow gradients
-        if (topBar != null)
+        if (_topBar != null)
         {
-            topBar.CornerRadius = isEdgeToEdge ? new CornerRadius(0) : new CornerRadius(8, 8, 0, 0);
+            _topBar.CornerRadius = isEdgeToEdge ? new CornerRadius(0) : new CornerRadius(8, 8, 0, 0);
         }
-        if (bottomBar != null)
+        if (_bottomBar != null)
         {
-            bottomBar.CornerRadius = isEdgeToEdge ? new CornerRadius(0) : new CornerRadius(0, 0, 8, 8);
+            _bottomBar.CornerRadius = isEdgeToEdge ? new CornerRadius(0) : new CornerRadius(0, 0, 8, 8);
         }
     }
 

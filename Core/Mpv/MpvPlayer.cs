@@ -14,6 +14,9 @@ public class MpvPlayer : IDisposable
     private const ulong SeekablePropertyId = 4;
     private const ulong IdleActivePropertyId = 5;
     private const string AudioNormalizationFilter = "loudnorm=I=-16:TP=-1.5:LRA=11";
+    private const string SeekCommandKey = "seek";
+    private const string VolumeCommandKey = "volume";
+    private const string SpeedCommandKey = "speed";
 
     private readonly object _gate = new();
     private readonly MpvPropertyCache _propertyCache = new(FormatRuntimeVideoInfo(null, null, null, null, null));
@@ -185,7 +188,7 @@ public class MpvPlayer : IDisposable
     {
         Enqueue(handle => Check(
             LibMpvNative.mpv_command_string(handle, "seek", timeInSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture), "absolute"),
-            "seek"));
+            "seek"), SeekCommandKey);
     }
 
     public void SetVolume(double volume)
@@ -194,7 +197,7 @@ public class MpvPlayer : IDisposable
         {
             double vol = Math.Max(0, Math.Min(100, volume));
             Check(LibMpvNative.mpv_set_property(handle, "volume", LibMpvNative.MPV_FORMAT_DOUBLE, ref vol), "set volume");
-        });
+        }, VolumeCommandKey);
     }
 
     public void SetSpeed(double speed)
@@ -203,7 +206,7 @@ public class MpvPlayer : IDisposable
         {
             double spd = Math.Max(0.1, Math.Min(4.0, speed));
             Check(LibMpvNative.mpv_set_property(handle, "speed", LibMpvNative.MPV_FORMAT_DOUBLE, ref spd), "set speed");
-        });
+        }, SpeedCommandKey);
     }
 
     public void SetAudioNormalization(bool enabled)
@@ -454,9 +457,9 @@ public class MpvPlayer : IDisposable
         _renderUpdateCallback = null;
     }
 
-    private void Enqueue(Action<IntPtr> action)
+    private void Enqueue(Action<IntPtr> action, string? coalescingKey = null)
     {
-        _commandQueue.Enqueue(action);
+        _commandQueue.Enqueue(action, coalescingKey);
     }
 
     private T Read<T>(Func<IntPtr, T> read, T defaultValue)

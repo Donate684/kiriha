@@ -24,17 +24,15 @@ public partial class PlayerOverlayWindow
         if (!_controlsVisible)
         {
             _controlsVisible = true;
-            var top = this.FindControl<Border>("TopBar");
-            var bot = this.FindControl<Border>("BottomBar");
-            if (top != null) 
+            if (_topBar != null) 
             {
-                top.Opacity = 1;
-                top.IsHitTestVisible = true;
+                _topBar.Opacity = 1;
+                _topBar.IsHitTestVisible = true;
             }
-            if (bot != null) 
+            if (_bottomBar != null) 
             {
-                bot.Opacity = 1;
-                bot.IsHitTestVisible = true;
+                _bottomBar.Opacity = 1;
+                _bottomBar.IsHitTestVisible = true;
             }
             Cursor = new Cursor(StandardCursorType.Arrow);
         }
@@ -52,17 +50,15 @@ public partial class PlayerOverlayWindow
     {
         _controlsVisible = false;
         _lastControlsKeepAliveUtc = DateTime.MinValue;
-        var top = this.FindControl<Border>("TopBar");
-        var bot = this.FindControl<Border>("BottomBar");
-        if (top != null) 
+        if (_topBar != null) 
         {
-            top.Opacity = 0;
-            top.IsHitTestVisible = false;
+            _topBar.Opacity = 0;
+            _topBar.IsHitTestVisible = false;
         }
-        if (bot != null) 
+        if (_bottomBar != null) 
         {
-            bot.Opacity = 0;
-            bot.IsHitTestVisible = false;
+            _bottomBar.Opacity = 0;
+            _bottomBar.IsHitTestVisible = false;
         }
         Cursor = new Cursor(StandardCursorType.None);
     }
@@ -113,9 +109,8 @@ public partial class PlayerOverlayWindow
         _lastTimelinePreviewAt = now;
         _lastTimelinePreviewTime = previewTime;
 
-        var bottomBar = this.FindControl<Border>("BottomBar");
-        var bottomPos = bottomBar != null ? e.GetPosition(bottomBar) : timelinePos;
-        var maxLeft = Math.Max(8, (bottomBar?.Bounds.Width ?? Bounds.Width) - 244);
+        var bottomPos = _bottomBar != null ? e.GetPosition(_bottomBar) : timelinePos;
+        var maxLeft = Math.Max(8, (_bottomBar?.Bounds.Width ?? Bounds.Width) - 244);
         var previewLeft = Math.Clamp(bottomPos.X - 118, 8, maxLeft);
         vm.ShowTimelinePreview(previewTime, previewLeft);
         ShowControls();

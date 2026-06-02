@@ -31,7 +31,15 @@ public partial class PlayerOverlayWindow : Window
     private DateTime _lastControlsKeepAliveUtc = DateTime.MinValue;
 
     // Chapter markers
+    private Border? _topBar;
+    private Border? _bottomBar;
+    private Border? _settingsOverlayBackdrop;
+    private Slider? _timelineSlider;
     private Canvas? _chapterCanvas;
+    private Button? _settingsButton;
+    private Button? _screenshotButton;
+    private Button? _closeButton;
+    private TextBlock? _maximizeIcon;
     private PlayerViewModel? _subscribedViewModel;
     private PropertyChangedEventHandler? _viewModelPropertyChanged;
     private EventHandler<PixelPointEventArgs>? _ownerPositionChanged;
@@ -42,6 +50,7 @@ public partial class PlayerOverlayWindow : Window
     public PlayerOverlayWindow()
     {
         InitializeComponent();
+        CacheOverlayControls();
         DisableLegacySettingsFlyout();
         _ownerWindow = null!;
         _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
@@ -52,6 +61,7 @@ public partial class PlayerOverlayWindow : Window
     public PlayerOverlayWindow(PlayerWindow owner)
     {
         InitializeComponent();
+        CacheOverlayControls();
         DisableLegacySettingsFlyout();
         _ownerWindow = owner;
         DataContext = owner.DataContext;
@@ -62,17 +72,14 @@ public partial class PlayerOverlayWindow : Window
         AddHandler(DragDrop.DropEvent, OnDrop);
         AddHandler(KeyDownEvent, OnOverlayKeyDown, RoutingStrategies.Tunnel);
 
-        var slider = this.FindControl<Slider>("TimelineSlider");
-        if (slider != null)
+        if (_timelineSlider != null)
         {
-            slider.AddHandler(PointerPressedEvent, OnSliderPointerPressed, RoutingStrategies.Tunnel);
-            slider.AddHandler(PointerReleasedEvent, OnSliderPointerReleased, RoutingStrategies.Tunnel);
+            _timelineSlider.AddHandler(PointerPressedEvent, OnSliderPointerPressed, RoutingStrategies.Tunnel);
+            _timelineSlider.AddHandler(PointerReleasedEvent, OnSliderPointerReleased, RoutingStrategies.Tunnel);
         }
 
-        if (this.FindControl<Button>("ScreenshotButton") is { } screenshotButton)
-            screenshotButton.AddHandler(PointerReleasedEvent, OnScreenshotButtonPointerReleased, RoutingStrategies.Tunnel);
-
-        _chapterCanvas = this.FindControl<Canvas>("ChapterCanvas");
+        if (_screenshotButton != null)
+            _screenshotButton.AddHandler(PointerReleasedEvent, OnScreenshotButtonPointerReleased, RoutingStrategies.Tunnel);
 
         // Subscribe to chapter changes from the ViewModel
         if (DataContext is PlayerViewModel vm)
@@ -91,6 +98,19 @@ public partial class PlayerOverlayWindow : Window
 
         // Start with controls visible, then auto-hide
         _hideTimer.Start();
+    }
+
+    private void CacheOverlayControls()
+    {
+        _topBar = this.FindControl<Border>("TopBar");
+        _bottomBar = this.FindControl<Border>("BottomBar");
+        _settingsOverlayBackdrop = this.FindControl<Border>("SettingsOverlayBackdrop");
+        _timelineSlider = this.FindControl<Slider>("TimelineSlider");
+        _chapterCanvas = this.FindControl<Canvas>("ChapterCanvas");
+        _settingsButton = this.FindControl<Button>("SettingsButton");
+        _screenshotButton = this.FindControl<Button>("ScreenshotButton");
+        _closeButton = this.FindControl<Button>("CloseButton");
+        _maximizeIcon = this.FindControl<TextBlock>("MaximizeIcon");
     }
 
     private void OnDrop(object? sender, DragEventArgs e)

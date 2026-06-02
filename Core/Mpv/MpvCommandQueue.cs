@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -9,11 +10,14 @@ namespace Kiriha.Core.Mpv;
 internal sealed class MpvCommandQueue
 {
     private readonly object _gate;
+    private readonly object _pendingGate = new();
     private readonly Func<IntPtr> _getHandle;
     private readonly Func<bool> _isDisposed;
-    private readonly Channel<Action<IntPtr>> _queue = Channel.CreateUnbounded<Action<IntPtr>>(
+    private readonly Dictionary<string, long> _latestCoalescedVersions = new(StringComparer.Ordinal);
+    private readonly Channel<QueuedMpvCommand> _queue = Channel.CreateUnbounded<QueuedMpvCommand>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
     private Task? _loopTask;
+    private long _nextCoalescedVersion;
 
     public MpvCommandQueue(object gate, Func<IntPtr> getHandle, Func<bool> isDisposed)
     {
@@ -27,7 +31,7 @@ internal sealed class MpvCommandQueue
         _loopTask = Task.Run(CommandLoopAsync);
     }
 
-    public bool Enqueue(Action<IntPtr> action)
+    public bool Enqueue(Action<IntPtr> action, string? coalescingKey = null)
     {
         lock (_gate)
         {
@@ -35,7 +39,8 @@ internal sealed class MpvCommandQueue
                 return false;
         }
 
-        if (_queue.Writer.TryWrite(action))
+        var command = CreateCommand(action, coalescingKey);
+        if (_queue.Writer.TryWrite(command))
             return true;
 
         Log.Debug("Ignored mpv command after command queue completed");
@@ -56,6 +61,9 @@ internal sealed class MpvCommandQueue
     {
         await foreach (var command in _queue.Reader.ReadAllAsync())
         {
+            if (IsSuperseded(command))
+                continue;
+
             try
             {
                 lock (_gate)
@@ -63,7 +71,7 @@ internal sealed class MpvCommandQueue
                     if (_isDisposed() || _getHandle() == IntPtr.Zero)
                         continue;
 
-                    command(_getHandle());
+                    command.Execute(_getHandle());
                 }
             }
             catch (Exception ex)
@@ -72,4 +80,31 @@ internal sealed class MpvCommandQueue
             }
         }
     }
+
+    private QueuedMpvCommand CreateCommand(Action<IntPtr> action, string? coalescingKey)
+    {
+        if (string.IsNullOrWhiteSpace(coalescingKey))
+            return new QueuedMpvCommand(action, null, 0);
+
+        lock (_pendingGate)
+        {
+            var version = ++_nextCoalescedVersion;
+            _latestCoalescedVersions[coalescingKey] = version;
+            return new QueuedMpvCommand(action, coalescingKey, version);
+        }
+    }
+
+    private bool IsSuperseded(QueuedMpvCommand command)
+    {
+        if (command.CoalescingKey == null)
+            return false;
+
+        lock (_pendingGate)
+        {
+            return _latestCoalescedVersions.TryGetValue(command.CoalescingKey, out var latestVersion) &&
+                   latestVersion != command.CoalescingVersion;
+        }
+    }
+
+    private sealed record QueuedMpvCommand(Action<IntPtr> Execute, string? CoalescingKey, long CoalescingVersion);
 }
