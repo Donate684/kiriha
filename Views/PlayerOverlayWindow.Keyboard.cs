@@ -25,6 +25,13 @@ public partial class PlayerOverlayWindow
         if (IsTextInputSource(e.Source) || DataContext is not PlayerViewModel vm)
             return;
 
+        if (IsSettingsOverlayVisible() && e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            HideSettingsOverlay();
+            return;
+        }
+
         if (MatchesHotkey(e, vm.ScreenshotWithSubtitlesHotkey))
         {
             e.Handled = true;
@@ -86,6 +93,76 @@ public partial class PlayerOverlayWindow
         {
             e.Handled = true;
             vm.SeekRelative(1);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.TogglePlayPauseHotkey))
+        {
+            e.Handled = true;
+            vm.TogglePlayPauseCommand.Execute(null);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.ToggleFullscreenHotkey))
+        {
+            e.Handled = true;
+            OnFullscreenClick(null, new RoutedEventArgs());
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.ExitFullscreenHotkey) && _ownerWindow.WindowState == WindowState.FullScreen)
+        {
+            e.Handled = true;
+            _ownerWindow.WindowState = WindowState.Normal;
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.ToggleMuteHotkey))
+        {
+            e.Handled = true;
+            vm.ToggleMuteCommand.Execute(null);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.CycleAudioHotkey))
+        {
+            e.Handled = true;
+            vm.CycleAudioCommand.Execute(null);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.CycleSubtitleHotkey))
+        {
+            e.Handled = true;
+            vm.CycleSubtitleCommand.Execute(null);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.NextMediaHotkey))
+        {
+            e.Handled = true;
+            vm.OpenNextMediaCommand.Execute(null);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.PreviousMediaHotkey))
+        {
+            e.Handled = true;
+            vm.OpenPreviousMediaCommand.Execute(null);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.SpeedDownHotkey))
+        {
+            e.Handled = true;
+            vm.AdjustPlaybackSpeed(-0.25);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.SpeedUpHotkey))
+        {
+            e.Handled = true;
+            vm.AdjustPlaybackSpeed(0.25);
         }
     }
 

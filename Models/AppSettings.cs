@@ -132,6 +132,16 @@ public class AppSettings
         public bool ScreenshotHighBitDepth { get; set; } = false;
         public string ScreenshotWithSubtitlesHotkey { get; set; } = "S";
         public string ScreenshotWithoutSubtitlesHotkey { get; set; } = "Shift+S";
+        public string TogglePlayPauseHotkey { get; set; } = "Space";
+        public string ToggleFullscreenHotkey { get; set; } = "F";
+        public string ExitFullscreenHotkey { get; set; } = "Escape";
+        public string ToggleMuteHotkey { get; set; } = "M";
+        public string CycleAudioHotkey { get; set; } = "A";
+        public string CycleSubtitleHotkey { get; set; } = "V";
+        public string PreviousMediaHotkey { get; set; } = "P";
+        public string NextMediaHotkey { get; set; } = "N";
+        public string SpeedDownHotkey { get; set; } = "OemOpenBrackets";
+        public string SpeedUpHotkey { get; set; } = "OemCloseBrackets";
         public string VolumeUpHotkey { get; set; } = "Up";
         public string VolumeDownHotkey { get; set; } = "Down";
         public string SeekBackwardHotkey { get; set; } = "Left";

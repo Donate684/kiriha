@@ -49,6 +49,11 @@ public partial class PlayerViewModel
 
         ApplyTimelineSnapshot(_timeline.Reset());
         IsPlaying = PlayerAutoPlay;
+        IsLoading = true;
+        HasPlaybackError = false;
+        PlaybackErrorMessage = string.Empty;
+        PlaybackStatusMessage = "Загрузка видео...";
+        UpdateNavigationAvailability();
 
         if (!_playback.HasPlayer)
             return;

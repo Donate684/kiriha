@@ -15,6 +15,11 @@ namespace Kiriha.ViewModels;
 
 public partial class PlayerViewModel : ObservableObject, IDisposable
 {
+    private static readonly HashSet<string> MediaExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".webm", ".m4v", ".flv", ".ts", ".m2ts", ".mpg", ".mpeg", ".ogm", ".ogg"
+    };
+
     private readonly IPlayerMediaMetadataResolver? _metadataResolver;
     private readonly SettingsService? _settingsService;
     private readonly PlayerPlaybackController _playback = new();
@@ -73,6 +78,12 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private double _duration = 0;
     [ObservableProperty] private string _currentTimeString = "00:00";
     [ObservableProperty] private string _durationString = "--:--";
+    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private bool _hasPlaybackError;
+    [ObservableProperty] private string _playbackStatusMessage = "Загрузка видео...";
+    [ObservableProperty] private string _playbackErrorMessage = string.Empty;
+    [ObservableProperty] private bool _canOpenPreviousMedia;
+    [ObservableProperty] private bool _canOpenNextMedia;
     
     [ObservableProperty] private double _volume = 100;
     [ObservableProperty] private bool _isMuted = false;
@@ -126,6 +137,16 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _screenshotHighBitDepth = false;
     [ObservableProperty] private string _screenshotWithSubtitlesHotkey = "S";
     [ObservableProperty] private string _screenshotWithoutSubtitlesHotkey = "Shift+S";
+    [ObservableProperty] private string _togglePlayPauseHotkey = "Space";
+    [ObservableProperty] private string _toggleFullscreenHotkey = "F";
+    [ObservableProperty] private string _exitFullscreenHotkey = "Escape";
+    [ObservableProperty] private string _toggleMuteHotkey = "M";
+    [ObservableProperty] private string _cycleAudioHotkey = "A";
+    [ObservableProperty] private string _cycleSubtitleHotkey = "V";
+    [ObservableProperty] private string _previousMediaHotkey = "P";
+    [ObservableProperty] private string _nextMediaHotkey = "N";
+    [ObservableProperty] private string _speedDownHotkey = "OemOpenBrackets";
+    [ObservableProperty] private string _speedUpHotkey = "OemCloseBrackets";
     [ObservableProperty] private string _volumeUpHotkey = "Up";
     [ObservableProperty] private string _volumeDownHotkey = "Down";
     [ObservableProperty] private string _seekBackwardHotkey = "Left";

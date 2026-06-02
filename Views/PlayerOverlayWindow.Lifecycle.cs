@@ -28,6 +28,7 @@ public partial class PlayerOverlayWindow
     {
         _hideTimer.Stop();
         _hideTimer.Tick -= OnHideTimerTick;
+        RemoveHandler(DragDrop.DragOverEvent, OnDragOver);
         RemoveHandler(DragDrop.DropEvent, OnDrop);
         RemoveHandler(KeyDownEvent, OnOverlayKeyDown);
 

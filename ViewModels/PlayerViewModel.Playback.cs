@@ -103,6 +103,27 @@ public partial class PlayerViewModel
         }
     }
 
+    [RelayCommand]
+    public void OpenPreviousMedia()
+    {
+        if (TryGetAdjacentMediaPath(previous: true, out var path))
+            LoadVideo(path);
+    }
+
+    [RelayCommand]
+    public void OpenNextMedia()
+    {
+        if (TryGetAdjacentMediaPath(previous: false, out var path))
+            LoadVideo(path);
+    }
+
+    [RelayCommand]
+    public void ReloadMedia()
+    {
+        if (!string.IsNullOrWhiteSpace(VideoUrl))
+            LoadVideo(VideoUrl);
+    }
+
     public void SeekTo(double time)
     {
         if (_playback.HasPlayer)
@@ -122,6 +143,11 @@ public partial class PlayerViewModel
     public void AdjustVolume(double delta)
     {
         Volume = Math.Clamp(Volume + delta, 0, 100);
+    }
+
+    public void AdjustPlaybackSpeed(double delta)
+    {
+        PlaybackSpeed = Math.Clamp(PlaybackSpeed + delta, 0.25, 2.0);
     }
 
     public void ShowTimelinePreview(double timeSeconds, double left)
@@ -170,6 +196,11 @@ public partial class PlayerViewModel
     {
         Dispatcher.UIThread.Post(() =>
         {
+            IsLoading = false;
+            HasPlaybackError = false;
+            PlaybackErrorMessage = string.Empty;
+            PlaybackStatusMessage = "Готово";
+            UpdateNavigationAvailability();
             RefreshDurationFromPlayer();
             UpdateTracks();
             RefreshMpvRuntimeInfo();
@@ -185,7 +216,17 @@ public partial class PlayerViewModel
 
         Dispatcher.UIThread.Post(() =>
         {
+            IsLoading = false;
             IsPlaying = false;
+            if (e.HasError)
+            {
+                HasPlaybackError = true;
+                PlaybackErrorMessage = string.IsNullOrWhiteSpace(e.ErrorMessage)
+                    ? "Не удалось открыть или воспроизвести файл."
+                    : e.ErrorMessage;
+                PlaybackStatusMessage = "Ошибка воспроизведения";
+            }
+
             _statePublisher.Publish();
         });
     }
@@ -209,6 +250,45 @@ public partial class PlayerViewModel
             ApplyTimelineSnapshot(snapshot.Value);
 
         IsPlaying = state.IsPlaying;
+    }
+
+    private bool TryGetAdjacentMediaPath(bool previous, out string path)
+    {
+        path = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(VideoUrl) || !File.Exists(VideoUrl))
+            return false;
+
+        var directory = Path.GetDirectoryName(VideoUrl);
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            return false;
+
+        var files = Directory.EnumerateFiles(directory)
+            .Where(IsSupportedMediaPath)
+            .OrderBy(x => x, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        var currentIndex = files.FindIndex(x => string.Equals(x, VideoUrl, StringComparison.OrdinalIgnoreCase));
+        if (currentIndex < 0)
+            return false;
+
+        var adjacentIndex = previous ? currentIndex - 1 : currentIndex + 1;
+        if (adjacentIndex < 0 || adjacentIndex >= files.Count)
+            return false;
+
+        path = files[adjacentIndex];
+        return true;
+    }
+
+    private void UpdateNavigationAvailability()
+    {
+        CanOpenPreviousMedia = TryGetAdjacentMediaPath(previous: true, out _);
+        CanOpenNextMedia = TryGetAdjacentMediaPath(previous: false, out _);
+    }
+
+    private static bool IsSupportedMediaPath(string path)
+    {
+        return MediaExtensions.Contains(Path.GetExtension(path));
     }
 
     private void RefreshMpvRuntimeInfo()

@@ -53,6 +53,66 @@
             </StackPanel>
         </Border>
 
+        <Border Classes="player-state-panel"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsHitTestVisible="False"
+                IsVisible="{Binding IsLoading}">
+            <StackPanel Spacing="10" Width="280">
+                <ProgressBar IsIndeterminate="True" Height="3"/>
+                <TextBlock Text="{Binding PlaybackStatusMessage}"
+                           Classes="overlay-text"
+                           Foreground="White"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"/>
+                <TextBlock Text="{Binding TopTitle}"
+                           Foreground="#AFFFFFFF"
+                           FontSize="12"
+                           TextAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+        </Border>
+
+        <Border Classes="player-state-panel error"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsVisible="{Binding HasPlaybackError}">
+            <StackPanel Spacing="12" Width="340">
+                <material:MaterialIcon Kind="AlertCircleOutline"
+                                       Width="32"
+                                       Height="32"
+                                       Foreground="#FFFFD166"
+                                       HorizontalAlignment="Center"/>
+                <TextBlock Text="Не удалось воспроизвести видео"
+                           Classes="overlay-text"
+                           Foreground="White"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"/>
+                <TextBlock Text="{Binding PlaybackErrorMessage}"
+                           Foreground="#BFFFFFFF"
+                           FontSize="12"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal"
+                            Spacing="8"
+                            HorizontalAlignment="Center">
+                    <Button Classes="icon-btn state-action"
+                            Command="{Binding ReloadMediaCommand}"
+                            ToolTip.Tip="Повторить">
+                        <material:MaterialIcon Kind="Refresh" Width="20" Height="20" Foreground="White"/>
+                    </Button>
+                    <Button Classes="icon-btn state-action"
+                            Command="{Binding OpenNextMediaCommand}"
+                            IsEnabled="{Binding CanOpenNextMedia}"
+                            ToolTip.Tip="Следующий файл">
+                        <material:MaterialIcon Kind="SkipNext" Width="20" Height="20" Foreground="White"/>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
         <!-- ===== TOP GRADIENT + BAR ===== -->
         <Border Name="TopBar" VerticalAlignment="Top" Height="72"
                 CornerRadius="8,8,0,0" ClipToBounds="True">
@@ -218,23 +278,48 @@
 
                     <!-- Play/Pause -->
                     <Border Grid.Column="0" Classes="control-pill" Padding="2,0">
-                        <Button Classes="icon-btn" Command="{Binding TogglePlayPauseCommand}" IsVisible="{Binding ShowPlayPauseButton}">
-                            <Panel>
-                                <material:MaterialIcon Kind="Pause" Width="28" Height="28" Foreground="White"
-                                                       IsVisible="{Binding IsPlaying}"/>
-                                <material:MaterialIcon Kind="Play"  Width="28" Height="28" Foreground="White"
-                                                       IsVisible="{Binding !IsPlaying}"/>
-                            </Panel>
-                        </Button>
+                        <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                            <Button Classes="icon-btn"
+                                    Command="{Binding OpenPreviousMediaCommand}"
+                                    IsEnabled="{Binding CanOpenPreviousMedia}"
+                                    ToolTip.Tip="Предыдущий файл">
+                                <material:MaterialIcon Kind="SkipPrevious" Width="20" Height="20" Foreground="White"/>
+                            </Button>
+                            <Button Classes="icon-btn"
+                                    Command="{Binding TogglePlayPauseCommand}"
+                                    IsVisible="{Binding ShowPlayPauseButton}"
+                                    ToolTip.Tip="Пауза / воспроизведение">
+                                <Panel>
+                                    <material:MaterialIcon Kind="Pause" Width="28" Height="28" Foreground="White"
+                                                           IsVisible="{Binding IsPlaying}"/>
+                                    <material:MaterialIcon Kind="Play"  Width="28" Height="28" Foreground="White"
+                                                           IsVisible="{Binding !IsPlaying}"/>
+                                </Panel>
+                            </Button>
+                            <Button Classes="icon-btn"
+                                    Command="{Binding OpenNextMediaCommand}"
+                                    IsEnabled="{Binding CanOpenNextMedia}"
+                                    ToolTip.Tip="Следующий файл">
+                                <material:MaterialIcon Kind="SkipNext" Width="20" Height="20" Foreground="White"/>
+                            </Button>
+                        </StackPanel>
                     </Border>
 
                     <!-- Skip controls -->
                     <Border Grid.Column="1" Classes="control-pill" Margin="2,0,0,0">
                     <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
-                        <Button Classes="icon-btn" Command="{Binding SkipCommand}" CommandParameter="-10" IsVisible="{Binding ShowSkipButtons}">
+                        <Button Classes="icon-btn"
+                                Command="{Binding SkipCommand}"
+                                CommandParameter="-10"
+                                IsVisible="{Binding ShowSkipButtons}"
+                                ToolTip.Tip="Назад 10 секунд">
                             <material:MaterialIcon Kind="Rewind10" Width="21" Height="21" Foreground="White"/>
                         </Button>
-                        <Button Classes="icon-btn" Command="{Binding SkipCommand}" CommandParameter="10" IsVisible="{Binding ShowSkipButtons}">
+                        <Button Classes="icon-btn"
+                                Command="{Binding SkipCommand}"
+                                CommandParameter="10"
+                                IsVisible="{Binding ShowSkipButtons}"
+                                ToolTip.Tip="Вперед 10 секунд">
                             <material:MaterialIcon Kind="FastForward10" Width="21" Height="21" Foreground="White"/>
                         </Button>
                     </StackPanel>
@@ -243,7 +328,10 @@
                     <!-- Volume -->
                     <Border Grid.Column="2" Classes="control-pill" Margin="4,0,0,0">
                     <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
-                        <Button Classes="icon-btn" Command="{Binding ToggleMuteCommand}" IsVisible="{Binding ShowMuteButton}">
+                        <Button Classes="icon-btn"
+                                Command="{Binding ToggleMuteCommand}"
+                                IsVisible="{Binding ShowMuteButton}"
+                                ToolTip.Tip="Звук (M)">
                             <Panel>
                                 <material:MaterialIcon Kind="VolumeHigh" Width="20" Height="20" Foreground="White"
                                                        IsVisible="{Binding !IsMuted}"/>
@@ -279,7 +367,9 @@
                                 VerticalAlignment="Center">
 
                         <!-- Playback speed -->
-                        <Button Classes="icon-btn" IsVisible="{Binding ShowSpeedButton}">
+                        <Button Classes="icon-btn"
+                                IsVisible="{Binding ShowSpeedButton}"
+                                ToolTip.Tip="Скорость">
                             <Button.Flyout>
                                 <MenuFlyout Placement="Top">
                                     <MenuItem Header="0.25×" Classes="speed-item"
@@ -308,7 +398,10 @@
                         </Button>
 
                         <!-- Subtitles -->
-                        <Button Name="SubtitleButton" Classes="icon-btn" IsVisible="{Binding ShowSubtitleButton}">
+                        <Button Name="SubtitleButton"
+                                Classes="icon-btn"
+                                IsVisible="{Binding ShowSubtitleButton}"
+                                ToolTip.Tip="Субтитры (V)">
                             <Button.Flyout>
                                 <Flyout Placement="Top">
                                     <Border Width="240"
@@ -354,7 +447,10 @@
                         </Button>
 
                         <!-- Audio tracks -->
-                        <Button Name="AudioButton" Classes="icon-btn" IsVisible="{Binding ShowAudioButton}">
+                        <Button Name="AudioButton"
+                                Classes="icon-btn"
+                                IsVisible="{Binding ShowAudioButton}"
+                                ToolTip.Tip="Аудиодорожка (A)">
                             <Button.Flyout>
                                 <Flyout Placement="Top">
                                     <Border Width="240"
@@ -424,7 +520,10 @@
                             </Button>
 
                         <!-- Player settings -->
-                        <Button Name="SettingsButton" Classes="icon-btn" Click="OnSettingsButtonClick">
+                        <Button Name="SettingsButton"
+                                Classes="icon-btn"
+                                Click="OnSettingsButtonClick"
+                                ToolTip.Tip="Настройки">
                             <Button.Flyout>
                                 <Flyout Placement="Top">
                                     <Border Width="620"
@@ -1007,6 +1106,116 @@
                                 <TextBlock Classes="player-settings-row-title"
                                            Text="Горячие клавиши"
                                            Margin="0,6,0,0"/>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Пауза / воспроизведение"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: Space"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding TogglePlayPauseHotkey}"
+                                             PlaceholderText="Space"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Полноэкранный режим"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: F"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding ToggleFullscreenHotkey}"
+                                             PlaceholderText="F"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Выйти из полноэкранного режима"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: Escape"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding ExitFullscreenHotkey}"
+                                             PlaceholderText="Escape"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Mute"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: M"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding ToggleMuteHotkey}"
+                                             PlaceholderText="M"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Следующая аудиодорожка"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: A"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding CycleAudioHotkey}"
+                                             PlaceholderText="A"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Следующие субтитры"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: V"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding CycleSubtitleHotkey}"
+                                             PlaceholderText="V"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Предыдущий файл"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: P"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding PreviousMediaHotkey}"
+                                             PlaceholderText="P"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Следующий файл"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: N"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding NextMediaHotkey}"
+                                             PlaceholderText="N"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Скорость ниже"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: OemOpenBrackets ([)"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SpeedDownHotkey}"
+                                             PlaceholderText="OemOpenBrackets"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Скорость выше"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: OemCloseBrackets (])"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SpeedUpHotkey}"
+                                             PlaceholderText="OemCloseBrackets"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
 
                                 <Grid ColumnDefinitions="*,220" MinHeight="44">
                                     <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">

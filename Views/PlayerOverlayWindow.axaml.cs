@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Collections.Specialized;
 using System.Linq;
@@ -22,7 +23,10 @@ namespace Kiriha.Views;
 public partial class PlayerOverlayWindow : Window
 {
     private PlayerWindow _ownerWindow;
-    private MpvPlayer? _player => _ownerWindow.Player;
+    private static readonly HashSet<string> DropMediaExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".webm", ".m4v", ".flv", ".ts", ".m2ts", ".mpg", ".mpeg", ".ogm", ".ogg"
+    };
 
     // Auto-hide: hide panels after 3 seconds of no mouse movement
     private static readonly TimeSpan ControlsKeepAliveInterval = TimeSpan.FromMilliseconds(180);
@@ -69,6 +73,7 @@ public partial class PlayerOverlayWindow : Window
         _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _hideTimer.Tick += OnHideTimerTick;
 
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
         AddHandler(KeyDownEvent, OnOverlayKeyDown, RoutingStrategies.Tunnel);
 
@@ -113,29 +118,41 @@ public partial class PlayerOverlayWindow : Window
         _maximizeIcon = this.FindControl<TextBlock>("MaximizeIcon");
     }
 
+    private void OnDragOver(object? sender, DragEventArgs e)
+    {
+        e.DragEffects = TryGetDroppedMediaPath(e, out _)
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
     private void OnDrop(object? sender, DragEventArgs e)
     {
-        var files     = e.DataTransfer.TryGetFiles();
-        var firstFile = files?.FirstOrDefault();
-        if (firstFile != null && _player != null)
+        e.Handled = true;
+        if (!TryGetDroppedMediaPath(e, out var path))
+            return;
+
+        Log.Information("Dropped media file: {Path}", path);
+        if (DataContext is PlayerViewModel vm)
         {
-            var path = firstFile.TryGetLocalPath();
-            if (!string.IsNullOrEmpty(path))
-            {
-                Log.Information("Dropped file: {Path}", path);
-                if (DataContext is PlayerViewModel vm)
-                {
-                    vm.AnimeTitle   = System.IO.Path.GetFileName(path);
-                    vm.EpisodeTitle = "Локальный файл";
-                    vm.VideoUrl     = path;
-                    vm.IsPlaying    = vm.PlayerAutoPlay;
-                }
-                if (DataContext is PlayerViewModel { PlayerAutoPlay: false })
-                    _player.Pause();
-                _player.Load(path);
-                if (DataContext is PlayerViewModel { PlayerAutoPlay: true })
-                    _player.Play();
-            }
+            vm.LoadVideo(path);
+            ShowControls();
         }
+    }
+
+    private static bool TryGetDroppedMediaPath(DragEventArgs e, out string path)
+    {
+        path = string.Empty;
+        var files = e.DataTransfer.TryGetFiles();
+        var firstFile = files?.FirstOrDefault();
+        var localPath = firstFile?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(localPath) || !System.IO.File.Exists(localPath))
+            return false;
+
+        if (!DropMediaExtensions.Contains(System.IO.Path.GetExtension(localPath)))
+            return false;
+
+        path = localPath;
+        return true;
     }
 }

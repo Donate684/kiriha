@@ -179,6 +179,13 @@
         <Style Selector="Button.icon-btn:pressed">
             <Setter Property="RenderTransform" Value="scale(0.93)"/>
         </Style>
+        <Style Selector="Button.icon-btn:disabled">
+            <Setter Property="Opacity" Value="0.38"/>
+        </Style>
+        <Style Selector="Button.state-action">
+            <Setter Property="Background" Value="#22FFFFFF"/>
+            <Setter Property="Padding" Value="8"/>
+        </Style>
 
         <!-- Top right window buttons -->
         <Style Selector="Button.wnd-btn">
@@ -332,5 +339,22 @@
                     <DoubleTransition Property="Opacity" Duration="0:0:0.12"/>
                 </Transitions>
             </Setter>
+        </Style>
+        <Style Selector="Border.player-state-panel">
+            <Setter Property="Background" Value="#D9121212"/>
+            <Setter Property="BorderBrush" Value="#36FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="18,16"/>
+            <Setter Property="MinWidth" Value="260"/>
+            <Setter Property="BoxShadow" Value="0 12 32 0 #80000000"/>
+        </Style>
+        <Style Selector="Border.player-state-panel.error">
+            <Setter Property="Background" Value="#E0141414"/>
+            <Setter Property="BorderBrush" Value="#44FFD166"/>
+        </Style>
+        <Style Selector="ProgressBar">
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Background" Value="#24FFFFFF"/>
         </Style>
 </Styles>

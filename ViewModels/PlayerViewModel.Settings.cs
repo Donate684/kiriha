@@ -71,6 +71,16 @@ public partial class PlayerViewModel
             ScreenshotHighBitDepth = settings.ScreenshotHighBitDepth;
             ScreenshotWithSubtitlesHotkey = NormalizeHotkey(settings.ScreenshotWithSubtitlesHotkey, "S");
             ScreenshotWithoutSubtitlesHotkey = NormalizeHotkey(settings.ScreenshotWithoutSubtitlesHotkey, "Shift+S");
+            TogglePlayPauseHotkey = NormalizeHotkey(settings.TogglePlayPauseHotkey, "Space");
+            ToggleFullscreenHotkey = NormalizeHotkey(settings.ToggleFullscreenHotkey, "F");
+            ExitFullscreenHotkey = NormalizeHotkey(settings.ExitFullscreenHotkey, "Escape");
+            ToggleMuteHotkey = NormalizeHotkey(settings.ToggleMuteHotkey, "M");
+            CycleAudioHotkey = NormalizeHotkey(settings.CycleAudioHotkey, "A");
+            CycleSubtitleHotkey = NormalizeHotkey(settings.CycleSubtitleHotkey, "V");
+            PreviousMediaHotkey = NormalizeHotkey(settings.PreviousMediaHotkey, "P");
+            NextMediaHotkey = NormalizeHotkey(settings.NextMediaHotkey, "N");
+            SpeedDownHotkey = NormalizeHotkey(settings.SpeedDownHotkey, "OemOpenBrackets");
+            SpeedUpHotkey = NormalizeHotkey(settings.SpeedUpHotkey, "OemCloseBrackets");
             VolumeUpHotkey = NormalizeHotkey(settings.VolumeUpHotkey, "Up");
             VolumeDownHotkey = NormalizeHotkey(settings.VolumeDownHotkey, "Down");
             SeekBackwardHotkey = NormalizeHotkey(settings.SeekBackwardHotkey, "Left");
@@ -123,6 +133,7 @@ public partial class PlayerViewModel
         if (string.IsNullOrEmpty(value) || _isInitializing) return;
 
         ApplyMetadata(_metadataResolver?.Resolve(value) ?? PlayerMediaMetadata.FromVideoPath(value));
+        UpdateNavigationAvailability();
     }
 
     private void ApplyMetadata(PlayerMediaMetadata metadata)
@@ -133,7 +144,7 @@ public partial class PlayerViewModel
         RawEpisodeText = metadata.EpisodeText;
         EpisodeTitle = string.IsNullOrEmpty(metadata.EpisodeText)
             ? string.Empty
-            : $"Серия {metadata.EpisodeText}";
+            : $"\u0421\u0435\u0440\u0438\u044F {metadata.EpisodeText}";
         AnimeTitle = AnimeTitleRu;
         OnPropertyChanged(nameof(TrackingTitle));
     }

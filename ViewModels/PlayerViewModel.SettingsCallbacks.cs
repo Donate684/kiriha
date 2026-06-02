@@ -202,6 +202,46 @@ public partial class PlayerViewModel
         if (_isApplyingSettings || _settingsService == null) return;
         _settingsService.Update(settings => settings.Player.ScreenshotWithoutSubtitlesHotkey = NormalizeHotkey(value, "Shift+S"), SettingsSection.Player);
     }
+    partial void OnTogglePlayPauseHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "Space", (settings, hotkey) => settings.TogglePlayPauseHotkey = hotkey);
+    }
+    partial void OnToggleFullscreenHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "F", (settings, hotkey) => settings.ToggleFullscreenHotkey = hotkey);
+    }
+    partial void OnExitFullscreenHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "Escape", (settings, hotkey) => settings.ExitFullscreenHotkey = hotkey);
+    }
+    partial void OnToggleMuteHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "M", (settings, hotkey) => settings.ToggleMuteHotkey = hotkey);
+    }
+    partial void OnCycleAudioHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "A", (settings, hotkey) => settings.CycleAudioHotkey = hotkey);
+    }
+    partial void OnCycleSubtitleHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "V", (settings, hotkey) => settings.CycleSubtitleHotkey = hotkey);
+    }
+    partial void OnPreviousMediaHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "P", (settings, hotkey) => settings.PreviousMediaHotkey = hotkey);
+    }
+    partial void OnNextMediaHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "N", (settings, hotkey) => settings.NextMediaHotkey = hotkey);
+    }
+    partial void OnSpeedDownHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "OemOpenBrackets", (settings, hotkey) => settings.SpeedDownHotkey = hotkey);
+    }
+    partial void OnSpeedUpHotkeyChanged(string value)
+    {
+        SaveHotkey(value, "OemCloseBrackets", (settings, hotkey) => settings.SpeedUpHotkey = hotkey);
+    }
     partial void OnVolumeUpHotkeyChanged(string value)
     {
         if (_isApplyingSettings || _settingsService == null) return;
@@ -254,6 +294,13 @@ public partial class PlayerViewModel
     {
         if (_isApplyingSettings || _settingsService == null) return;
         _settingsService.Update(settings => update(settings.Player), SettingsSection.Player);
+    }
+
+    private void SaveHotkey(string value, string fallback, Action<AppSettings.PlayerConfig, string> update)
+    {
+        if (_isApplyingSettings || _settingsService == null) return;
+        var normalized = NormalizeHotkey(value, fallback);
+        _settingsService.Update(settings => update(settings.Player, normalized), SettingsSection.Player);
     }
 
     private void SaveMpvOption(Action<AppSettings.PlayerConfig> update)
