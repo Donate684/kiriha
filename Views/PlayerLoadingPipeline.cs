@@ -30,18 +30,21 @@ internal sealed class PlayerLoadingPipeline
         _uiSubscribed = true;
 
         _videoView.Player = player;
-        StartMediaLoad();
+        TryStartMediaLoad();
     }
 
     public void MarkRenderContextReady()
     {
         _renderContextReady = true;
-        TryRequestInitialFrame();
+        TryStartMediaLoad();
     }
 
-    private void StartMediaLoad()
+    private void TryStartMediaLoad()
     {
-        if (!_uiSubscribed || _mediaLoadStarted || string.IsNullOrWhiteSpace(_viewModel.VideoUrl))
+        if (!_uiSubscribed ||
+            !_renderContextReady ||
+            _mediaLoadStarted ||
+            string.IsNullOrWhiteSpace(_viewModel.VideoUrl))
             return;
 
         _mediaLoadStarted = true;
