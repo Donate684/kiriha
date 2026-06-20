@@ -402,7 +402,7 @@ public partial class MainWindow : Window
                 // (tray, taskbar) — restoring as Minimized on next launch would be
                 // confusing.
                 placement.Maximized = WindowState == WindowState.Maximized;
-            }, save: false);
+            }, SettingsSection.UI, save: false);
 
             // Synchronous flush, not the debounced Save(). SavePlacement is
             // only invoked at terminal moments (window closing, hide-to-tray)

@@ -85,35 +85,7 @@ public class MappingService
     {
         if (string.IsNullOrWhiteSpace(title)) return null;
 
-        var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
-        var titleElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
-        var seasonElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeSeason);
-        var typeElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeType);
-        var subTitleElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementEpisodeTitle);
-        var otherElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementOther);
-        var episodeElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementEpisodeNumber);
-
-        int parsedSeason = ExtractSeason(title, seasonElement);
-        string cleanTitle = titleElement != null ? titleElement.Value : Path.GetFileNameWithoutExtension(title);
-        
-        if (episodeElement == null)
-        {
-            if (subTitleElement != null && !cleanTitle.Contains(subTitleElement.Value, StringComparison.OrdinalIgnoreCase))
-                cleanTitle = $"{cleanTitle} {subTitleElement.Value}";
-            if (otherElement != null && !cleanTitle.Contains(otherElement.Value, StringComparison.OrdinalIgnoreCase))
-                cleanTitle = $"{cleanTitle} {otherElement.Value}";
-        }
-
-        string searchTitle = cleanTitle;
-        if (typeElement != null && !string.IsNullOrEmpty(typeElement.Value))
-        {
-            string type = typeElement.Value.ToUpperInvariant();
-            if (type == "OVA" || type == "OAD" || type == "SPECIAL" || type == "SP" || type == "ONA")
-                searchTitle = $"{cleanTitle} {type}";
-        }
-
-        if (searchTitle == cleanTitle && parsedSeason > 1)
-            searchTitle = $"{cleanTitle} Season {parsedSeason}";
+        var (cleanTitle, searchTitle, parsedSeason) = ParseAnimeTitle(title);
         
         string normalized = cleanTitle.Trim().ToLowerInvariant();
         string normalizedWithSeason = searchTitle.Trim().ToLowerInvariant();
@@ -210,7 +182,7 @@ public class MappingService
         return 0;
     }
 
-    public async Task<int?> SearchOnMalAsync(string title)
+    private (string CleanTitle, string SearchTitle, int ParsedSeason) ParseAnimeTitle(string title)
     {
         var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
         var titleElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
@@ -220,6 +192,7 @@ public class MappingService
         var otherElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementOther);
         var episodeElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementEpisodeNumber);
 
+        int parsedSeason = ExtractSeason(title, seasonElement);
         string cleanTitle = titleElement != null ? titleElement.Value : Path.GetFileNameWithoutExtension(title);
         
         if (episodeElement == null)
@@ -230,17 +203,23 @@ public class MappingService
                 cleanTitle = $"{cleanTitle} {otherElement.Value}";
         }
 
-        string searchQuery = cleanTitle;
+        string searchTitle = cleanTitle;
         if (typeElement != null && !string.IsNullOrEmpty(typeElement.Value))
         {
             string type = typeElement.Value.ToUpperInvariant();
             if (type == "OVA" || type == "OAD" || type == "SPECIAL" || type == "SP" || type == "ONA")
-                searchQuery = $"{cleanTitle} {type}";
+                searchTitle = $"{cleanTitle} {type}";
         }
-        else if (seasonElement != null && int.TryParse(seasonElement.Value, out int season) && season > 1)
-        {
-            searchQuery = $"{cleanTitle} Season {season}";
-        }
+
+        if (searchTitle == cleanTitle && parsedSeason > 1)
+            searchTitle = $"{cleanTitle} Season {parsedSeason}";
+
+        return (cleanTitle, searchTitle, parsedSeason);
+    }
+
+    public async Task<int?> SearchOnMalAsync(string title)
+    {
+        var (cleanTitle, searchQuery, _) = ParseAnimeTitle(title);
 
         string normQuery = Normalize(searchQuery);
         if (_sessionCache.TryGetValue(normQuery, out int cachedId))

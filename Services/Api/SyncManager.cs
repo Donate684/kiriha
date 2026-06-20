@@ -255,18 +255,16 @@ public class SyncManager : IHostedService
         Log.Information("Sync task enqueued (DB ID: {Id}): FullUpdate for {AnimeId}", task.Id, item.Id);
     }
 
-    public void CancelTasksForAnime(int animeId)
+    public async Task CancelTasksForAnimeAsync(int animeId)
     {
         // Mark sentinel so any in-flight queue items skip themselves.
         _latestTaskIds[animeId] = int.MaxValue;
         // Also remove the rows from the persistent sync_tasks table - otherwise the next
         // app launch repopulates the queue with the now-cancelled tasks (the in-memory
         // sentinel is reset on startup) and we'd happily push deleted-anime updates to trackers.
-        _backgroundTasks.Run("SyncManager.CancelTasksForAnime", async ct =>
-        {
-            try { await _syncTaskRepo.RemoveForAnimeAsync(animeId); }
-            catch (Exception ex) { Log.Warning(ex, "SyncManager: failed to purge sync tasks for {AnimeId}", animeId); }
-        });
+        try { await _syncTaskRepo.RemoveForAnimeAsync(animeId); }
+        catch (Exception ex) { Log.Warning(ex, "SyncManager: failed to purge sync tasks for {AnimeId}", animeId); }
+        
         Log.Information("SyncManager: Cancelled all pending tasks for Anime {AnimeId}", animeId);
     }
 

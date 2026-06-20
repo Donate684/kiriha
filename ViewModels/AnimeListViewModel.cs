@@ -59,13 +59,17 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     private Utils.Debouncer? _filterRefreshDebouncer;
     private int _filterRefreshVersion;
 
+
     // Per-minute ticker that re-evaluates the airing countdown ("Hч Mм") on
     // every visible card. Without it the pill text would only refresh when
     // NextEpisodeAt itself changed (i.e. on the next 12 h sync), so a card
     // could sit stuck on "3ч 19м" for hours.
     private DispatcherTimer? _airingTicker;
 
-    public object[] AvailableScores =>
+    private object[]? _availableScores;
+    public object[] AvailableScores => _availableScores ??= CreateAvailableScores();
+
+    private static object[] CreateAvailableScores() =>
     [
         RatingHelper.GetRatingOption("-"),
         RatingHelper.GetRatingOption("10"),
@@ -84,6 +88,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
     public void RefreshAvailableScores()
     {
+        _availableScores = CreateAvailableScores();
         OnPropertyChanged(nameof(AvailableScores));
     }
 

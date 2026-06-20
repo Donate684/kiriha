@@ -105,9 +105,14 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(DisplayStatus))]
     private string _countdownStatus = string.Empty;
 
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(DisplayStatus))]
+    private string _trackingStatus = string.Empty;
+
     public string DisplayStatus => !IsMediaDetected ? UIUtils.GetLoc("scrobbler.status.ready") : 
+                                   (!string.IsNullOrEmpty(TrackingStatus) ? TrackingStatus :
                                    (IsPaused ? UIUtils.GetLoc("scrobbler.status.paused") : 
-                                   (string.IsNullOrEmpty(CountdownStatus) ? UIUtils.GetLoc("scrobbler.status.active") : CountdownStatus));
+                                   (string.IsNullOrEmpty(CountdownStatus) ? UIUtils.GetLoc("scrobbler.status.active") : CountdownStatus)));
 
     public SettingsService Settings => _settingsService;
     public bool IsScrobblerEnabled => _settingsService.Current.System.Scrobbler.Enabled;
@@ -267,6 +272,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
 
     private void OnStatusUpdated(object? sender, string status)
     {
+        Dispatcher.UIThread.Post(() => TrackingStatus = status);
     }
 
     private void OnCountdownUpdated(object? sender, string countdown)
@@ -287,7 +293,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
             _pendingManualMatchId = 0;
         }
 
-        Dispatcher.UIThread.Post(async () => {
+        Dispatcher.UIThread.InvokeAsync(async () => {
             MatchedAnime = anime;
             if (anime != null)
             {
@@ -313,7 +319,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
             {
                 IsManuallyMapped = false;
             }
-        });
+        }).SafeFireAndForget("NowPlaying.AnimeMatched");
     }
 
     private void OnMediaChanged(object? sender, ParsedMedia? media)
@@ -335,6 +341,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
             ShowSuggestions = false;
             SearchQuery = string.Empty;
             IsSearchPanelOpen = false;
+            TrackingStatus = string.Empty;
             OnPropertyChanged(nameof(HasSuggestions));
             if (media != null)
             {

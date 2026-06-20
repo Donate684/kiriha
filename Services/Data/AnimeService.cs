@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -341,9 +341,8 @@ public class AnimeService
         });
 
         // Cancel any pending sync tasks for this anime BEFORE enqueuing the Remove
-        // (otherwise CancelTasksForAnime would mark our new task as outdated).
-        _syncManager.CancelTasksForAnime(animeId);
-        await _syncTaskRepo.RemoveForAnimeAsync(animeId);
+        // (otherwise CancelTasksForAnimeAsync would mark our new task as outdated).
+        await _syncManager.CancelTasksForAnimeAsync(animeId);
 
         await _uiDispatcher.InvokeAsync(() =>
         {

@@ -325,6 +325,15 @@ public partial class AnimeDetailsViewModel : ViewModelBase
 
         bool scoreChanged = _originalAnime.Score != Anime.Score && Anime.Score != "-" && !string.IsNullOrEmpty(Anime.Score);
 
+        bool hasChanges = _originalAnime.Status != Anime.Status ||
+                          _originalAnime.Progress != Anime.Progress ||
+                          _originalAnime.Score != Anime.Score ||
+                          _originalAnime.IsRewatching != Anime.IsRewatching ||
+                          _originalAnime.RewatchCount != Anime.RewatchCount ||
+                          _originalAnime.Notes != Anime.Notes ||
+                          _originalAnime.DateStarted != Anime.DateStarted ||
+                          _originalAnime.DateCompleted != Anime.DateCompleted;
+
         // Apply changes from clone to original item
         Anime.CopyTo(_originalAnime);
 
@@ -346,8 +355,11 @@ public partial class AnimeDetailsViewModel : ViewModelBase
                 _historyService.AddEntry(_originalAnime.Id, _originalAnime.Title, _originalAnime.RussianTitle, _originalAnime.Progress, "ScoreSet", _originalAnime.Score);
             }
 
-            // BACKGROUND SYNC: Enqueue the full item update
-            await _syncManager.EnqueueFullUpdateAsync(_originalAnime);
+            if (hasChanges)
+            {
+                // BACKGROUND SYNC: Enqueue the full item update
+                await _syncManager.EnqueueFullUpdateAsync(_originalAnime);
+            }
 
             // Notify UI to refresh lists
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());

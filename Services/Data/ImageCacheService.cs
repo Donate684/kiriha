@@ -314,7 +314,7 @@ public class ImageCacheService : IDisposable
                     catch
                     {
                         // File locked (antivirus, in-use). Skip and keep evicting older files
-                        // \u2014 we don't want a single locked file to abort the whole LRU pass.
+                        // — we don't want a single locked file to abort the whole LRU pass.
                     }
                 }
             }
@@ -324,8 +324,7 @@ public class ImageCacheService : IDisposable
 
     private string GetHashString(string inputString)
     {
-        using var md5 = MD5.Create();
-        byte[] hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(inputString));
+        byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(inputString));
         return Convert.ToHexString(hashBytes);
     }
 

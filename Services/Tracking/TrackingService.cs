@@ -188,17 +188,7 @@ public class TrackingService : IDisposable
                 lock (_state) _matchedAnime = matched;
                 AnimeMatched?.Invoke(this, matched);
 
-                string? mainTitle = matched.Title ?? matched.EnglishTitle;
-                string? subTitle = matched.RussianTitle;
-
-                string discordTitle = (!string.IsNullOrEmpty(subTitle) && !string.IsNullOrEmpty(mainTitle) && subTitle != mainTitle)
-                    ? $"{mainTitle} | {subTitle}"
-                    : (!string.IsNullOrEmpty(subTitle) ? subTitle : (mainTitle ?? "Anime"));
-
-                string malUrl = $"https://myanimelist.net/anime/{matched.Id}";
-                string shikiUrl = $"{ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{matched.Id}";
-
-                _discordService.UpdatePresence(discordTitle, media.Episode, matched.TotalEpisodes, malUrl, shikiUrl, media.Position, media.Duration, matched.MainPictureUrl, media.IsPlaying);
+                UpdateDiscordPresence(media, matched);
                 _scrobbleService.StartScrobble(media, matched);
             }
             else
@@ -368,6 +358,15 @@ public class TrackingService : IDisposable
         {
             Log.Error(ex, "Error during tracking mapping");
         }
+        finally
+        {
+            ParsedMedia? cur;
+            lock (_state) cur = _currentMedia;
+            if (ReferenceEquals(cur, media))
+            {
+                StatusUpdated?.Invoke(this, string.Empty);
+            }
+        }
     }
 
     public void Dispose()
@@ -389,5 +388,20 @@ public class TrackingService : IDisposable
             matched.RussianTitle ?? matched.Title,
             matched.EnglishTitle ?? matched.Title,
             media.Episode);
+    }
+
+    private void UpdateDiscordPresence(ParsedMedia media, AnimeItem matched)
+    {
+        string? mainTitle = matched.Title ?? matched.EnglishTitle;
+        string? subTitle = matched.RussianTitle;
+
+        string discordTitle = (!string.IsNullOrEmpty(subTitle) && !string.IsNullOrEmpty(mainTitle) && subTitle != mainTitle)
+            ? $"{mainTitle} | {subTitle}"
+            : (!string.IsNullOrEmpty(subTitle) ? subTitle : (mainTitle ?? "Anime"));
+
+        string malUrl = $"https://myanimelist.net/anime/{matched.Id}";
+        string shikiUrl = $"{ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{matched.Id}";
+
+        _discordService.UpdatePresence(discordTitle, media.Episode, matched.TotalEpisodes, malUrl, shikiUrl, media.Position, media.Duration, matched.MainPictureUrl, media.IsPlaying);
     }
 }

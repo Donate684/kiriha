@@ -27,6 +27,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
     private readonly SettingsService _settingsService;
     private readonly LoadQueueService _queueService;
     private readonly AnimeService _animeService;
+    private readonly SyncManager _syncManager;
     
     [ObservableProperty] private string _searchQuery = string.Empty;
     [ObservableProperty] private bool _isLoading;
@@ -63,13 +64,14 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
 
     public SearchViewModel(MalApiService apiService, ShikiMetadataService shikiMetadataService, 
         SettingsService settingsService, LoadQueueService queueService,
-        AnimeService animeService)
+        AnimeService animeService, SyncManager syncManager)
     {
         _apiService = apiService;
         _shikiMetadataService = shikiMetadataService;
         _settingsService = settingsService;
         _queueService = queueService;
         _animeService = animeService;
+        _syncManager = syncManager;
 
         _searchDebouncer = new Utils.Debouncer(TimeSpan.FromMilliseconds(800), _ =>
         {
@@ -193,15 +195,12 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
         IsLoading = true;
         try
         {
-            var outcome = await _apiService.UpdateProgressAsync(item.Id, 0, status);
-            if (outcome == SyncOutcome.Success)
-            {
-                item.Status = status;
-                await _animeService.AddOrUpdateAnimeAsync(item);
-                
-                // Notify UI
-                WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
-            }
+            item.Status = status;
+            await _animeService.AddOrUpdateAnimeAsync(item);
+            await _syncManager.EnqueueUpdateAsync(item.Id, 0, status);
+            
+            // Notify UI
+            WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
         }
         catch (Exception ex)
         {

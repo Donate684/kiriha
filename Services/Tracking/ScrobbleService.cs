@@ -113,13 +113,18 @@ public class ScrobbleService : IScrobbleService, IDisposable
 
     private async Task CountdownTaskAsync(int targetEp, AnimeItem match, ParsedMedia media, CancellationToken ct)
     {
-        int remaining = _settingsService.Current.System.Scrobbler.DelaySeconds;
+        int elapsed = 0;
 
         try
         {
-            while (remaining > 0)
+            while (true)
             {
                 ct.ThrowIfCancellationRequested();
+                
+                int delaySeconds = _settingsService.Current.System.Scrobbler.DelaySeconds;
+                int remaining = delaySeconds - elapsed;
+
+                if (remaining <= 0) break;
                 
                 if (!_isPlaying)
                 {
@@ -130,7 +135,7 @@ public class ScrobbleService : IScrobbleService, IDisposable
 
                 CountdownUpdated?.Invoke(this, $"{TimeSpan.FromSeconds(remaining):mm\\:ss}");
                 await Task.Delay(1000, ct);
-                remaining--;
+                elapsed++;
             }
 
             ct.ThrowIfCancellationRequested();
