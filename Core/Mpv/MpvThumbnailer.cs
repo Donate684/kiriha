@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
@@ -23,6 +24,7 @@ public sealed class MpvThumbnailer : IDisposable
     private IntPtr _handle;
     private string? _loadedPath;
     private bool _disposed;
+    private int _activeCalls;
 
     public MpvThumbnailer()
     {
@@ -102,75 +104,162 @@ public sealed class MpvThumbnailer : IDisposable
         if (string.IsNullOrWhiteSpace(videoPath) || !File.Exists(videoPath))
             return Task.CompletedTask;
 
-        return Task.Run(() =>
+        return Task.Run(async () =>
         {
-            lock (_gate)
+            await _captureGate.WaitAsync(cancellationToken);
+            try
             {
-                if (_disposed || _handle == IntPtr.Zero || cancellationToken.IsCancellationRequested)
+                if (!TryEnterActiveCall(out var handle))
                     return;
 
-                EnsureLoaded(videoPath);
+                try
+                {
+                    EnsureLoaded(handle, videoPath, cancellationToken);
+                }
+                finally
+                {
+                    LeaveActiveCall();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // ignore
+            }
+            finally
+            {
+                _captureGate.Release();
             }
         }, cancellationToken);
+    }
+
+    private bool TryEnterActiveCall(out IntPtr handle)
+    {
+        lock (_gate)
+        {
+            if (_disposed || _handle == IntPtr.Zero)
+            {
+                handle = IntPtr.Zero;
+                return false;
+            }
+            _activeCalls++;
+            handle = _handle;
+            return true;
+        }
+    }
+
+    private void LeaveActiveCall()
+    {
+        lock (_gate)
+        {
+            _activeCalls--;
+            if (_disposed && _activeCalls == 0 && _handle != IntPtr.Zero)
+            {
+                LibMpvNative.mpv_terminate_destroy(_handle);
+                _handle = IntPtr.Zero;
+            }
+        }
     }
 
     public static int GetCacheBucket(double timeSeconds) => ToBucket(timeSeconds);
 
     private string? CaptureThumbnail(string videoPath, int bucket, CancellationToken cancellationToken)
     {
-        lock (_gate)
+        if (!TryEnterActiveCall(out var handle))
+            return null;
+
+        try
         {
-            if (_disposed || _handle == IntPtr.Zero || cancellationToken.IsCancellationRequested)
+            EnsureLoaded(handle, videoPath, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var targetPath = Path.Combine(_thumbnailDirectory, $"thumb-{bucket:000000}.jpg");
+            TryDelete(targetPath);
+
+            var seconds = (bucket * CacheStepSeconds).ToString("0.###", CultureInfo.InvariantCulture);
+            Check(LibMpvNative.mpv_command_string(handle, "seek", seconds, "absolute+keyframes"), "seek thumbnailer");
+            
+            if (cancellationToken.WaitHandle.WaitOne(45))
+                cancellationToken.ThrowIfCancellationRequested();
+
+            Check(LibMpvNative.mpv_command_string(handle, "screenshot-to-file", targetPath, "video"), "capture thumbnail");
+            if (!WaitForFile(targetPath, cancellationToken))
                 return null;
 
-            if (_cache.TryGetValue(bucket, out var cached) && File.Exists(cached.Path))
+            lock (_gate)
             {
-                cached.LastUsedUtc = DateTime.UtcNow;
-                return cached.Path;
-            }
-
-            try
-            {
-                EnsureLoaded(videoPath);
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var targetPath = Path.Combine(_thumbnailDirectory, $"thumb-{bucket:000000}.jpg");
-                TryDelete(targetPath);
-
-                var seconds = (bucket * CacheStepSeconds).ToString("0.###", CultureInfo.InvariantCulture);
-                Check(LibMpvNative.mpv_command_string(_handle, "seek", seconds, "absolute+keyframes"), "seek thumbnailer");
-                Thread.Sleep(45);
-                cancellationToken.ThrowIfCancellationRequested();
-
-                Check(LibMpvNative.mpv_command_string(_handle, "screenshot-to-file", targetPath, "video"), "capture thumbnail");
-                if (!WaitForFile(targetPath, cancellationToken))
-                    return null;
-
                 _cache[bucket] = new CacheEntry(targetPath);
                 TrimCache();
-                return targetPath;
             }
-            catch (OperationCanceledException)
-            {
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Log.Debug(ex, "Failed to generate timeline thumbnail");
-                return null;
-            }
+            return targetPath;
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Failed to generate timeline thumbnail");
+            return null;
+        }
+        finally
+        {
+            LeaveActiveCall();
         }
     }
 
-    private void EnsureLoaded(string videoPath)
+    private void EnsureLoaded(IntPtr handle, string videoPath, CancellationToken cancellationToken)
     {
-        if (string.Equals(_loadedPath, videoPath, StringComparison.Ordinal))
+        bool needsLoad = false;
+        lock (_gate)
+        {
+            if (!string.Equals(_loadedPath, videoPath, StringComparison.Ordinal))
+            {
+                _cache.Clear();
+                _loadedPath = videoPath;
+                needsLoad = true;
+            }
+        }
+
+        if (!needsLoad)
             return;
 
-        _cache.Clear();
-        Check(LibMpvNative.mpv_command_string(_handle, "loadfile", videoPath, "replace"), "load thumbnail source");
-        _loadedPath = videoPath;
-        Thread.Sleep(220);
+        Check(LibMpvNative.mpv_command_string(handle, "loadfile", videoPath, "replace"), "load thumbnail source");
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        bool loaded = false;
+        while (sw.ElapsedMilliseconds < 5000)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var eventPtr = LibMpvNative.mpv_wait_event(handle, 0.05);
+            if (eventPtr != IntPtr.Zero)
+            {
+                var mpvEvent = Marshal.PtrToStructure<MpvEvent>(eventPtr);
+                if (mpvEvent.EventId == LibMpvNative.MPV_EVENT_FILE_LOADED)
+                {
+                    loaded = true;
+                    break;
+                }
+                
+                if (mpvEvent.EventId == LibMpvNative.MPV_EVENT_END_FILE)
+                {
+                    var endFile = Marshal.PtrToStructure<MpvEventEndFile>(mpvEvent.Data);
+                    if (endFile.Reason == 2) // MPV_END_FILE_REASON_ERROR
+                    {
+                        Log.Warning("Thumbnailer failed to load: {VideoPath}", videoPath);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!loaded)
+        {
+            lock (_gate)
+            {
+                if (string.Equals(_loadedPath, videoPath, StringComparison.Ordinal))
+                    _loadedPath = null;
+            }
+        }
     }
 
     private void TrimCache()
@@ -197,7 +286,9 @@ public sealed class MpvThumbnailer : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             if (File.Exists(path) && new FileInfo(path).Length > 0)
                 return true;
-            Thread.Sleep(25);
+            
+            if (cancellationToken.WaitHandle.WaitOne(25))
+                cancellationToken.ThrowIfCancellationRequested();
         }
 
         return false;
@@ -237,8 +328,12 @@ public sealed class MpvThumbnailer : IDisposable
             _disposed = true;
             if (_handle != IntPtr.Zero)
             {
-                LibMpvNative.mpv_terminate_destroy(_handle);
-                _handle = IntPtr.Zero;
+                LibMpvNative.mpv_wakeup(_handle);
+                if (_activeCalls == 0)
+                {
+                    LibMpvNative.mpv_terminate_destroy(_handle);
+                    _handle = IntPtr.Zero;
+                }
             }
         }
 

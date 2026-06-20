@@ -82,9 +82,15 @@ public partial class PlayerViewModel
 
     partial void OnWheelVolumeStepChanged(int value)
     {
+        var normalized = FindWheelStep(value);
+        if (value != normalized)
+        {
+            WheelVolumeStep = normalized;
+            return;
+        }
+
         if (_isApplyingSettings || _settingsService == null) return;
-        WheelVolumeStep = FindWheelStep(value);
-        _settingsService.Update(settings => settings.Player.WheelVolumeStep = WheelVolumeStep, SettingsSection.Player);
+        _settingsService.Update(settings => settings.Player.WheelVolumeStep = normalized, SettingsSection.Player);
     }
 
     partial void OnShowPlayPauseButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowPlayPauseButton = value);
@@ -134,8 +140,8 @@ public partial class PlayerViewModel
     partial void OnSubtitleShadowColorChanged(string value) => SaveSubtitleStyle(x => x.SubtitleShadowColor = NormalizeSubtitleColor(value, "#000000"));
     partial void OnSubtitleBorderSizeChanged(double value) => SaveSubtitleStyle(x => x.SubtitleBorderSize = Math.Clamp(value, 0, 20));
     partial void OnSubtitleShadowOffsetChanged(double value) => SaveSubtitleStyle(x => x.SubtitleShadowOffset = Math.Clamp(value, 0, 20));
-    partial void OnSubtitleAlignYChanged(string value) => SaveSubtitleStyle(x => x.SubtitleAlignY = NormalizeSubtitleAlignment(value, "bottom"));
-    partial void OnSubtitleAlignXChanged(string value) => SaveSubtitleStyle(x => x.SubtitleAlignX = NormalizeSubtitleAlignment(value, "center"));
+    partial void OnSubtitleAlignYChanged(string value) => SaveSubtitleStyle(x => x.SubtitleAlignY = NormalizeSubtitleAlignY(value, "bottom"));
+    partial void OnSubtitleAlignXChanged(string value) => SaveSubtitleStyle(x => x.SubtitleAlignX = NormalizeSubtitleAlignX(value, "center"));
     partial void OnSubtitleMarginYChanged(int value) => SaveSubtitleStyle(x => x.SubtitleMarginY = Math.Clamp(value, 0, 500));
     partial void OnSubtitleScaleByWindowChanged(bool value) => SaveSubtitleStyle(x => x.SubtitleScaleByWindow = value);
     partial void OnScreenshotDirectoryChanged(string value)
@@ -363,8 +369,8 @@ public partial class PlayerViewModel
             NormalizeSubtitleColor(SubtitleShadowColor, "#000000"),
             Math.Clamp(SubtitleBorderSize, 0, 20),
             Math.Clamp(SubtitleShadowOffset, 0, 20),
-            NormalizeSubtitleAlignment(SubtitleAlignY, "bottom"),
-            NormalizeSubtitleAlignment(SubtitleAlignX, "center"),
+            NormalizeSubtitleAlignY(SubtitleAlignY, "bottom"),
+            NormalizeSubtitleAlignX(SubtitleAlignX, "center"),
             Math.Clamp(SubtitleMarginY, 0, 500),
             SubtitleScaleByWindow));
     }
@@ -412,13 +418,24 @@ public partial class PlayerViewModel
             : fallback;
     }
 
-    private static string NormalizeSubtitleAlignment(string? value, string fallback)
+    private static string NormalizeSubtitleAlignX(string? value, string fallback)
     {
         if (string.IsNullOrWhiteSpace(value))
             return fallback;
 
         var trimmed = value.Trim().ToLowerInvariant();
-        return trimmed is "top" or "center" or "bottom" or "left" or "right"
+        return trimmed is "left" or "center" or "right"
+            ? trimmed
+            : fallback;
+    }
+
+    private static string NormalizeSubtitleAlignY(string? value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return fallback;
+
+        var trimmed = value.Trim().ToLowerInvariant();
+        return trimmed is "top" or "center" or "bottom"
             ? trimmed
             : fallback;
     }

@@ -13,6 +13,7 @@ public class MpvPlayer : IDisposable
     private const ulong PausePropertyId = 3;
     private const ulong SeekablePropertyId = 4;
     private const ulong IdleActivePropertyId = 5;
+    private const ulong TrackListPropertyId = 6;
     private const string AudioNormalizationFilter = "loudnorm=I=-16:TP=-1.5:LRA=11";
     private const string SeekCommandKey = "seek";
     private const string VolumeCommandKey = "volume";
@@ -34,6 +35,7 @@ public class MpvPlayer : IDisposable
     public event EventHandler<MpvPlaybackEndedEventArgs>? PlaybackEnded;
     public event Action? RenderUpdateRequested;
     public event Action<PlaybackState>? PlaybackStateChanged;
+    public event Action? TracksChanged;
 
     public MpvPlayer(MpvOptions? options = null)
     {
@@ -283,7 +285,6 @@ public class MpvPlayer : IDisposable
 
     public void SetOptionString(string name, string value)
     {
-        InvalidateRuntimeVideoInfo();
         Enqueue(handle =>
         {
             Check(LibMpvNative.mpv_set_option_string(handle, name, value), $"set {name}");
@@ -742,6 +743,7 @@ public class MpvPlayer : IDisposable
         Check(LibMpvNative.mpv_observe_property(_mpvHandle, PausePropertyId, "pause", LibMpvNative.MPV_FORMAT_FLAG), "observe pause");
         Check(LibMpvNative.mpv_observe_property(_mpvHandle, SeekablePropertyId, "seekable", LibMpvNative.MPV_FORMAT_FLAG), "observe seekable");
         Check(LibMpvNative.mpv_observe_property(_mpvHandle, IdleActivePropertyId, "idle-active", LibMpvNative.MPV_FORMAT_FLAG), "observe idle active");
+        Check(LibMpvNative.mpv_observe_property(_mpvHandle, TrackListPropertyId, "track-list", LibMpvNative.MPV_FORMAT_NONE), "observe track list");
     }
 
     private static void UnobservePlaybackProperties(IntPtr handle)
@@ -751,6 +753,7 @@ public class MpvPlayer : IDisposable
         LibMpvNative.mpv_unobserve_property(handle, PausePropertyId);
         LibMpvNative.mpv_unobserve_property(handle, SeekablePropertyId);
         LibMpvNative.mpv_unobserve_property(handle, IdleActivePropertyId);
+        LibMpvNative.mpv_unobserve_property(handle, TrackListPropertyId);
     }
 
     private void ConfigureScreenshots(
@@ -813,6 +816,13 @@ public class MpvPlayer : IDisposable
             return;
 
         var property = Marshal.PtrToStructure<MpvEventProperty>(mpvEvent.Data);
+
+        if (mpvEvent.ReplyUserData == TrackListPropertyId)
+        {
+            TracksChanged?.Invoke();
+            return;
+        }
+
         if (property.Format == LibMpvNative.MPV_FORMAT_NONE || property.Data == IntPtr.Zero)
             return;
 

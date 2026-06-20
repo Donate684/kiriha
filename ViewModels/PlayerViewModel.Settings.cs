@@ -59,8 +59,8 @@ public partial class PlayerViewModel
             SubtitleShadowColor = NormalizeSubtitleColor(settings.SubtitleShadowColor, "#000000");
             SubtitleBorderSize = Math.Clamp(settings.SubtitleBorderSize, 0, 20);
             SubtitleShadowOffset = Math.Clamp(settings.SubtitleShadowOffset, 0, 20);
-            SubtitleAlignY = NormalizeSubtitleAlignment(settings.SubtitleAlignY, "bottom");
-            SubtitleAlignX = NormalizeSubtitleAlignment(settings.SubtitleAlignX, "center");
+            SubtitleAlignY = NormalizeSubtitleAlignY(settings.SubtitleAlignY, "bottom");
+            SubtitleAlignX = NormalizeSubtitleAlignX(settings.SubtitleAlignX, "center");
             SubtitleMarginY = Math.Clamp(settings.SubtitleMarginY, 0, 500);
             SubtitleScaleByWindow = settings.SubtitleScaleByWindow;
             ScreenshotDirectory = NormalizeScreenshotDirectory(settings.ScreenshotDirectory);

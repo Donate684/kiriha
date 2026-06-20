@@ -85,6 +85,8 @@ public sealed class PlayerTimelinePreviewController : IDisposable
         _requestId++;
         _previewBucket = -1;
         _thumbnailCts?.Cancel();
+        _thumbnailCts?.Dispose();
+        _thumbnailCts = null;
         _overlay.HideTimelinePreview();
     }
 

@@ -76,17 +76,25 @@ public partial class PlayerWindow : Window
     {
         VideoHost.RenderContextReady -= OnVideoRenderContextReady;
 
-        _overlay?.Close();
-        _overlay = null;
+        var dataContext = DataContext;
+        DataContext = null;
+
+        if (_overlay != null)
+        {
+            _overlay.DataContext = null;
+            _overlay.Close();
+            _overlay = null;
+        }
+
         _loadingPipeline = null;
 
-        base.OnClosed(e);
-
-        if (DataContext is IDisposable disposable)
+        if (dataContext is IDisposable disposable)
             disposable.Dispose();
 
         _player?.Dispose();
         _player = null;
+
+        base.OnClosed(e);
 
         if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
         {

@@ -12,6 +12,7 @@ public sealed class PlayerPlaybackController
     public event EventHandler? FileLoaded;
     public event EventHandler<MpvPlaybackEndedEventArgs>? PlaybackEnded;
     public event Action<PlaybackState>? PlaybackStateChanged;
+    public event Action? TracksChanged;
 
     public bool HasPlayer => _player != null;
 
@@ -23,6 +24,7 @@ public sealed class PlayerPlaybackController
         _player.FileLoaded += OnFileLoaded;
         _player.PlaybackEnded += OnPlaybackEnded;
         _player.PlaybackStateChanged += OnPlaybackStateChanged;
+        _player.TracksChanged += OnTracksChanged;
     }
 
     public void Detach()
@@ -33,6 +35,7 @@ public sealed class PlayerPlaybackController
         _player.FileLoaded -= OnFileLoaded;
         _player.PlaybackEnded -= OnPlaybackEnded;
         _player.PlaybackStateChanged -= OnPlaybackStateChanged;
+        _player.TracksChanged -= OnTracksChanged;
         _player = null;
     }
 
@@ -136,4 +139,5 @@ public sealed class PlayerPlaybackController
     private void OnFileLoaded(object? sender, EventArgs e) => FileLoaded?.Invoke(sender, e);
     private void OnPlaybackEnded(object? sender, MpvPlaybackEndedEventArgs e) => PlaybackEnded?.Invoke(sender, e);
     private void OnPlaybackStateChanged(PlaybackState state) => PlaybackStateChanged?.Invoke(state);
+    private void OnTracksChanged() => TracksChanged?.Invoke();
 }

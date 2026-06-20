@@ -121,7 +121,7 @@ internal sealed class MpvPropertyCache
 
             _lastTimePosition = timePosition;
 
-            if (!isFirstEvent && (!changedEnough || !elapsedEnough))
+            if (!isFirstEvent && !changedEnough && !elapsedEnough)
                 return false;
 
             _lastPublishedTimePosition = timePosition;

@@ -22,6 +22,7 @@ public partial class PlayerViewModel
         _playback.FileLoaded += OnPlayerFileLoaded;
         _playback.PlaybackEnded += OnPlayerPlaybackEnded;
         _playback.PlaybackStateChanged += OnPlayerPlaybackStateChanged;
+        _playback.TracksChanged += OnPlayerTracksChanged;
         _playback.SetVolume(Volume);
         _playback.SetSpeed(PlaybackSpeed);
         _playback.SetAudioNormalization(NormalizeAudio);
@@ -53,7 +54,6 @@ public partial class PlayerViewModel
         HasPlaybackError = false;
         PlaybackErrorMessage = string.Empty;
         PlaybackStatusMessage = "Загрузка видео...";
-        UpdateNavigationAvailability();
 
         if (!_playback.HasPlayer)
             return;
@@ -69,6 +69,9 @@ public partial class PlayerViewModel
         _statePublisher.Publish();
     }
 
+    private double _lastPublishedPosition = -1;
+    private bool _lastPublishedIsPlaying;
+
     private void OnTimerTick(object? sender, EventArgs e)
     {
         if (!_playback.HasPlayer) return;
@@ -76,7 +79,13 @@ public partial class PlayerViewModel
         if (Duration <= 0)
             RefreshDurationFromPlayer();
 
-        _statePublisher.Publish();
+        if (IsPlaying || _lastPublishedIsPlaying != IsPlaying || Math.Abs(_lastPublishedPosition - CurrentTime) > 0.5)
+        {
+            _statePublisher.Publish();
+            _lastPublishedPosition = CurrentTime;
+            _lastPublishedIsPlaying = IsPlaying;
+        }
+
         if (_mpvRuntimeDiagnosticsVisible)
             RefreshMpvRuntimeInfo();
     }
@@ -97,9 +106,15 @@ public partial class PlayerViewModel
         Overlay.ShowOsd(message, detail);
     }
 
+    private CancellationTokenSource? _updateTracksCts;
+
     public void UpdateTracks()
     {
-        _ = UpdateTracksAsync();
+        _updateTracksCts?.Cancel();
+        _updateTracksCts?.Dispose();
+        _updateTracksCts = new CancellationTokenSource();
+
+        _ = UpdateTracksAsync(_updateTracksCts.Token);
     }
 
     private void RefreshDurationFromPlayer()
@@ -107,10 +122,10 @@ public partial class PlayerViewModel
         ApplyPlaybackState(_playback.GetPlaybackState());
     }
 
-    private async Task UpdateTracksAsync()
+    private async Task UpdateTracksAsync(CancellationToken token)
     {
         var result = await _playback.GetTracksAndChaptersAsync();
-        if (result == null)
+        if (result == null || token.IsCancellationRequested)
             return;
 
         var (tracks, chapters) = result.Value;
@@ -132,13 +147,11 @@ public partial class PlayerViewModel
     }
 
     [RelayCommand]
-    private async Task SelectTrack(TrackInfo track)
+    private void SelectTrack(TrackInfo track)
     {
         if (_playback.HasPlayer && track != null)
         {
             _playback.SetTrack(track.Type, track.Id);
-            await Task.Delay(120);
-            UpdateTracks();
             ShowOsd(track.Type == "sub" ? "Субтитры" : "Аудио", track.DisplayName);
         }
     }

@@ -25,7 +25,7 @@ public sealed class PlayerTimelineServiceTests
 
         Assert.True(timeline.TrySetDuration(125, out var snapshot));
         Assert.Equal(125, snapshot.Duration);
-        Assert.Equal("00:02:05", snapshot.DurationString);
+        Assert.Equal("02:05", snapshot.DurationString);
 
         Assert.False(timeline.TrySetDuration(125.005, out _));
     }
@@ -39,7 +39,7 @@ public sealed class PlayerTimelineServiceTests
         var snapshot = timeline.SeekTo(90);
 
         Assert.Equal(60, snapshot.CurrentTime);
-        Assert.Equal("00:01:00", snapshot.CurrentTimeString);
+        Assert.Equal("01:00", snapshot.CurrentTimeString);
         Assert.False(timeline.TryApplyPlayerTime(12, out _));
     }
 
@@ -54,7 +54,7 @@ public sealed class PlayerTimelineServiceTests
 
         Assert.True(timeline.IsScrubbing);
         Assert.Equal(42, scrubSnapshot.CurrentTime);
-        Assert.Equal("00:00:42", scrubSnapshot.CurrentTimeString);
+        Assert.Equal("00:42", scrubSnapshot.CurrentTimeString);
         Assert.False(timeline.TryApplyPlayerTime(50, out _));
 
         var endSnapshot = timeline.EndScrub(84);

@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger workflow when a tag starting with 'v' is pushed (e.g., v1.0.3)
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write # Required for creating and uploading to GitHub Releases
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          # Strip the 'v' prefix from the tag name (e.g., 'v1.0.3' -> '1.0.3')
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Install Velopack
+        run: dotnet tool install -g vpk
+
+      - name: Run tests
+        run: dotnet test .\Tests\Kiriha.Tests\Kiriha.Tests.csproj --configuration Release
+
+      - name: Publish app
+        run: dotnet publish Kiriha.csproj -c Release --runtime win-x64 --self-contained true -p:PublishReadyToRun=true -p:Version=${{ env.VERSION }} -o ./publish
+
+      - name: Pack with Velopack
+        run: vpk pack --packId Kiriha --packVersion ${{ env.VERSION }} --packDir ./publish --mainExe Kiriha.exe --icon ./Assets/kiriha.ico
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./Releases/*
+          name: Release ${{ env.VERSION }}
+          draft: false
+          prerelease: false

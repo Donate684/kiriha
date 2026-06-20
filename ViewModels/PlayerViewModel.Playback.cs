@@ -25,8 +25,6 @@ public partial class PlayerViewModel
             _playback.Pause();
         else
             _playback.Play();
-            
-        IsPlaying = !IsPlaying;
     }
 
     [RelayCommand]
@@ -106,15 +104,15 @@ public partial class PlayerViewModel
     [RelayCommand]
     public void OpenPreviousMedia()
     {
-        if (TryGetAdjacentMediaPath(previous: true, out var path))
-            LoadVideo(path);
+        if (!string.IsNullOrEmpty(_previousMediaPath))
+            LoadVideo(_previousMediaPath);
     }
 
     [RelayCommand]
     public void OpenNextMedia()
     {
-        if (TryGetAdjacentMediaPath(previous: false, out var path))
-            LoadVideo(path);
+        if (!string.IsNullOrEmpty(_nextMediaPath))
+            LoadVideo(_nextMediaPath);
     }
 
     [RelayCommand]
@@ -162,6 +160,8 @@ public partial class PlayerViewModel
 
     public void Dispose()
     {
+        _updateTracksCts?.Cancel();
+        _updateTracksCts?.Dispose();
         _timelinePreview.Dispose();
         _timer?.Stop();
         _timer = null;
@@ -169,6 +169,7 @@ public partial class PlayerViewModel
         _playback.FileLoaded -= OnPlayerFileLoaded;
         _playback.PlaybackEnded -= OnPlayerPlaybackEnded;
         _playback.PlaybackStateChanged -= OnPlayerPlaybackStateChanged;
+        _playback.TracksChanged -= OnPlayerTracksChanged;
         _playback.Detach();
         _statePublisher.PublishClosed();
         _statePublisher.Dispose();
@@ -207,6 +208,11 @@ public partial class PlayerViewModel
             _timelinePreview.WarmUp(VideoUrl);
             _statePublisher.Publish();
         });
+    }
+
+    private void OnPlayerTracksChanged()
+    {
+        Dispatcher.UIThread.Post(() => UpdateTracks());
     }
 
     private void OnPlayerPlaybackEnded(object? sender, MpvPlaybackEndedEventArgs e)
@@ -252,38 +258,50 @@ public partial class PlayerViewModel
         IsPlaying = state.IsPlaying;
     }
 
-    private bool TryGetAdjacentMediaPath(bool previous, out string path)
-    {
-        path = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(VideoUrl) || !File.Exists(VideoUrl))
-            return false;
-
-        var directory = Path.GetDirectoryName(VideoUrl);
-        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
-            return false;
-
-        var files = Directory.EnumerateFiles(directory)
-            .Where(IsSupportedMediaPath)
-            .OrderBy(x => x, StringComparer.CurrentCultureIgnoreCase)
-            .ToList();
-
-        var currentIndex = files.FindIndex(x => string.Equals(x, VideoUrl, StringComparison.OrdinalIgnoreCase));
-        if (currentIndex < 0)
-            return false;
-
-        var adjacentIndex = previous ? currentIndex - 1 : currentIndex + 1;
-        if (adjacentIndex < 0 || adjacentIndex >= files.Count)
-            return false;
-
-        path = files[adjacentIndex];
-        return true;
-    }
+    private string? _previousMediaPath;
+    private string? _nextMediaPath;
 
     private void UpdateNavigationAvailability()
     {
-        CanOpenPreviousMedia = TryGetAdjacentMediaPath(previous: true, out _);
-        CanOpenNextMedia = TryGetAdjacentMediaPath(previous: false, out _);
+        _previousMediaPath = null;
+        _nextMediaPath = null;
+        CanOpenPreviousMedia = false;
+        CanOpenNextMedia = false;
+
+        if (string.IsNullOrWhiteSpace(VideoUrl) || !File.Exists(VideoUrl))
+            return;
+
+        var directory = Path.GetDirectoryName(VideoUrl);
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            return;
+
+        try
+        {
+            var files = Directory.EnumerateFiles(directory)
+                .Where(IsSupportedMediaPath)
+                .OrderBy(x => x, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            var currentIndex = files.FindIndex(x => string.Equals(x, VideoUrl, StringComparison.OrdinalIgnoreCase));
+            if (currentIndex >= 0)
+            {
+                if (currentIndex > 0)
+                {
+                    _previousMediaPath = files[currentIndex - 1];
+                    CanOpenPreviousMedia = true;
+                }
+
+                if (currentIndex < files.Count - 1)
+                {
+                    _nextMediaPath = files[currentIndex + 1];
+                    CanOpenNextMedia = true;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore directory access errors
+        }
     }
 
     private static bool IsSupportedMediaPath(string path)

@@ -72,7 +72,15 @@ public partial class PlayerOverlayWindow
             return;
         }
 
-        OnFullscreenClick(null, new RoutedEventArgs());
+        if (DataContext is not PlayerViewModel vm)
+            return;
+
+        var action = vm.LeftClickAction?.Value ?? PlayerMouseAction.TogglePlayPause;
+        if (action == PlayerMouseAction.None)
+            return;
+
+        e.Handled = true;
+        ExecuteMouseAction(vm, action);
     }
 
     private void OnBackgroundPointerWheelChanged(object? sender, PointerWheelEventArgs e)
