@@ -261,6 +261,8 @@ public partial class PlayerViewModel
     private string? _previousMediaPath;
     private string? _nextMediaPath;
 
+    private CancellationTokenSource? _updateNavigationCts;
+
     private void UpdateNavigationAvailability()
     {
         _previousMediaPath = null;
@@ -268,10 +270,23 @@ public partial class PlayerViewModel
         CanOpenPreviousMedia = false;
         CanOpenNextMedia = false;
 
-        if (string.IsNullOrWhiteSpace(VideoUrl) || !File.Exists(VideoUrl))
+        var videoUrl = VideoUrl;
+        if (string.IsNullOrWhiteSpace(videoUrl))
             return;
 
-        var directory = Path.GetDirectoryName(VideoUrl);
+        _updateNavigationCts?.Cancel();
+        _updateNavigationCts?.Dispose();
+        _updateNavigationCts = new CancellationTokenSource();
+
+        _ = Task.Run(() => UpdateNavigationAvailabilityAsync(videoUrl, _updateNavigationCts.Token));
+    }
+
+    private void UpdateNavigationAvailabilityAsync(string videoUrl, CancellationToken token)
+    {
+        if (!File.Exists(videoUrl))
+            return;
+
+        var directory = Path.GetDirectoryName(videoUrl);
         if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
             return;
 
@@ -282,20 +297,37 @@ public partial class PlayerViewModel
                 .OrderBy(x => x, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
 
-            var currentIndex = files.FindIndex(x => string.Equals(x, VideoUrl, StringComparison.OrdinalIgnoreCase));
+            if (token.IsCancellationRequested) return;
+
+            var currentIndex = files.FindIndex(x => string.Equals(x, videoUrl, StringComparison.OrdinalIgnoreCase));
             if (currentIndex >= 0)
             {
+                string? previousMediaPath = null;
+                string? nextMediaPath = null;
+                bool canOpenPreviousMedia = false;
+                bool canOpenNextMedia = false;
+
                 if (currentIndex > 0)
                 {
-                    _previousMediaPath = files[currentIndex - 1];
-                    CanOpenPreviousMedia = true;
+                    previousMediaPath = files[currentIndex - 1];
+                    canOpenPreviousMedia = true;
                 }
 
                 if (currentIndex < files.Count - 1)
                 {
-                    _nextMediaPath = files[currentIndex + 1];
-                    CanOpenNextMedia = true;
+                    nextMediaPath = files[currentIndex + 1];
+                    canOpenNextMedia = true;
                 }
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (token.IsCancellationRequested) return;
+
+                    _previousMediaPath = previousMediaPath;
+                    _nextMediaPath = nextMediaPath;
+                    CanOpenPreviousMedia = canOpenPreviousMedia;
+                    CanOpenNextMedia = canOpenNextMedia;
+                });
             }
         }
         catch

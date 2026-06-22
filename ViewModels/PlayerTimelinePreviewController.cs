@@ -30,7 +30,7 @@ public sealed class PlayerTimelinePreviewController : IDisposable
 
     public async void Show(string videoUrl, double duration, double timeSeconds, double left)
     {
-        if (duration <= 0 || string.IsNullOrWhiteSpace(videoUrl) || !File.Exists(videoUrl))
+        if (duration <= 0 || string.IsNullOrWhiteSpace(videoUrl))
         {
             Hide();
             return;
@@ -93,18 +93,26 @@ public sealed class PlayerTimelinePreviewController : IDisposable
     public void WarmUp(string videoUrl)
     {
         var thumbnailer = _thumbnailer;
-        if (thumbnailer == null || string.IsNullOrWhiteSpace(videoUrl) || !File.Exists(videoUrl))
+        if (thumbnailer == null || string.IsNullOrWhiteSpace(videoUrl))
             return;
 
         _warmUpCts?.Cancel();
         _warmUpCts?.Dispose();
         _warmUpCts = new CancellationTokenSource();
-        _ = thumbnailer.WarmUpAsync(videoUrl, _warmUpCts.Token)
-            .ContinueWith(task =>
-            {
-                if (task.Exception != null)
-                    Serilog.Log.Debug(task.Exception, "Failed to warm up timeline thumbnailer");
-            }, TaskContinuationOptions.OnlyOnFaulted);
+        var token = _warmUpCts.Token;
+
+        _ = Task.Run(() =>
+        {
+            if (token.IsCancellationRequested || !File.Exists(videoUrl))
+                return Task.CompletedTask;
+
+            return thumbnailer.WarmUpAsync(videoUrl, token)
+                .ContinueWith(task =>
+                {
+                    if (task.Exception != null)
+                        Serilog.Log.Debug(task.Exception, "Failed to warm up timeline thumbnailer");
+                }, TaskContinuationOptions.OnlyOnFaulted);
+        });
     }
 
     public void Dispose()
