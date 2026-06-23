@@ -75,9 +75,7 @@ public readonly struct AnimeItemPresentation
 
     public bool ShowProgress => !IsCompleted || _item.IsRewatching;
 
-    public bool HasNewEpisodes => _item.StatusDetailed == "currently_airing"
-        && _item.Status == UserAnimeStatus.Watching
-        && _item.Progress < _item.EpisodesAired;
+    public bool HasNewEpisodes => _item.Status == UserAnimeStatus.Watching && _item.Progress < ResolvedAiredEpisodes;
 
     public int UnseenEpisodesCount
     {
@@ -97,6 +95,9 @@ public readonly struct AnimeItemPresentation
             if (IsNewEpisode && HasNewEpisodes) return UIUtils.GetLoc("anime.labels.new_ep");
             if (_item.NextEpisodeAt.HasValue)
             {
+                if (_item.StatusDetailed?.Equals("finished_airing", StringComparison.OrdinalIgnoreCase) == true || _item.StatusDetailed?.Equals("finished airing", StringComparison.OrdinalIgnoreCase) == true)
+                    return string.Empty;
+
                 var diff = _item.NextEpisodeAt.Value - _now;
 
                 if (diff.TotalSeconds <= 0)
@@ -147,17 +148,17 @@ public readonly struct AnimeItemPresentation
     {
         get
         {
-            return _item.StatusDetailed switch
+            return _item.StatusDetailed?.ToLowerInvariant() switch
             {
-                "currently_airing" => UIUtils.GetLoc("anime.status.currently_airing"),
-                "finished_airing" => UIUtils.GetLoc("anime.status.finished_airing"),
-                "not_yet_aired" => UIUtils.GetLoc("anime.status.not_yet_aired"),
-                _ => _item.StatusDetailed != null ? UIUtils.GetLoc("anime.status." + _item.StatusDetailed) : UIUtils.GetLoc("anime.status.unknown")
+                "currently_airing" or "currently airing" => UIUtils.GetLoc("anime.status.currently_airing"),
+                "finished_airing" or "finished airing" => UIUtils.GetLoc("anime.status.finished_airing"),
+                "not_yet_aired" or "not yet aired" or "anons" => UIUtils.GetLoc("anime.status.not_yet_aired"),
+                _ => _item.StatusDetailed != null ? UIUtils.GetLoc("anime.status." + _item.StatusDetailed.ToLowerInvariant().Replace(" ", "_")) : UIUtils.GetLoc("anime.status.unknown")
             };
         }
     }
 
-    public bool ShowAiredInfo => _item.StatusDetailed != "finished_airing";
+    public bool ShowAiredInfo => !(_item.StatusDetailed?.Equals("finished_airing", StringComparison.OrdinalIgnoreCase) == true || _item.StatusDetailed?.Equals("finished airing", StringComparison.OrdinalIgnoreCase) == true);
 
     public bool HasGenres => _item.Genres != null && _item.Genres.Count > 0;
 
@@ -165,18 +166,18 @@ public readonly struct AnimeItemPresentation
 
     public bool HasStudios => _item.Studios != null && _item.Studios.Count > 0;
 
-    private int EffectiveTotal
+    public int EffectiveTotal
     {
         get
         {
             if (_item.TotalEpisodes > 0) return _item.TotalEpisodes;
             int maxKnownEpisode = Math.Max(_item.Progress, _item.EpisodesAired);
-            if (maxKnownEpisode <= 0) return 0;
+            if (maxKnownEpisode <= 0) return 12;
             return maxKnownEpisode > 24 ? ((maxKnownEpisode - 1) / 12 + 1) * 12 : (maxKnownEpisode > 12 ? 24 : 12);
         }
     }
 
-    private int ResolvedAiredEpisodes => _item.StatusDetailed == "finished_airing" && _item.TotalEpisodes > 0
+    public int ResolvedAiredEpisodes => _item.StatusDetailed == "finished_airing" && _item.TotalEpisodes > 0
         ? _item.TotalEpisodes
         : _item.EpisodesAired;
 }

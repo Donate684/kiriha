@@ -15,8 +15,9 @@ namespace Kiriha.Services.Api;
 public sealed record AniListAiringInfo(
     int AniListId,
     int MalId,
-    int NextEpisode,
-    DateTime NextEpisodeAt,
+    string? Status,
+    int? NextEpisode,
+    DateTime? NextEpisodeAt,
     int? TotalEpisodes);
 
 public class AniListApiService
@@ -64,6 +65,7 @@ public class AniListApiService
                      Media(idMal: $malId, type: ANIME) {
                        id
                        idMal
+                       status
                        episodes
                        nextAiringEpisode {
                          episode
@@ -89,8 +91,13 @@ public class AniListApiService
                 return (await TryReadCacheAsync(cacheKey, allowStale: true)).Value;
             }
 
-            await using var stream = await response.Content.ReadAsStreamAsync(ct);
-            using var json = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+            var contentString = await response.Content.ReadAsStringAsync(ct);
+            if (malId == 59970)
+            {
+                Log.Information("SLIME_ANILIST_DEBUG: {Content}", contentString);
+            }
+
+            using var json = JsonDocument.Parse(contentString);
             var result = ParseAiringInfo(json.RootElement, malId);
             await WriteCacheAsync(cacheKey, result);
             return result;
@@ -145,26 +152,31 @@ public class AniListApiService
             || media.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
             return null;
 
-        if (!media.TryGetProperty("nextAiringEpisode", out var next)
-            || next.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-            return null;
+        var status = media.TryGetProperty("status", out var statusElement) && statusElement.ValueKind == JsonValueKind.String
+            ? statusElement.GetString()
+            : null;
 
-        if (!next.TryGetProperty("episode", out var epElement) || !epElement.TryGetInt32(out var episode) || episode <= 0)
-            return null;
+        int? episode = null;
+        DateTime? nextAt = null;
 
-        if (!next.TryGetProperty("airingAt", out var atElement) || !atElement.TryGetInt64(out var airingAt) || airingAt <= 0)
-            return null;
+        if (media.TryGetProperty("nextAiringEpisode", out var next) && next.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
+        {
+            if (next.TryGetProperty("episode", out var epElement) && epElement.ValueKind == JsonValueKind.Number && epElement.TryGetInt32(out var ep) && ep > 0)
+                episode = ep;
 
-        var aniListId = media.TryGetProperty("id", out var idElement) && idElement.TryGetInt32(out var id) ? id : 0;
-        var malId = media.TryGetProperty("idMal", out var malElement) && malElement.TryGetInt32(out var parsedMalId)
+            if (next.TryGetProperty("airingAt", out var atElement) && atElement.ValueKind == JsonValueKind.Number && atElement.TryGetInt64(out var airingAt) && airingAt > 0)
+                nextAt = DateTimeOffset.FromUnixTimeSeconds(airingAt).LocalDateTime;
+        }
+
+        var aniListId = media.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.Number && idElement.TryGetInt32(out var id) ? id : 0;
+        var malId = media.TryGetProperty("idMal", out var malElement) && malElement.ValueKind == JsonValueKind.Number && malElement.TryGetInt32(out var parsedMalId)
             ? parsedMalId
             : requestedMalId;
-        var totalEpisodes = media.TryGetProperty("episodes", out var epsElement) && epsElement.TryGetInt32(out var eps)
+        var totalEpisodes = media.TryGetProperty("episodes", out var epsElement) && epsElement.ValueKind == JsonValueKind.Number && epsElement.TryGetInt32(out var eps)
             ? eps
             : (int?)null;
-        var nextAt = DateTimeOffset.FromUnixTimeSeconds(airingAt).LocalDateTime;
 
-        return new AniListAiringInfo(aniListId, malId, episode, nextAt, totalEpisodes);
+        return new AniListAiringInfo(aniListId, malId, status, episode, nextAt, totalEpisodes);
     }
 
     private static string CacheKey(int malId)

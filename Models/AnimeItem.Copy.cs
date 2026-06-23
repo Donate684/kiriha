@@ -53,7 +53,8 @@ public partial class AnimeItem
             target.LastEpisodeAt = LastEpisodeAt;
         }
 
-        if (NextEpisodeAt.HasValue) target.NextEpisodeAt = NextEpisodeAt;
+        if (StatusDetailed == "finished_airing" || StatusDetailed == "finished airing") target.NextEpisodeAt = null;
+        else if (NextEpisodeAt.HasValue) target.NextEpisodeAt = NextEpisodeAt;
 
         target.Genres = new List<string>(Genres);
         target.Studios = new List<string>(Studios);

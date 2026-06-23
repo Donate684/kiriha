@@ -36,18 +36,53 @@ public class AiringInfoService
     /// concrete future episode number and Unix timestamp, so there is no local
     /// prediction math: if episode 8 is next, at least 7 episodes have aired.
     /// </summary>
-    private static (int aired, DateTime nextSlot) ResolveAired(AnimeItem anime, AniListAiringInfo airing)
+    private static (int aired, DateTime? nextSlot) ResolveAired(AnimeItem anime, AniListAiringInfo airing)
     {
-        var aired = Math.Max(0, airing.NextEpisode - 1);
+        int aired = anime.EpisodesAired;
+        DateTime? nextSlot = airing.NextEpisodeAt;
+
+        if (airing.NextEpisode.HasValue)
+        {
+            if (airing.NextEpisodeAt.HasValue && airing.NextEpisodeAt.Value <= DateTime.Now)
+            {
+                aired = airing.NextEpisode.Value;
+                nextSlot = null;
+            }
+            else
+            {
+                aired = Math.Max(0, airing.NextEpisode.Value - 1);
+            }
+        }
+        else if (airing.Status == "FINISHED")
+        {
+            if (airing.TotalEpisodes.HasValue && airing.TotalEpisodes > 0)
+                aired = airing.TotalEpisodes.Value;
+            else if (anime.TotalEpisodes > 0)
+                aired = anime.TotalEpisodes;
+        }
+        else if (anime.NextEpisodeAt.HasValue && anime.NextEpisodeAt.Value <= DateTime.Now)
+        {
+            // AniList no longer reports a next episode, but we expected one to have aired by now.
+            // This usually happens when the final episode just aired, but AniList's status is still "RELEASING".
+            // We can assume at least the expected episode has aired.
+            aired = Math.Max(aired, anime.EpisodesAired + 1);
+        }
+
         if (anime.TotalEpisodes > 0 && aired > anime.TotalEpisodes)
             aired = anime.TotalEpisodes;
-        return (aired, airing.NextEpisodeAt);
+
+        return (aired, nextSlot);
     }
 
     public async Task SyncEpisodesForAnimeAsync(AnimeItem anime, CancellationToken ct = default)
     {
         if (_animeService.IsSyncing) return;
-        if (anime.StatusDetailed != "currently_airing" || anime.Status != UserAnimeStatus.Watching) return;
+        if (anime.Status != UserAnimeStatus.Watching) return;
+        
+        var status = anime.StatusDetailed?.ToLowerInvariant();
+        bool isTrackableStatus = status == "currently_airing" || status == "currently airing";
+
+        if (!isTrackableStatus && !anime.NextEpisodeAt.HasValue) return;
 
         Log.Information("AiringInfoService: Immediate AniList sync requested for {Title} (ID: {Id})", anime.Title, anime.Id);
 
@@ -79,9 +114,12 @@ public class AiringInfoService
         // Snapshot on UI thread - ObservableCollection is not thread-safe.
         var toSync = await _uiDispatcher.InvokeAsync(() =>
             _animeService.Collection
-                .Where(x => x.StatusDetailed == "currently_airing" &&
-                            x.Status == UserAnimeStatus.Watching &&
-                            (force || x.LastEpisodesSync == null || x.LastEpisodesSync < threshold))
+                .Where(x => {
+                    var s = x.StatusDetailed?.ToLowerInvariant();
+                    return (s == "currently_airing" || s == "currently airing" || x.NextEpisodeAt.HasValue) &&
+                           x.Status == UserAnimeStatus.Watching &&
+                           (force || x.LastEpisodesSync == null || x.LastEpisodesSync < threshold);
+                })
                 .ToList());
 
         if (!toSync.Any())
@@ -128,7 +166,9 @@ public class AiringInfoService
         {
             if (finalAiredCount != anime.EpisodesAired)
             {
-                if (anime.EpisodesAired > 0 && finalAiredCount > anime.EpisodesAired)
+                bool isFirstSyncJumpFromZero = anime.LastEpisodesSync == null && anime.EpisodesAired == 0;
+
+                if (!isFirstSyncJumpFromZero && finalAiredCount > anime.EpisodesAired)
                 {
                     anime.LastEpisodeAt = now;
                     notifyEp = finalAiredCount;
