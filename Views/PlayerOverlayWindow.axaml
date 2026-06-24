@@ -59,7 +59,7 @@
                 IsHitTestVisible="False"
                 IsVisible="{Binding IsLoading}">
             <StackPanel Spacing="10" Width="280">
-                <ProgressBar IsIndeterminate="True" Height="3"/>
+                <ProgressBar Height="3" Value="100"/>
                 <TextBlock Text="{Binding PlaybackStatusMessage}"
                            Classes="overlay-text"
                            Foreground="White"

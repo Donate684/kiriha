@@ -173,7 +173,7 @@ public class MpvPlayer : IDisposable
 
     public void Load(string url)
     {
-        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "loadfile", url), "load file"));
+        Enqueue(handle => Check(LibMpvNative.mpv_command_async_string(handle, 0, "loadfile", url), "load file"));
     }
 
     public void Play()
@@ -716,8 +716,19 @@ public class MpvPlayer : IDisposable
         {
             case LibMpvNative.MPV_EVENT_FILE_LOADED:
                 InvalidateRuntimeVideoInfo();
-                if (_propertyCache.TryUpdateLoaded(true))
+                
+                bool isPaused = Read(handle => 
+                {
+                    LibMpvNative.mpv_get_property_int(handle, "pause", LibMpvNative.MPV_FORMAT_FLAG, out int paused);
+                    return paused != 0;
+                }, true);
+                
+                bool pauseChanged = _propertyCache.TryUpdatePause(isPaused);
+                bool loadedChanged = _propertyCache.TryUpdateLoaded(true);
+                
+                if (pauseChanged || loadedChanged)
                     PublishPlaybackState();
+                    
                 FileLoaded?.Invoke(this, EventArgs.Empty);
                 break;
 

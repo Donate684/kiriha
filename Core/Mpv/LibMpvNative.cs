@@ -33,6 +33,9 @@ public static class LibMpvNative
     public static extern int mpv_command(IntPtr ctx, IntPtr args);
 
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int mpv_command_async(IntPtr ctx, ulong reply_userdata, IntPtr args);
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
     public static extern int mpv_set_property(IntPtr ctx, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, int format, ref double data);
 
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
@@ -135,6 +138,35 @@ public static class LibMpvNative
             Marshal.Copy(ptrs, 0, unmanagedPointer, ptrs.Length);
 
             return mpv_command(ctx, unmanagedPointer);
+        }
+        finally
+        {
+            if (unmanagedPointer != IntPtr.Zero)
+                Marshal.FreeHGlobal(unmanagedPointer);
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (ptrs[i] != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(ptrs[i]);
+            }
+        }
+    }
+
+    public static int mpv_command_async_string(IntPtr ctx, ulong reply_userdata, params string[] args)
+    {
+        IntPtr[] ptrs = new IntPtr[args.Length + 1];
+        IntPtr unmanagedPointer = IntPtr.Zero;
+
+        try
+        {
+            for (int i = 0; i < args.Length; i++)
+                ptrs[i] = Marshal.StringToCoTaskMemUTF8(args[i]);
+            ptrs[args.Length] = IntPtr.Zero;
+
+            unmanagedPointer = Marshal.AllocHGlobal(ptrs.Length * IntPtr.Size);
+            Marshal.Copy(ptrs, 0, unmanagedPointer, ptrs.Length);
+
+            return mpv_command_async(ctx, reply_userdata, unmanagedPointer);
         }
         finally
         {

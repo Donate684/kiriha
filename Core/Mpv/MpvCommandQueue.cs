@@ -66,13 +66,15 @@ internal sealed class MpvCommandQueue
 
             try
             {
+                IntPtr handle;
                 lock (_gate)
                 {
                     if (_isDisposed() || _getHandle() == IntPtr.Zero)
                         continue;
-
-                    command.Execute(_getHandle());
+                    handle = _getHandle();
                 }
+
+                command.Execute(handle);
             }
             catch (Exception ex)
             {
