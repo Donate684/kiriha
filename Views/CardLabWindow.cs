@@ -76,7 +76,7 @@ public sealed class CardLabWindow : Window
             Children =
             {
                 Txt("Card Lab", 22, FontWeight.SemiBold, headerText1),
-                Txt("6 концепций карточек. Тема переключается на лету.", 13, FontWeight.Normal, headerText2)
+                Txt("13 концептов карточек. Тема переключается на лету.", 13, FontWeight.Normal, headerText2)
             }
         });
 
@@ -144,19 +144,30 @@ public sealed class CardLabWindow : Window
         {
             Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Left,
-            ItemWidth = 176,
-            ItemHeight = 342
+            ItemWidth = 184,
+            ItemHeight = 360
         };
 
-        wrap.Children.Add(Variant("01", "Neo Glass", CardNeoGlass(0, _isLight), _isLight));
-        wrap.Children.Add(Variant("02", "Accent Stripe", CardAccentStripe(1, _isLight), _isLight));
-        wrap.Children.Add(Variant("03", "Floating Poster", CardFloatingPoster(2, _isLight), _isLight));
-        wrap.Children.Add(Variant("04", "Full Bleed", CardFullBleedCinematic(3, _isLight), _isLight));
-        wrap.Children.Add(Variant("05", "Magazine", CardMagazineEditorial(4, _isLight), _isLight));
-        wrap.Children.Add(Variant("06", "Soft Depth", CardSoftDepth(5, _isLight), _isLight));
+        var rnd = new Random();
         
         var imgPath = @"C:\Users\ASUS\.gemini\antigravity-ide\brain\924958af-7837-4fb1-88fa-5723fd951a62\anime_cover_mockup_1780311451533.png";
-        wrap.Children.Add(Variant("07", "Floating Mag", CardFloatingMagazine(2, _isLight, imgPath), _isLight));
+        try
+        {
+            var cacheDir = Kiriha.Core.PathHelper.GetImageCachePath();
+            if (System.IO.Directory.Exists(cacheDir))
+            {
+                var files = System.IO.Directory.GetFiles(cacheDir);
+                if (files.Length > 0)
+                {
+                    imgPath = files[rnd.Next(files.Length)];
+                }
+            }
+        }
+        catch { }
+
+        // --- Новые концепты ---
+        wrap.Children.Add(Variant("A",  "Poster First",     CardA_PosterFirst(_isLight, imgPath, rnd.Next(Titles.Length)),     _isLight));
+        wrap.Children.Add(Variant("D",  "Full Cinematic",   CardD_FullCinematic(_isLight, imgPath, rnd.Next(Titles.Length)),   _isLight));
 
         scroll.Content = wrap;
         root.Children.Add(scroll);
@@ -192,469 +203,292 @@ public sealed class CardLabWindow : Window
         };
     }
 
-    private static Control CardNeoGlass(int i, bool isLight)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  НОВЫЕ КОНЦЕПТЫ A–F
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// A — Poster First: постер 62%, снизу чистый блок. Таблетки на постере,
+    /// прогресс точками (зелёные/красные), управление сериями в одну строку.
+    /// </summary>
+    private static Control CardA_PosterFirst(bool isLight, string imgPath, int i)
     {
-        var bg = isLight ? "#B3FFFFFF" : "#D91A1F2A";
-        var border = isLight ? "#40FFFFFF" : "#18FFFFFF";
-        var shadow = isLight ? "0 4 20 0 #15000000" : "0 0 18 0 #154FC3F7";
-        var track = isLight ? "#E0F2FE" : "#1A2A3A";
+        var cardBg   = isLight ? "#FFFFFF" : "#16181E";
+        var border   = isLight ? "#E4E7EC" : "#252830";
+        var titleFg  = isLight ? "#0D1117" : "#EAEDF2";
+        var subFg    = isLight ? "#6B7280" : "#6E7685";
+        var epFg     = isLight ? "#374151" : "#C0C8D4";
+        var epMuted  = isLight ? "#9CA3AF" : "#525C6B";
+        var dotOn    = "#3DBA6F";
+        var dotOff   = isLight ? "#F0493E" : "#8B2020";
+        var shadow   = isLight ? "0 2 12 0 #10000000" : "0 4 20 0 #35000000";
 
         var card = new Border
         {
-            Width = 158, Height = 305,
-            CornerRadius = new CornerRadius(10),
+            Width = 164, Height = 318,
+            CornerRadius = new CornerRadius(14),
             ClipToBounds = true,
-            Background = Brush(bg),
+            Background = Brush(cardBg),
             BorderBrush = Brush(border),
             BorderThickness = new Thickness(1),
             BoxShadow = BoxShadows.Parse(shadow)
         };
 
-        card.Child = new Panel
+        // постер с таблетками поверх
+        var posterPanel = new Panel { Height = 195 };
+        var posterImg = RealPoster(0, new Thickness(0), imgPath);
+        posterImg.CornerRadius = new CornerRadius(14, 14, 0, 0);
+        posterPanel.Children.Add(posterImg);
+        // «Новый эп.» — яркая оранжевая таблетка
+        posterPanel.Children.Add(new Border
         {
+            Padding = new Thickness(7, 4),
+            CornerRadius = new CornerRadius(20),
+            Background = Brush("#FF4D00"),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(9, 9, 0, 0),
+            Child = Txt("Новый эп.", 10, FontWeight.Bold, "#FFFFFF")
+        });
+        // «★ —» рейтинг — тёмная таблетка
+        posterPanel.Children.Add(new Border
+        {
+            Padding = new Thickness(6, 4),
+            CornerRadius = new CornerRadius(20),
+            Background = Brush("#CC000000"),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 9, 9, 0),
+            Child = new StackPanel
+            {
+                Orientation = Orientation.Horizontal, Spacing = 3,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    MIcon(MaterialIconKind.Star, "#FFD700", 11),
+                    Txt("—", 10, FontWeight.SemiBold, "#FFFFFF")
+                }
+            }
+        });
+
+        // нижняя секция
+        var bottom = new Grid
+        {
+            RowDefinitions = new RowDefinitions("*,Auto,Auto"),
+            Margin = new Thickness(12, 10, 12, 12),
             Children =
             {
-                new Grid
+                // Заголовок
+                new StackPanel
                 {
-                    RowDefinitions = new RowDefinitions("195,*"),
+                    Spacing = 2,
                     Children =
                     {
-                        Poster(0, new Thickness(0), "#1B3A5C", "#4FC3F7").WithRow(0),
-                        new Grid
-                        {
-                            RowDefinitions = new RowDefinitions("*,Auto,Auto"),
-                            Margin = new Thickness(11, 9, 11, 10),
-                            Children =
-                            {
-                                TitleBlock(i, light: isLight).WithRow(0),
-                                GradientBar(0.29, "#4FC3F7", "#81D4FA", track).WithRow(1),
-                                EpisodeControls("8", "28", light: isLight, accent: "#4FC3F7").WithRow(2)
-                            }
-                        }.WithRow(1)
+                        Txt(Titles[i], 13, FontWeight.Bold, titleFg).WithMaxLines(2).WithMinHeight(36),
+                        Txt(Subtitles[i], 10, FontWeight.Normal, subFg).WithMaxLines(2).WithMinHeight(28)
                     }
-                },
-                GlassScore("9.1", isLight)
-                    .WithAlign(HorizontalAlignment.Right, VerticalAlignment.Top, new Thickness(0, 8, 8, 0))
+                }.WithRow(0),
+                // Точечный прогресс 7/12
+                NewDotProgress(7, 12, dotOn, dotOff).WithRow(1).WithAlign(HorizontalAlignment.Center, VerticalAlignment.Center, new Thickness(0, 0, 0, 8)),
+                // Управление сериями
+                NewEpRow("7", "12", epFg, epMuted, "#3DBA6F").WithRow(2)
             }
         };
 
+        card.Child = new Grid
+        {
+            RowDefinitions = new RowDefinitions("195,*"),
+            Children = { posterPanel.WithRow(0), bottom.WithRow(1) }
+        };
         return card;
     }
 
-    private static Control CardAccentStripe(int i, bool isLight)
+    /// <summary>
+    /// B — Glassy Overlay: постер во весь рост, снизу матовое стекло.
+    /// Всё содержимое поверх постера.
+    /// </summary>
+
+
+    /// <summary>
+    /// C — Banner Cut: постер с чётким горизонтальным срезом + тонкая акцент-линия,
+    /// затем белая/тёмная секция с инфо.
+    /// </summary>
+
+
+    /// <summary>
+    /// D — Full Cinematic: постер во весь рост, тёмный градиент снизу,
+    /// весь текст и кнопки поверх.
+    /// </summary>
+    private static Control CardD_FullCinematic(bool isLight, string imgPath, int i)
     {
-        var bg = isLight ? "#FFFFFF" : "#161B24";
-        var border = isLight ? "#E5E7EB" : "#1E2A38";
-        var track = isLight ? "#EDE9FE" : "#2A2540";
-        var epText = isLight ? "#4C1D95" : "#E8E0FA";
-        var statText = isLight ? "#7C3AED" : "#7B6FA0";
-        var accentSub = isLight ? "#6D28D9" : "#9C7CF4";
+        var gradStart = isLight ? "#00000000" : "#00000000";
+        var gradMid   = isLight ? "#B0000000" : "#C0000000";
+        var gradEnd   = isLight ? "#EE000000" : "#F5000000";
+        var accentLine= "#F178B6";
+        var shadow    = isLight ? "0 4 20 0 #20000000" : "0 6 28 0 #50000000";
 
         var card = new Border
         {
-            Width = 158, Height = 305,
-            CornerRadius = new CornerRadius(10),
+            Width = 164, Height = 318,
+            CornerRadius = new CornerRadius(14),
             ClipToBounds = true,
-            Background = Brush(bg),
-            BorderBrush = Brush(border),
-            BorderThickness = new Thickness(1)
+            BoxShadow = BoxShadows.Parse(shadow)
         };
 
-        var stripe = new Border
+        var poster = RealPoster(0, new Thickness(0), imgPath);
+
+        // Тёмный градиент снизу
+        var gradient = new Border
         {
-            Width = 3,
-            HorizontalAlignment = HorizontalAlignment.Left,
-            CornerRadius = new CornerRadius(10, 0, 0, 10),
+            Height = 210,
+            VerticalAlignment = VerticalAlignment.Bottom,
             Background = new LinearGradientBrush
             {
                 StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
+                EndPoint   = new RelativePoint(0, 1, RelativeUnit.Relative),
                 GradientStops =
                 {
-                    new GradientStop(Color.Parse("#9C7CF4"), 0),
-                    new GradientStop(Color.Parse("#5BB8F5"), 1)
+                    new GradientStop(Color.Parse(gradStart), 0),
+                    new GradientStop(Color.Parse(gradMid),   0.4),
+                    new GradientStop(Color.Parse(gradEnd),   1)
                 }
             }
         };
 
-        var body = new Grid
+        // «Новый эп.» таблетка (верх-лево)
+        var newPill = new Border
         {
-            RowDefinitions = new RowDefinitions("168,*"),
-            Margin = new Thickness(3, 0, 0, 0),
-            Children =
+            Padding = new Thickness(7, 4),
+            CornerRadius = new CornerRadius(20),
+            Background = Brush("#FF4D00"),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(9, 9, 0, 0),
+            Child = Txt("Новый эп.", 10, FontWeight.Bold, "#FFFFFF")
+        };
+
+        // Рейтинг (верх-право)
+        var ratingPill = new Border
+        {
+            Padding = new Thickness(6, 4),
+            CornerRadius = new CornerRadius(20),
+            Background = Brush("#CC000000"),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 9, 9, 0),
+            Child = new StackPanel
             {
-                Poster(8, new Thickness(7, 7, 7, 0), "#2A1F42", "#9C7CF4").WithRow(0),
-                new StackPanel
-                {
-                    Margin = new Thickness(11, 9, 11, 10),
-                    Spacing = 6,
-                    Children =
-                    {
-                        TitleBlock(i, light: isLight, accentSub: accentSub),
-                        new Grid
-                        {
-                            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
-                            VerticalAlignment = VerticalAlignment.Bottom,
-                            Children =
-                            {
-                                RingProgress(0.67, "#9C7CF4", track, 28).WithColumn(0),
-                                new StackPanel
-                                {
-                                    Margin = new Thickness(8, 0, 0, 0),
-                                    VerticalAlignment = VerticalAlignment.Center,
-                                    Spacing = 1,
-                                    Children =
-                                    {
-                                        Txt("8 / 12", 12, FontWeight.SemiBold, epText),
-                                        Txt("Смотрю", 9, FontWeight.Normal, statText)
-                                    }
-                                }.WithColumn(1)
-                            }
-                        }
-                    }
-                }.WithRow(1)
+                Orientation = Orientation.Horizontal, Spacing = 3,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children = { MIcon(MaterialIconKind.Star, "#FFD700", 11), Txt("—", 10, FontWeight.SemiBold, "#FFFFFF") }
             }
         };
 
-        card.Child = new Panel { Children = { stripe, body } };
-        return card;
-    }
-
-    private static Control CardFloatingPoster(int i, bool isLight)
-    {
-        var bg = isLight ? "#FFFFFF" : "#14181F";
-        var shadow = isLight ? "0 4 16 0 #15000000" : "0 4 16 0 #30000000";
-        var track = isLight ? "#E5E7EB" : "#1E2A30";
-        var text = isLight ? "#4B5563" : "#5A7A70";
-
-        var card = new Border
+        // Текст и контролы у низа
+        var textBlock = new Grid
         {
-            Width = 158, Height = 305,
-            CornerRadius = new CornerRadius(10),
-            ClipToBounds = true,
-            Background = Brush(bg)
-        };
-
-        if (isLight) 
-        {
-            card.BorderBrush = Brush("#F3F4F6");
-            card.BorderThickness = new Thickness(1);
-        }
-
-        var poster = Poster(10, new Thickness(10, 10, 10, 0), "#1A3D38", "#67D7A1");
-        poster.BoxShadow = BoxShadows.Parse(shadow);
-
-        card.Child = new Grid
-        {
-            RowDefinitions = new RowDefinitions("178,*"),
+            RowDefinitions = new RowDefinitions("*,Auto,Auto"),
+            Margin = new Thickness(12, 205, 12, 12),
             Children =
             {
-                poster.WithRow(0),
                 new StackPanel
                 {
-                    Margin = new Thickness(11, 10, 11, 12),
-                    Spacing = 8,
+                    Spacing = 2,
                     Children =
                     {
-                        TitleBlock(i, light: isLight),
-                        SegmentedProgress(8, 13, "#67D7A1", track),
-                        new TextBlock
-                        {
-                            Text = "8 из 13 серий",
-                            FontSize = 10,
-                            FontWeight = FontWeight.Medium,
-                            Foreground = Brush(text),
-                            HorizontalAlignment = HorizontalAlignment.Center
-                        }
+                        Txt(Titles[i], 13, FontWeight.Bold, "#FFFFFF").WithMaxLines(2).WithMinHeight(36),
+                        Txt(Subtitles[i], 10, FontWeight.Normal, "#A0FFFFFF").WithMaxLines(2).WithMinHeight(28)
                     }
-                }.WithRow(1)
+                }.WithRow(0),
+                NewDotProgress(7, 12, "#F178B6", "#50FFFFFF").WithRow(1).WithAlign(HorizontalAlignment.Center, VerticalAlignment.Center, new Thickness(0, 0, 0, 8)),
+                NewEpRow("7", "12", "#FFFFFF", "#80FFFFFF", accentLine).WithRow(2)
             }
-        };
-
-        return card;
-    }
-
-    private static Control CardFullBleedCinematic(int i, bool isLight)
-    {
-        var bg = isLight ? "#FFFFFF" : "#0C0E14";
-        
-        var card = new Border
-        {
-            Width = 158, Height = 305,
-            CornerRadius = new CornerRadius(10),
-            ClipToBounds = true,
-            Background = Brush(bg)
         };
 
         card.Child = new Panel
         {
-            Children =
-            {
-                Poster(0, new Thickness(0), "#3D1F35", "#F178B6"),
-                new Border
-                {
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    Height = 190,
-                    Background = new LinearGradientBrush
-                    {
-                        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                        EndPoint   = new RelativePoint(0, 1, RelativeUnit.Relative),
-                        GradientStops =
-                        {
-                            new GradientStop(Color.Parse("#00000000"), 0),
-                            new GradientStop(Color.Parse("#90000000"), 0.35),
-                            new GradientStop(Color.Parse("#E8000000"), 0.7),
-                            new GradientStop(Color.Parse("#F5000000"), 1)
-                        }
-                    }
-                },
-                new StackPanel
-                {
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    Margin = new Thickness(11, 0, 11, 16),
-                    Spacing = 4,
-                    Children =
-                    {
-                        TitleBlock(i, white: true),
-                        SolidBar(0.74, "#F178B6", "#3FFFFFFF"),
-                        EpisodeControls("9", "12", white: true, accent: "#F178B6")
-                    }
-                },
-                new Border
-                {
-                    Height = 3,
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    Background = new LinearGradientBrush
-                    {
-                        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                        EndPoint   = new RelativePoint(1, 0, RelativeUnit.Relative),
-                        GradientStops =
-                        {
-                            new GradientStop(Color.Parse("#F178B6"), 0),
-                            new GradientStop(Color.Parse("#FF6B9D"), 1)
-                        }
-                    }
-                },
-                InfoPill("Онгоинг", "#CC000000", "#FFFFFF")
-                    .WithAlign(HorizontalAlignment.Left, VerticalAlignment.Top, new Thickness(8, 8, 0, 0)),
-                DarkScore("8.4")
-                    .WithAlign(HorizontalAlignment.Right, VerticalAlignment.Top, new Thickness(0, 8, 8, 0))
-            }
+            Children = { poster, gradient, newPill, ratingPill, textBlock }
         };
+        return card;
+    }
 
-        if (isLight)
+    /// <summary>
+    /// E — Neon Pulse: тёмная карточка с цветным свечением на фоне,
+    /// постер с закруглёнными углами, неоновые акценты.
+    /// </summary>
+
+
+    /// <summary>
+    /// F — Paper Card: тёплый минималистичный стиль, кремовый/коричневый,
+    /// без жёстких теней — как на журнальной странице.
+    /// </summary>
+
+
+    // ─── Общие хелперы для новых концептов ───────────────────────────────
+
+    /// <summary>Dot-прогресс: capsule-точки двух цветов.</summary>
+    private static Control NewDotProgress(int current, int total, string onColor, string offColor)
+    {
+        var gap  = total <= 12 ? 3.5 : 2.5;
+        var segW = Math.Max(5.0, (136.0 - (total - 1) * gap) / total);
+        var panel = new StackPanel
         {
-            card.BoxShadow = BoxShadows.Parse("0 4 12 0 #15000000");
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Spacing = gap
+        };
+        for (var j = 0; j < total; j++)
+        {
+            panel.Children.Add(new Border
+            {
+                Width = segW, Height = 5,
+                CornerRadius = new CornerRadius(2.5),
+                Background = j < current ? Brush(onColor) : Brush(offColor)
+            });
         }
-
-        return card;
+        return panel;
     }
 
-    private static Control CardMagazineEditorial(int i, bool isLight)
+    /// <summary>Строка управления сериями: [—] 7 из 12 эп. [+]</summary>
+    private static Grid NewEpRow(string cur, string total, string fg, string muted, string accent)
     {
-        var bg = isLight ? "#FFFFFF" : "#1C222D";
-        var border = isLight ? "#E5E7EB" : "#252D3A";
-        var pillBg = isLight ? "#F3F4F6" : "#2A2540";
-        var pillFgPurple = isLight ? "#6D28D9" : "#B388FF";
-        var pillFgGold = isLight ? "#B45309" : "#F6D365";
-        var pillFgGray = isLight ? "#4B5563" : "#8B95A5";
-        var track = isLight ? "#EDE9FE" : "#2A2540";
-
-        var card = new Border
+        return new Grid
         {
-            Width = 158, Height = 305,
-            CornerRadius = new CornerRadius(10),
-            ClipToBounds = true,
-            Background = Brush(bg),
-            BorderBrush = Brush(border),
-            BorderThickness = new Thickness(1)
-        };
-
-        card.Child = new Grid
-        {
-            RowDefinitions = new RowDefinitions("165,Auto,*"),
+            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
             Children =
             {
-                Poster(0, new Thickness(0), "#1F2648", "#7C4DFF").WithRow(0),
-                new Border
-                {
-                    Height = 2,
-                    Background = new LinearGradientBrush
-                    {
-                        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                        EndPoint   = new RelativePoint(1, 0, RelativeUnit.Relative),
-                        GradientStops =
-                        {
-                            new GradientStop(Color.Parse("#7C4DFF"), 0),
-                            new GradientStop(Color.Parse("#B388FF"), 0.5),
-                            new GradientStop(Color.Parse("#7C4DFF"), 1)
-                        }
-                    }
-                }.WithRow(1),
-                new Grid
-                {
-                    RowDefinitions = new RowDefinitions("*,Auto,Auto"),
-                    Margin = new Thickness(10, 8, 10, 8),
-                    Children =
-                    {
-                        TitleBlock(i, light: isLight).WithRow(0),
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 4,
-                            Margin = new Thickness(0, 4, 0, 6),
-                            Children =
-                            {
-                                MiniPill("TV", pillBg, pillFgPurple),
-                                MiniPill("★ 8.4", pillBg, pillFgGold),
-                                MiniPill("24 эп", pillBg, pillFgGray)
-                            }
-                        }.WithRow(1),
-                        GradientBar(0.46, "#7C4DFF", "#B388FF", track, 5).WithRow(2)
-                    }
-                }.WithRow(2)
-            }
-        };
-
-        return card;
-    }
-
-    private static Control CardSoftDepth(int i, bool isLight)
-    {
-        var bg = isLight ? "#F3F4F6" : "#181D26";
-        var border = isLight ? "#FFFFFF" : "#22FFFFFF";
-        var shadow = isLight ? "4 4 14 0 #15000000, -4 -4 14 0 #FFFFFF" : "4 4 14 0 #20000000";
-        var track = isLight ? "#E5E7EB" : "#2A2520";
-        var percentFg = isLight ? "#D97706" : "#F6D365";
-        var epFg = isLight ? "#6B7280" : "#8B8578";
-
-        var card = new Border
-        {
-            Width = 158, Height = 305,
-            CornerRadius = new CornerRadius(12),
-            ClipToBounds = true,
-            Background = Brush(bg),
-            BorderBrush = Brush(border),
-            BorderThickness = new Thickness(1),
-            BoxShadow = BoxShadows.Parse(shadow)
-        };
-
-        var poster = Poster(8, new Thickness(10, 10, 10, 0), "#3A2E1E", "#F6D365");
-
-        card.Child = new Grid
-        {
-            RowDefinitions = new RowDefinitions("155,*"),
-            Children =
-            {
-                poster.WithRow(0),
+                MIcon(MaterialIconKind.Minus, muted, 16).WithColumn(0),
                 new StackPanel
                 {
-                    Margin = new Thickness(12, 9, 12, 10),
-                    Spacing = 6,
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Spacing = 3,
                     Children =
                     {
-                        TitleBlock(i, light: isLight),
-                        StarRating(3.5, isLight),
-                        new Grid
-                        {
-                            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
-                            Children =
-                            {
-                                RingProgress(0.67, percentFg, track, 32).WithColumn(0),
-                                new StackPanel
-                                {
-                                    Margin = new Thickness(8, 0, 0, 0),
-                                    VerticalAlignment = VerticalAlignment.Center,
-                                    Spacing = 0,
-                                    Children =
-                                    {
-                                        Txt("67%", 16, FontWeight.Bold, percentFg),
-                                        Txt("8 / 12", 9, FontWeight.Normal, epFg)
-                                    }
-                                }.WithColumn(1)
-                            }
-                        },
-                        NeumorphicButtons(isLight)
+                        Txt(cur,    12, FontWeight.SemiBold, fg),
+                        Txt("из",   10, FontWeight.Normal,   muted),
+                        Txt(total,  11, FontWeight.Normal,   muted),
+                        Txt("эп.",  10, FontWeight.Normal,   muted)
                     }
-                }.WithRow(1)
+                }.WithColumn(1),
+                MIcon(MaterialIconKind.Plus, accent, 16).WithColumn(2)
             }
         };
-
-        return card;
-    }
-
-    private static Control CardFloatingMagazine(int i, bool isLight, string imagePath)
-    {
-        var bg = isLight ? "#FFFFFF" : "#1C222D";
-        var border = isLight ? "#E5E7EB" : "#252D3A";
-        var track = isLight ? "#E5E7EB" : "#1E2A30";
-        var text = isLight ? "#4B5563" : "#5A7A70";
-
-        var card = new Border
-        {
-            Width = 158, Height = 305,
-            CornerRadius = new CornerRadius(10),
-            ClipToBounds = true,
-            Background = Brush(bg),
-            BorderBrush = Brush(border),
-            BorderThickness = new Thickness(1)
-        };
-
-        var poster = RealPoster(0, new Thickness(0), imagePath);
-
-        card.Child = new Grid
-        {
-            RowDefinitions = new RowDefinitions("165,Auto,*"),
-            Children =
-            {
-                poster.WithRow(0),
-                new Border
-                {
-                    Height = 2,
-                    Background = new LinearGradientBrush
-                    {
-                        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                        EndPoint   = new RelativePoint(1, 0, RelativeUnit.Relative),
-                        GradientStops =
-                        {
-                            new GradientStop(Color.Parse("#7C4DFF"), 0),
-                            new GradientStop(Color.Parse("#B388FF"), 0.5),
-                            new GradientStop(Color.Parse("#7C4DFF"), 1)
-                        }
-                    }
-                }.WithRow(1),
-                new StackPanel
-                {
-                    Margin = new Thickness(11, 10, 11, 12),
-                    Spacing = 8,
-                    Children =
-                    {
-                        TitleBlock(i, light: isLight),
-                        SegmentedProgress(8, 13, "#67D7A1", track),
-                        new Grid
-                        {
-                            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
-                            Children =
-                            {
-                                MIcon(MaterialIconKind.Minus, isLight ? "#9CA3AF" : "#6B7888", 16).WithColumn(0),
-                                new TextBlock
-                                {
-                                    Text = "8 из 13 серий",
-                                    FontSize = 10,
-                                    FontWeight = FontWeight.Medium,
-                                    Foreground = Brush(text),
-                                    HorizontalAlignment = HorizontalAlignment.Center,
-                                    VerticalAlignment = VerticalAlignment.Center
-                                }.WithColumn(1),
-                                MIcon(MaterialIconKind.Plus, "#67D7A1", 16).WithColumn(2)
-                            }
-                        }
-                    }
-                }.WithRow(2)
-            }
-        };
-
-        return card;
     }
 
     private static Border RealPoster(double radius, Thickness margin, string imagePath)
@@ -740,7 +574,7 @@ public sealed class CardLabWindow : Window
             Children =
             {
                 Txt(Titles[i], 12, FontWeight.SemiBold, primary).WithMaxLines(2),
-                Txt(Subtitles[i], 10, FontWeight.Normal, secondary).WithMaxLines(1)
+                Txt(Subtitles[i], 10, FontWeight.Normal, secondary).WithMaxLines(2)
             }
         };
     }
@@ -1012,4 +846,5 @@ internal static class CardLabControlExtensions
     public static T WithAlign<T>(this T control, HorizontalAlignment h, VerticalAlignment v, Thickness m) where T : Control { control.HorizontalAlignment = h; control.VerticalAlignment = v; control.Margin = m; return control; }
     public static T WithOpacity<T>(this T control, double opacity) where T : Control { control.Opacity = opacity; return control; }
     public static TextBlock WithMaxLines(this TextBlock text, int lines) { text.MaxLines = lines; return text; }
+    public static TextBlock WithMinHeight(this TextBlock text, double h) { text.MinHeight = h; return text; }
 }

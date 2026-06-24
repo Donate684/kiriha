@@ -72,7 +72,7 @@ public sealed class PlayerTimelineService
         if (IsScrubbing || (DateTime.Now - _lastSeekTime) <= SeekEchoSuppression)
             return false;
 
-        if (Math.Abs(time - CurrentTime) <= 0.5)
+        if (Math.Abs(time - CurrentTime) <= 0.05)
             return false;
 
         CurrentTime = Math.Max(0, time);

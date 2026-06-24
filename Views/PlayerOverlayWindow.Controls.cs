@@ -34,7 +34,7 @@ public partial class PlayerOverlayWindow
                 _bottomBar.Opacity = 1;
                 _bottomBar.IsHitTestVisible = true;
             }
-            Cursor = new Cursor(StandardCursorType.Arrow);
+            Cursor = s_arrowCursor;
         }
 
         if (now - _lastControlsKeepAliveUtc < ControlsKeepAliveInterval)
@@ -60,7 +60,7 @@ public partial class PlayerOverlayWindow
             _bottomBar.Opacity = 0;
             _bottomBar.IsHitTestVisible = false;
         }
-        Cursor = new Cursor(StandardCursorType.None);
+        Cursor = s_noneCursor;
     }
 
     private void OnHideTimerTick(object? sender, EventArgs e)

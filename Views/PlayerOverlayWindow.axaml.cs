@@ -22,6 +22,9 @@ namespace Kiriha.Views;
 
 public partial class PlayerOverlayWindow : Window
 {
+    private static readonly Cursor s_arrowCursor = new(StandardCursorType.Arrow);
+    private static readonly Cursor s_noneCursor = new(StandardCursorType.None);
+
     private PlayerWindow _ownerWindow;
     private static readonly HashSet<string> DropMediaExtensions = new(StringComparer.OrdinalIgnoreCase)
     {

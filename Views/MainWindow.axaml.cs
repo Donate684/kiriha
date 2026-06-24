@@ -45,7 +45,7 @@ public partial class MainWindow : Window
     {
         base.OnKeyDown(e);
 
-        if (e.Key == Key.F11)
+        if (e.Key == Key.F11 || e.Key == Key.F10)
         {
             var lab = new CardLabWindow();
             lab.Show(this);

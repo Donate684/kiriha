@@ -67,14 +67,14 @@ public partial class AnimeListView : UserControl
 
         var settings = App.Services.GetRequiredService<Kiriha.Services.Data.SettingsService>();
         
-        // Ensure ItemsRepeater uses the Floating Magazine template
-        if (_gridRepeater != null && this.TryFindResource("CardTemplateFloatingMagazine", this.ActualThemeVariant, out var resource) && resource is IDataTemplate dt)
+        // Ensure ItemsRepeater uses the Poster First template
+        if (_gridRepeater != null && this.TryFindResource("CardTemplatePosterFirst", this.ActualThemeVariant, out var resource) && resource is IDataTemplate dt)
         {
             _gridRepeater.ItemTemplate = dt;
             if (_gridRepeater.Layout is Avalonia.Layout.UniformGridLayout layout)
             {
-                layout.MinItemWidth = 166;
-                layout.MinItemHeight = 335;
+                layout.MinItemWidth = 172;
+                layout.MinItemHeight = 326;
             }
         }
 

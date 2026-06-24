@@ -204,9 +204,13 @@ public partial class PlayerViewModel
             UpdateNavigationAvailability();
             RefreshDurationFromPlayer();
             UpdateTracks();
-            RefreshMpvRuntimeInfo();
             _timelinePreview.WarmUp(VideoUrl);
             _statePublisher.Publish();
+            _ = Task.Run(() =>
+            {
+                var info = _playback.GetRuntimeVideoInfo();
+                Dispatcher.UIThread.Post(() => MpvRuntimeInfo = info);
+            });
         });
     }
 

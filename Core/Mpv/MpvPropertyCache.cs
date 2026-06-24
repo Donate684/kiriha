@@ -4,9 +4,9 @@ namespace Kiriha.Core.Mpv;
 
 internal sealed class MpvPropertyCache
 {
-    private const double TimePositionMinimumChangeSeconds = 0.25;
+    private const double TimePositionMinimumChangeSeconds = 0.05;
     private static readonly TimeSpan RuntimeInfoRefreshInterval = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan TimePositionEventInterval = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan TimePositionEventInterval = TimeSpan.FromMilliseconds(80);
 
     private readonly object _gate = new();
     private double _lastTimePosition;

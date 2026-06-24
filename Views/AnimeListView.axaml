@@ -89,7 +89,7 @@
                         </StackPanel>
 
                         <!-- Progress bar -->
-                        <controls:SegmentedProgressBar Margin="0,4"
+                        <controls:SegmentedProgressBar Margin="0,4,0,4"
                                                        Current="{Binding Progress}"
                                                        Total="{Binding Presentation.EffectiveTotal}"
                                                        Aired="{Binding Presentation.ResolvedAiredEpisodes}"
@@ -344,6 +344,114 @@
                         </StackPanel>
                     </Border>
                 </Panel>
+            </Border>
+        </DataTemplate>
+
+        <!-- ═══════════ VARIANT: Poster First ═══════════ -->
+        <DataTemplate x:Key="CardTemplatePosterFirst" x:DataType="models:AnimeItem">
+            <Border Classes="AnimeCard revealItem PosterFirstCard" Margin="4" Width="164" Height="318"
+                    CornerRadius="14" ClipToBounds="True"
+                    BorderBrush="{DynamicResource DividerStrokeColorDefault}" BorderThickness="1">
+                <Grid RowDefinitions="195,*">
+
+                    <!-- ══ Poster panel ══ -->
+                    <Panel Grid.Row="0" DoubleTapped="Poster_DoubleTapped">
+                        <TemplatedControl Template="{DynamicResource PosterLoadingTemplate}"/>
+                        <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill"/>
+
+                        <!-- Airing + rewatching badges (top-left) -->
+                        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left"
+                                    Margin="9" Orientation="Horizontal" Spacing="4">
+                            <Border Classes="Badge" Background="{Binding Presentation.AiringBadgeColor}"
+                                    IsVisible="{Binding Presentation.AiringBadgeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <TextBlock Text="{Binding Presentation.AiringBadgeText}"
+                                           FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                            </Border>
+                            <Border Classes="Badge" Background="#2E7D32"
+                                    IsVisible="{Binding IsRewatching}">
+                                <TextBlock Text="{DynamicResource l.anime.status.rewatching}"
+                                           FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Score badge (top-right) -->
+                        <Button VerticalAlignment="Top" HorizontalAlignment="Right"
+                                Margin="9" Padding="2" Background="Transparent"
+                                BorderThickness="0" CornerRadius="6"
+                                Command="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).OpenScoreMenuCommand}"
+                                CommandParameter="{Binding}"
+                                IsVisible="{Binding Score, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <Button.Effect>
+                                <DropShadowEffect BlurRadius="4" Color="#AA000000" OffsetX="0" OffsetY="1"/>
+                            </Button.Effect>
+                            <Button.Flyout>
+                                <MenuFlyout ItemsSource="{Binding $parent[UserControl].DataContext.AvailableScores}"
+                                            FlyoutPresenterClasses="ScoreFlyout"
+                                            Opened="ScoreMenu_Opened"/>
+                            </Button.Flyout>
+                            <StackPanel Orientation="Horizontal" Spacing="3">
+                                <material:MaterialIcon Kind="Star" Width="11" Height="11" Foreground="#FFD700" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Score}" FontSize="10" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Panel>
+
+                    <!-- ══ Info panel ══ -->
+                    <Grid Grid.Row="1" RowDefinitions="*,Auto,Auto" Margin="12,10,12,4">
+
+                        <!-- Title block: English + Russian, 2 lines each -->
+                        <StackPanel Grid.Row="0" Spacing="2" VerticalAlignment="Top">
+                            <TextBlock Text="{Binding Title}"
+                                       FontSize="13" FontWeight="Bold" MaxLines="2"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       LineHeight="16"
+                                       Foreground="{DynamicResource SystemBaseHighColor}"/>
+                            <TextBlock Text="{Binding RussianTitle}"
+                                       FontSize="10" MaxLines="2"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       LineHeight="14"
+                                       Foreground="{DynamicResource SystemBaseMediumColor}" Opacity="0.85"
+                                       IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+
+                        <!-- Segmented progress dots -->
+                        <controls:SegmentedProgressBar Grid.Row="1"
+                                                       Margin="0,0,0,4"
+                                                       Current="{Binding Progress}"
+                                                       Total="{Binding Presentation.EffectiveTotal}"
+                                                       Aired="{Binding Presentation.ResolvedAiredEpisodes}"
+                                                       AccentBrush="#3DBA6F"
+                                                       AiredBrush="#E53935"
+                                                       TrackBrush="{DynamicResource SegmentedTrackBrush}"
+                                                       IsVisible="{Binding Presentation.ShowProgress}"/>
+
+                        <!-- Episode controls row -->
+                        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                            <Button Grid.Column="0" Classes="ProgressStep"
+                                    IsVisible="{Binding Presentation.CanEditProgress}"
+                                    Command="{Binding $parent[UserControl].DataContext.DecrementProgressCommand}"
+                                    CommandParameter="{Binding}">
+                                <material:MaterialIcon Kind="Minus" Width="16" Height="16" Foreground="{DynamicResource SystemBaseMediumColor}"/>
+                            </Button>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Presentation.ProgressPart}" FontSize="10" FontWeight="Medium"
+                                           Foreground="{DynamicResource SystemBaseMediumColor}"
+                                           IsVisible="{Binding Presentation.ShowProgress}"/>
+                                <TextBlock Text="{Binding Presentation.TotalPart}" FontSize="10" FontWeight="Medium"
+                                           Foreground="{DynamicResource SystemBaseMediumColor}"/>
+                            </StackPanel>
+
+                            <Button Grid.Column="2" Classes="ProgressStep"
+                                    IsVisible="{Binding Presentation.CanEditProgress}"
+                                    Command="{Binding $parent[UserControl].DataContext.IncrementProgressCommand}"
+                                    CommandParameter="{Binding}">
+                                <material:MaterialIcon Kind="Plus" Width="16" Height="16" Foreground="#3DBA6F"/>
+                            </Button>
+                        </Grid>
+                    </Grid>
+
+                </Grid>
             </Border>
         </DataTemplate>
     </UserControl.Resources>

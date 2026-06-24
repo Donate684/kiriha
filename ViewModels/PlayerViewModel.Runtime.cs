@@ -33,7 +33,7 @@ public partial class PlayerViewModel
         _timelinePreview.Initialize();
         _timelinePreview.WarmUp(VideoUrl);
         
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _timer.Tick += OnTimerTick;
         _timer.Start();
 
@@ -110,9 +110,11 @@ public partial class PlayerViewModel
 
     public void UpdateTracks()
     {
-        _updateTracksCts?.Cancel();
-        _updateTracksCts?.Dispose();
+        var oldCts = _updateTracksCts;
         _updateTracksCts = new CancellationTokenSource();
+
+        try { oldCts?.Cancel(); } catch (ObjectDisposedException) { }
+        oldCts?.Dispose();
 
         _ = UpdateTracksAsync(_updateTracksCts.Token);
     }
@@ -129,21 +131,29 @@ public partial class PlayerViewModel
             return;
 
         var (tracks, chapters) = result.Value;
-        AudioTracks.Clear();
-        SubtitleTracks.Clear();
+        
+        var audioTracks = tracks.Where(t => t.Type == "audio").ToList();
+        var subTracks = tracks.Where(t => t.Type == "sub").ToList();
 
-        // Add 'None' option for subtitles
-        SubtitleTracks.Add(new TrackInfo { Id = "no", Type = "sub", Title = "Отключить" });
+        if (token.IsCancellationRequested) return;
 
-        foreach (var track in tracks)
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            if (track.Type == "audio") AudioTracks.Add(track);
-            else if (track.Type == "sub") SubtitleTracks.Add(track);
-        }
+            if (token.IsCancellationRequested) return;
 
-        Chapters.Clear();
-        foreach (var ch in chapters)
-            Chapters.Add(ch);
+            AudioTracks.Clear();
+            SubtitleTracks.Clear();
+
+            // Add 'None' option for subtitles
+            SubtitleTracks.Add(new TrackInfo { Id = "no", Type = "sub", Title = "Отключить" });
+
+            foreach (var t in audioTracks) AudioTracks.Add(t);
+            foreach (var t in subTracks) SubtitleTracks.Add(t);
+
+            Chapters.Clear();
+            foreach (var ch in chapters)
+                Chapters.Add(ch);
+        });
     }
 
     [RelayCommand]

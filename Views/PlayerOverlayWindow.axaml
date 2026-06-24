@@ -125,7 +125,7 @@
             </Border.Background>
             <Border.Transitions>
                 <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.35" Easing="CubicEaseInOut"/>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
                 </Transitions>
             </Border.Transitions>
 
@@ -208,7 +208,7 @@
             </Border.Background>
             <Border.Transitions>
                 <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.35" Easing="CubicEaseInOut"/>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
                 </Transitions>
             </Border.Transitions>
 

@@ -92,15 +92,19 @@ public class AniListApiService
             }
 
             var contentString = await response.Content.ReadAsStringAsync(ct);
-            if (malId == 59970)
-            {
-                Log.Information("SLIME_ANILIST_DEBUG: {Content}", contentString);
-            }
 
             using var json = JsonDocument.Parse(contentString);
-            var result = ParseAiringInfo(json.RootElement, malId);
-            await WriteCacheAsync(cacheKey, result);
-            return result;
+            try
+            {
+                var result = ParseAiringInfo(json.RootElement, malId);
+                await WriteCacheAsync(cacheKey, result);
+                return result;
+            }
+            catch (Exception parseEx)
+            {
+                Log.Warning(parseEx, "AniList: failed to parse airing response for MAL {MalId}", malId);
+                return (await TryReadCacheAsync(cacheKey, allowStale: true)).Value;
+            }
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)

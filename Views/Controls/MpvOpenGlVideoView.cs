@@ -7,6 +7,7 @@ using Avalonia.OpenGL.Controls;
 using Avalonia.Threading;
 using Kiriha.Core.Mpv;
 using Serilog;
+using System.Threading;
 
 namespace Kiriha.Views.Controls;
 
@@ -16,6 +17,7 @@ public sealed class MpvOpenGlVideoView : OpenGlControlBase
     private GlInterface? _gl;
     private MpvOpenGlGetProcAddressCallback? _getProcAddress;
     private bool _renderContextReady;
+    private int _renderRequestPending;
 
     public event EventHandler? RenderContextReady;
 
@@ -115,6 +117,13 @@ public sealed class MpvOpenGlVideoView : OpenGlControlBase
 
     private void OnRenderUpdateRequested()
     {
-        Dispatcher.UIThread.Post(RequestNextFrameRendering);
+        if (Interlocked.CompareExchange(ref _renderRequestPending, 1, 0) == 0)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                Volatile.Write(ref _renderRequestPending, 0);
+                RequestNextFrameRendering();
+            });
+        }
     }
 }
