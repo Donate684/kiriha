@@ -11,7 +11,7 @@ namespace Kiriha.Core;
 public sealed class AnimeCollectionProjection : IDisposable
 {
     private readonly Dictionary<int, Entry> _entriesById = new();
-    private readonly Dictionary<UserAnimeStatus, List<Entry>> _buckets = new()
+    private readonly Dictionary<UserAnimeStatus, Dictionary<int, Entry>> _buckets = new()
     {
         [UserAnimeStatus.Watching] = new(),
         [UserAnimeStatus.Completed] = new(),
@@ -65,7 +65,7 @@ public sealed class AnimeCollectionProjection : IDisposable
         }
 
         var normalizedSearch = Normalize(searchQuery);
-        var query = bucket.AsEnumerable();
+        var query = bucket.Values.AsEnumerable();
 
         if (normalizedSearch.Length > 0)
         {
@@ -104,7 +104,7 @@ public sealed class AnimeCollectionProjection : IDisposable
         _entriesById[item.Id] = entry;
         if (_buckets.TryGetValue(entry.ListStatus, out var bucket))
         {
-            bucket.Add(entry);
+            bucket[item.Id] = entry;
         }
 
         item.PropertyChanged += OnItemPropertyChanged;
@@ -116,7 +116,7 @@ public sealed class AnimeCollectionProjection : IDisposable
 
         if (_buckets.TryGetValue(entry.ListStatus, out var bucket))
         {
-            bucket.Remove(entry);
+            bucket.Remove(item.Id);
         }
 
         item.PropertyChanged -= OnItemPropertyChanged;

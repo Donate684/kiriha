@@ -41,17 +41,6 @@ public partial class MainWindow : Window
 
     private const double TitleBarHeight = 34;
 
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-        base.OnKeyDown(e);
-
-        if (e.Key == Key.F11 || e.Key == Key.F10)
-        {
-            var lab = new CardLabWindow();
-            lab.Show(this);
-            e.Handled = true;
-        }
-    }
 
     /// <summary>
     /// Drives window dragging and double-click maximize on the custom title

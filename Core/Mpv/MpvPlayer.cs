@@ -340,6 +340,21 @@ public class MpvPlayer : IDisposable
         Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "cycle", "aid"), "cycle audio"));
     }
 
+    public void ReloadSubtitles()
+    {
+        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "sub-reload"), "reload subtitles"));
+    }
+
+    public void FrameStep()
+    {
+        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "frame-step"), "frame step"));
+    }
+
+    public void FrameBackStep()
+    {
+        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "frame-back-step"), "frame back step"));
+    }
+
     public void TakeScreenshot(bool includeSubtitles, string resolutionMode)
     {
         var flag = string.Equals(resolutionMode, "window", StringComparison.OrdinalIgnoreCase)

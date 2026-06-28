@@ -46,6 +46,25 @@ public partial class PlayerViewModel
     }
 
     [RelayCommand]
+    private void ReloadSubtitles()
+    {
+        _playback.ReloadSubtitles();
+        ShowOsd("Субтитры", "перезагружены");
+    }
+
+    [RelayCommand]
+    private void FrameStepForward()
+    {
+        _playback.FrameStep();
+    }
+
+    [RelayCommand]
+    private void FrameStepBackward()
+    {
+        _playback.FrameBackStep();
+    }
+
+    [RelayCommand]
     public void ToggleSubtitleStyleOverride()
     {
         SubtitleStyleOverrideEnabled = !SubtitleStyleOverrideEnabled;

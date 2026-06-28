@@ -146,6 +146,9 @@ public class AppSettings
         public string VolumeDownHotkey { get; set; } = "Down";
         public string SeekBackwardHotkey { get; set; } = "Left";
         public string SeekForwardHotkey { get; set; } = "Right";
+        public string ReloadSubtitlesHotkey { get; set; } = "Q";
+        public string FrameStepForwardHotkey { get; set; } = "OemPeriod";
+        public string FrameStepBackwardHotkey { get; set; } = "OemComma";
         public string MpvScale { get; set; } = "ewa_lanczossharp";
         public string MpvChromaScale { get; set; } = "ewa_lanczossharp";
         public string MpvDitherDepth { get; set; } = "auto";

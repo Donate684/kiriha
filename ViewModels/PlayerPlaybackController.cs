@@ -48,6 +48,9 @@ public sealed class PlayerPlaybackController
     public void SetAudioNormalization(bool enabled) => _player?.SetAudioNormalization(enabled);
     public void CycleSubtitle() => _player?.CycleSubtitle();
     public void CycleAudio() => _player?.CycleAudio();
+    public void ReloadSubtitles() => _player?.ReloadSubtitles();
+    public void FrameStep() => _player?.FrameStep();
+    public void FrameBackStep() => _player?.FrameBackStep();
     public void AdjustSubtitlePosition(double delta) => _player?.AdjustSubtitlePosition(delta);
     public void TakeScreenshot(bool includeSubtitles, string resolutionMode) => _player?.TakeScreenshot(includeSubtitles, resolutionMode);
     public void SetTrack(string type, string id) => _player?.SetTrack(type, id);

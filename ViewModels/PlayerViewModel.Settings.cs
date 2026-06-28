@@ -85,6 +85,9 @@ public partial class PlayerViewModel
             VolumeDownHotkey = NormalizeHotkey(settings.VolumeDownHotkey, "Down");
             SeekBackwardHotkey = NormalizeHotkey(settings.SeekBackwardHotkey, "Left");
             SeekForwardHotkey = NormalizeHotkey(settings.SeekForwardHotkey, "Right");
+            ReloadSubtitlesHotkey = NormalizeHotkey(settings.ReloadSubtitlesHotkey, "Q");
+            FrameStepForwardHotkey = NormalizeHotkey(settings.FrameStepForwardHotkey, "OemPeriod");
+            FrameStepBackwardHotkey = NormalizeHotkey(settings.FrameStepBackwardHotkey, "OemComma");
             MpvScale = NormalizeMpvOption(settings.MpvScale, "ewa_lanczossharp");
             MpvChromaScale = NormalizeMpvOption(settings.MpvChromaScale, "ewa_lanczossharp");
             MpvDitherDepth = NormalizeMpvOption(settings.MpvDitherDepth, "auto");

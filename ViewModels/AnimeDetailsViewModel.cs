@@ -60,10 +60,15 @@ public partial class AnimeDetailsViewModel : ViewModelBase
 
     public bool IsInList => Anime.Status != UserAnimeStatus.None;
 
+    private System.Collections.Generic.IEnumerable<string>? _allAlternativeTitles;
+
     public System.Collections.Generic.IEnumerable<string> AllAlternativeTitles
     {
         get
         {
+            if (_allAlternativeTitles != null)
+                return _allAlternativeTitles;
+
             var list = new System.Collections.Generic.List<string>();
             if (!string.IsNullOrEmpty(Anime.EnglishTitle) && Anime.EnglishTitle != Anime.Title) 
                 list.Add(Anime.EnglishTitle);
@@ -75,7 +80,8 @@ public partial class AnimeDetailsViewModel : ViewModelBase
                 if (syn != Anime.Title && !list.Contains(syn))
                     list.Add(syn);
             }
-            return list;
+            
+            return _allAlternativeTitles = list;
         }
     }
 
@@ -105,16 +111,22 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         RatingHelper.GetRatingOption("1") 
     };
     
+    private string? _combinedAltTitles;
+
     public string CombinedAltTitles
     {
         get
         {
+            if (_combinedAltTitles != null)
+                return _combinedAltTitles;
+
             var list = new System.Collections.Generic.List<string>();
             if (!string.IsNullOrEmpty(Anime.RussianTitle)) list.Add(Anime.RussianTitle);
             if (!string.IsNullOrEmpty(Anime.EnglishTitle)) list.Add(Anime.EnglishTitle);
             if (!string.IsNullOrEmpty(Anime.JapaneseTitle)) list.Add(Anime.JapaneseTitle);
             list.AddRange(Anime.AlternativeTitles);
-            return string.Join(", ", list.Distinct());
+            
+            return _combinedAltTitles = string.Join(", ", list.Distinct());
         }
     }
 
@@ -164,9 +176,12 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     {
         // Refresh properties based on existing clone data immediately
         Anime.RefreshMetadata();
+        _allAlternativeTitles = null;
+        _combinedAltTitles = null;
         OnPropertyChanged(nameof(JoinedGenres));
         OnPropertyChanged(nameof(JoinedStudios));
         OnPropertyChanged(nameof(JoinedAltTitles));
+        OnPropertyChanged(nameof(CombinedAltTitles));
         OnPropertyChanged(nameof(HasAlternativeTitles));
         OnPropertyChanged(nameof(AllAlternativeTitles));
 
@@ -239,9 +254,12 @@ public partial class AnimeDetailsViewModel : ViewModelBase
             Anime.Season = full.Season;
 
             Anime.RefreshMetadata();
+            _allAlternativeTitles = null;
+            _combinedAltTitles = null;
             OnPropertyChanged(nameof(JoinedGenres));
             OnPropertyChanged(nameof(JoinedStudios));
             OnPropertyChanged(nameof(JoinedAltTitles));
+            OnPropertyChanged(nameof(CombinedAltTitles));
             OnPropertyChanged(nameof(HasAlternativeTitles));
             OnPropertyChanged(nameof(AllAlternativeTitles));
         }

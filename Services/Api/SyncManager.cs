@@ -170,10 +170,10 @@ public class SyncManager : IHostedService
             
             // Remove the tasks we skipped via deduplication
             var skippedIds = pendingTasks.Select(x => x.Id).Except(deduplicated.Select(x => x.Id)).ToList();
-            foreach (var id in skippedIds)
+            if (skippedIds.Count > 0)
             {
                 ct.ThrowIfCancellationRequested();
-                await _syncTaskRepo.RemoveAsync(id);
+                await _syncTaskRepo.RemoveManyAsync(skippedIds);
             }
 
             if (restoredCount > 0) Log.Information("Restored {Count} pending sync tasks from database.", restoredCount);

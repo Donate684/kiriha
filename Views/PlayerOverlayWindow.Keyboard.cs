@@ -96,6 +96,27 @@ public partial class PlayerOverlayWindow
             return;
         }
 
+        if (MatchesHotkey(e, vm.ReloadSubtitlesHotkey))
+        {
+            e.Handled = true;
+            vm.ReloadSubtitlesCommand.Execute(null);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.FrameStepForwardHotkey))
+        {
+            e.Handled = true;
+            vm.FrameStepForwardCommand.Execute(null);
+            return;
+        }
+
+        if (MatchesHotkey(e, vm.FrameStepBackwardHotkey))
+        {
+            e.Handled = true;
+            vm.FrameStepBackwardCommand.Execute(null);
+            return;
+        }
+
         if (MatchesHotkey(e, vm.TogglePlayPauseHotkey))
         {
             e.Handled = true;

@@ -26,6 +26,8 @@ public interface ISyncTaskRepository
     /// <summary>Idempotent: a concurrent removal is treated as success.</summary>
     Task RemoveAsync(int id);
 
+    Task RemoveManyAsync(IEnumerable<int> ids);
+
     Task RemoveForAnimeAsync(int animeId);
 }
 
@@ -73,6 +75,12 @@ public sealed class SyncTaskRepository : ISyncTaskRepository
         {
             // Task was already removed by a parallel drain — treat as success.
         }
+    }
+
+    public async Task RemoveManyAsync(IEnumerable<int> ids)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+        await context.SyncTasks.Where(t => ids.Contains(t.Id)).ExecuteDeleteAsync();
     }
 
     public async Task RemoveForAnimeAsync(int animeId)

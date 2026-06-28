@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,7 +15,7 @@ using Serilog;
 
 namespace Kiriha.Services.Tracking;
 
-public class RssFeedService
+public partial class RssFeedService
 {
     private readonly HttpClient _httpClient;
     private readonly AnimeService _animeService;
@@ -121,23 +121,25 @@ public class RssFeedService
     /// "01 ~ 12", "Batch", "Complete", "02+03") whose Anitomy parse would yield
     /// an inflated max. Single-episode releases pass through unchanged.
     /// </summary>
+    [System.Text.RegularExpressions.GeneratedRegex(@"\b(batch|complete|completed|seasons?\s+\d+\s*[-~]\s*\d+)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex BatchRegex();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"(?<![\d.])(?:E|EP|Episode\s+|-\s+)?\d{1,3}\s*[-~\u2013\u2014]\s*\d{1,3}(?![\dpx])", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex RangeRegex();
+
     private static int? ExtractSingleEpisodeNumber(string title)
     {
         if (string.IsNullOrEmpty(title)) return null;
 
         // Keyword-based batch detection. Run on the raw title because Anitomy
         // sometimes folds these into ElementOther / drops them entirely.
-        if (System.Text.RegularExpressions.Regex.IsMatch(title,
-                @"\b(batch|complete|completed|seasons?\s+\d+\s*[-~]\s*\d+)\b",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+        if (BatchRegex().IsMatch(title))
             return null;
 
         // Range pattern: NN-MM, NN~MM, NN–MM, NN..MM where both sides are 1-3 digit
         // episode numbers. Restricted to a leading word boundary + non-resolution
         // context so we don't reject "1080p" / "S01E05" by accident.
-        if (System.Text.RegularExpressions.Regex.IsMatch(title,
-                @"(?<![\d.])(?:E|EP|Episode\s+|-\s+)?\d{1,3}\s*[-~\u2013\u2014]\s*\d{1,3}(?![\dpx])",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+        if (RangeRegex().IsMatch(title))
             return null;
 
         var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);

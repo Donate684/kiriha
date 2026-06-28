@@ -151,6 +151,9 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _volumeDownHotkey = "Down";
     [ObservableProperty] private string _seekBackwardHotkey = "Left";
     [ObservableProperty] private string _seekForwardHotkey = "Right";
+    [ObservableProperty] private string _reloadSubtitlesHotkey = "Q";
+    [ObservableProperty] private string _frameStepForwardHotkey = "OemPeriod";
+    [ObservableProperty] private string _frameStepBackwardHotkey = "OemComma";
     [ObservableProperty] private string _mpvScale = "ewa_lanczossharp";
     [ObservableProperty] private string _mpvChromaScale = "ewa_lanczossharp";
     [ObservableProperty] private string _mpvDitherDepth = "auto";

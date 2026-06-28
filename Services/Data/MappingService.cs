@@ -10,7 +10,7 @@ using Serilog;
 
 namespace Kiriha.Services.Data;
 
-public class MappingService
+public partial class MappingService
 {
     private readonly MalApiService _malApi;
     private readonly ManualMappingService _manualMapping;
@@ -169,11 +169,14 @@ public class MappingService
         return null;
     }
 
+    [System.Text.RegularExpressions.GeneratedRegex(@"[sS](\d{1,2})[eE]\d+|\b[sS]eason\s*(\d{1,2})\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex SeasonRegex();
+
     private int ExtractSeason(string title, AnitomySharp.Element? seasonElement)
     {
         if (seasonElement != null && int.TryParse(seasonElement.Value, out int s)) return s;
         
-        var match = System.Text.RegularExpressions.Regex.Match(title, @"[sS](\d{1,2})[eE]\d+|\b[sS]eason\s*(\d{1,2})\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var match = SeasonRegex().Match(title);
         if (match.Success)
         {
             int.TryParse(match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value, out int season);

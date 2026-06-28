@@ -243,12 +243,10 @@ public class ShikiMetadataService : IDisposable
                         {
                             await _metadataRepo.UpsertAsync(fetchedMeta);
                             
-                            _uiDispatcher.Post(async () => {
-                                bool changed = ApplyMetadata(item, fetchedMeta);
-                                if (changed) await _userAnimeRepo.UpdateMetadataAsync(item);
-                                int count = Interlocked.Increment(ref localizedCount);
-                                onProgress?.Invoke(count);
-                            });
+                            bool changed = await _uiDispatcher.InvokeAsync(() => ApplyMetadata(item, fetchedMeta));
+                            if (changed) await _userAnimeRepo.UpdateMetadataAsync(item);
+                            int count = Interlocked.Increment(ref localizedCount);
+                            onProgress?.Invoke(count);
                         }
                     }
                     finally {
