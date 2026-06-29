@@ -70,7 +70,7 @@ internal static class ShikiHttp
                 {
                     return response;
                 }
-                if (!ShikiHostResolver.IsSameRealm(request.RequestUri!.Host, target.Host))
+                if (!resolver.IsSameRealm(request.RequestUri!.Host, target.Host))
                 {
                     Log.Warning("Shiki cross-realm redirect rejected: {From} -> {To}",
                         request.RequestUri.Host, target.Host);
@@ -94,14 +94,14 @@ internal static class ShikiHttp
             // genuine 404 on, say, /assets/* can't trigger unrelated retries.
             if (code == 404 && !aliasTried &&
                 LooksLikeApiPath(request.RequestUri!.AbsolutePath) &&
-                ShikiHostResolver.IsForkHost(request.RequestUri.Host))
+                resolver.IsKnownHost(request.RequestUri.Host))
             {
                 aliasTried = true;
                 var originalHost = request.RequestUri.Host;
                 response.Dispose();
 
                 HttpResponseMessage? lastResponse = null;
-                foreach (var alias in ShikiHostResolver.ForkProbeOrder(originalHost))
+                foreach (var alias in resolver.ProbeOrder(originalHost))
                 {
                     var target = new UriBuilder(request.RequestUri) { Host = alias }.Uri;
                     Log.Information("Shiki 404 on {Host}, probing alias {Alias}",

@@ -6,6 +6,7 @@ public sealed class ShikiHostResolverTests
 {
     [Theory]
     [InlineData("shikimori.one", true, false)]
+    [InlineData("shikimori.io", true, false)]
     [InlineData("shikimori.net", false, true)]
     [InlineData("shikimori.rip", false, true)]
     [InlineData("shikimori.fi", false, true)]
@@ -15,43 +16,54 @@ public sealed class ShikiHostResolverTests
         bool isOriginal,
         bool isFork)
     {
+        var resolver = new ShikiHostResolver();
         Assert.Equal(isOriginal || isFork, ShikiHostResolver.IsShikiHost(host));
-        Assert.Equal(isOriginal, ShikiHostResolver.IsOriginalHost(host));
-        Assert.Equal(isFork, ShikiHostResolver.IsForkHost(host));
+        Assert.Equal(isOriginal, resolver.IsOriginalHost(host));
+        Assert.Equal(isFork, resolver.IsForkHost(host));
     }
 
     [Fact]
-    public void Remember_PinsOnlyWithinForkRealm()
+    public void Remember_PinsWithinSameRealm()
     {
         var resolver = new ShikiHostResolver();
 
         Assert.False(resolver.Remember("shikimori.one", "shikimori.net"));
         Assert.Null(resolver.ActiveForkHost);
+        Assert.Null(resolver.ActiveOriginalHost);
 
         Assert.True(resolver.Remember("shikimori.net", "shikimori.rip"));
         Assert.Equal("shikimori.rip", resolver.ActiveForkHost);
+        
+        Assert.True(resolver.Remember("shikimori.one", "shikimori.io"));
+        Assert.Equal("shikimori.io", resolver.ActiveOriginalHost);
     }
 
     [Fact]
-    public void Rewrite_ReplacesForkHostWithPinnedHostButLeavesOriginalRealmAlone()
+    public void Rewrite_ReplacesHostWithPinnedHostForBothRealms()
     {
         var resolver = new ShikiHostResolver();
         resolver.Remember("shikimori.net", "shikimori.rip");
+        resolver.Remember("shikimori.one", "shikimori.io");
 
-        var rewritten = resolver.Rewrite(new Uri("https://shikimori.net/api/animes/1"));
-        var original = resolver.Rewrite(new Uri("https://shikimori.one/api/animes/1"));
+        var rewrittenFork = resolver.Rewrite(new Uri("https://shikimori.net/api/animes/1"));
+        var rewrittenOriginal = resolver.Rewrite(new Uri("https://shikimori.one/api/animes/1"));
 
-        Assert.Equal("https://shikimori.rip/api/animes/1", rewritten.ToString());
-        Assert.Equal("https://shikimori.one/api/animes/1", original.ToString());
+        Assert.Equal("https://shikimori.rip/api/animes/1", rewrittenFork.ToString());
+        Assert.Equal("https://shikimori.io/api/animes/1", rewrittenOriginal.ToString());
     }
 
     [Fact]
-    public void ForkProbeOrder_SkipsTheFailedHost()
+    public void ProbeOrder_SkipsTheFailedHost()
     {
-        var order = ShikiHostResolver.ForkProbeOrder("shikimori.net").ToArray();
-
-        Assert.DoesNotContain("shikimori.net", order);
-        Assert.Contains("shikimori.rip", order);
-        Assert.Contains("shikimori.fi", order);
+        var resolver = new ShikiHostResolver();
+        
+        var forkOrder = resolver.ProbeOrder("shikimori.net").ToArray();
+        Assert.DoesNotContain("shikimori.net", forkOrder);
+        Assert.Contains("shikimori.rip", forkOrder);
+        Assert.Contains("shikimori.fi", forkOrder);
+        
+        var originalOrder = resolver.ProbeOrder("shikimori.one").ToArray();
+        Assert.DoesNotContain("shikimori.one", originalOrder);
+        Assert.Contains("shikimori.io", originalOrder);
     }
 }
