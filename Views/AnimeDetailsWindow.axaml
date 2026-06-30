@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Kiriha.ViewModels"
         xmlns:models="using:Kiriha.Models"
+        xmlns:entities="using:Kiriha.Models.Entities"
         xmlns:controls="using:Kiriha.Views.Controls"
         xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
         xmlns:material="using:Material.Icons.Avalonia"
@@ -9,6 +10,7 @@
         xmlns:u="using:Kiriha.Utils"
         x:Class="Kiriha.Views.AnimeDetailsWindow"
         x:DataType="vm:AnimeDetailsViewModel"
+        x:Name="Root"
         Title=""
         Width="880" Height="680"
         WindowStartupLocation="CenterOwner"
@@ -376,32 +378,98 @@
                                 <StackPanel Margin="18,16,18,16" Spacing="16">
                                     <!-- PROGRESS block -->
                                     <StackPanel Spacing="8">
-                                        <Grid ColumnDefinitions="*, Auto">
-                                            <TextBlock Grid.Column="0" Text="{DynamicResource l.anime.labels.watched_episodes}" Classes="FieldLabel" Margin="0"/>
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Anime.Progress}" FontSize="16" FontWeight="Bold"
-                                                           Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
-                                                <TextBlock Text="из" FontSize="13" Opacity="0.35" VerticalAlignment="Center" Margin="4,0"/>
-                                                <TextBlock Text="{Binding Anime.TotalEpisodes}" FontSize="13" Opacity="0.55" VerticalAlignment="Center"/>
+                                        <!-- Episodes (Anime) -->
+                                        <StackPanel Spacing="8" IsVisible="{Binding Anime.IsAnime}">
+                                            <Grid ColumnDefinitions="*, Auto">
+                                                <TextBlock Grid.Column="0" Text="{DynamicResource l.anime.labels.watched_episodes}" Classes="FieldLabel" Margin="0"/>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Anime.Progress}" FontSize="16" FontWeight="Bold"
+                                                               Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="из" FontSize="13" Opacity="0.35" VerticalAlignment="Center" Margin="4,0"/>
+                                                    <TextBlock Text="{Binding Anime.TotalEpisodes}" FontSize="13" Opacity="0.55" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
+                                                <ProgressBar Grid.Column="0" Minimum="0"
+                                                             Maximum="{Binding Anime.TotalEpisodes}"
+                                                             Value="{Binding Anime.Progress}"
+                                                             Height="6" MinHeight="6" CornerRadius="3"
+                                                             VerticalAlignment="Center"/>
+                                                <NumericUpDown Grid.Column="1" Value="{Binding Anime.Progress}"
+                                                               Minimum="0" Maximum="{Binding Anime.TotalEpisodes}"
+                                                               Width="70" ShowButtonSpinner="False" CornerRadius="6" FontSize="12"/>
+                                                <Button Grid.Column="2" Command="{Binding IncrementProgressCommand}"
+                                                        ToolTip.Tip="+1"
+                                                        Width="32" Height="32" Padding="0" CornerRadius="6"
+                                                        Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                                        BorderThickness="0">
+                                                    <material:MaterialIcon Kind="Plus" Width="14" Height="14"/>
+                                                </Button>
+                                            </Grid>
+                                        </StackPanel>
+
+                                        <!-- Chapters & Volumes (Manga) -->
+                                        <StackPanel Spacing="16" IsVisible="{Binding Anime.IsManga}">
+                                            <!-- Chapters -->
+                                            <StackPanel Spacing="8">
+                                                <Grid ColumnDefinitions="*, Auto">
+                                                    <TextBlock Grid.Column="0" Text="{DynamicResource l.anime.labels.chapters}" Classes="FieldLabel" Margin="0"/>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Anime.ChaptersRead}" FontSize="16" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="из" FontSize="13" Opacity="0.35" VerticalAlignment="Center" Margin="4,0"/>
+                                                        <TextBlock Text="{Binding Anime.Chapters}" FontSize="13" Opacity="0.55" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                                <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
+                                                    <ProgressBar Grid.Column="0" Minimum="0"
+                                                                 Maximum="{Binding Anime.Chapters}"
+                                                                 Value="{Binding Anime.ChaptersRead}"
+                                                                 Height="6" MinHeight="6" CornerRadius="3"
+                                                                 VerticalAlignment="Center"/>
+                                                    <NumericUpDown Grid.Column="1" Value="{Binding Anime.ChaptersRead}"
+                                                                   Minimum="0" Maximum="{Binding Anime.Chapters}"
+                                                                   Width="70" ShowButtonSpinner="False" CornerRadius="6" FontSize="12"/>
+                                                    <Button Grid.Column="2" Command="{Binding IncrementProgressCommand}"
+                                                            ToolTip.Tip="+1"
+                                                            Width="32" Height="32" Padding="0" CornerRadius="6"
+                                                            Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                                            BorderThickness="0">
+                                                        <material:MaterialIcon Kind="Plus" Width="14" Height="14"/>
+                                                    </Button>
+                                                </Grid>
                                             </StackPanel>
-                                        </Grid>
-                                        <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
-                                            <ProgressBar Grid.Column="0" Minimum="0"
-                                                         Maximum="{Binding Anime.TotalEpisodes}"
-                                                         Value="{Binding Anime.Progress}"
-                                                         Height="6" MinHeight="6" CornerRadius="3"
-                                                         VerticalAlignment="Center"/>
-                                            <NumericUpDown Grid.Column="1" Value="{Binding Anime.Progress}"
-                                                           Minimum="0" Maximum="{Binding Anime.TotalEpisodes}"
-                                                           Width="70" ShowButtonSpinner="False" CornerRadius="6" FontSize="12"/>
-                                            <Button Grid.Column="2" Command="{Binding IncrementProgressCommand}"
-                                                    ToolTip.Tip="+1"
-                                                    Width="32" Height="32" Padding="0" CornerRadius="6"
-                                                    Background="{DynamicResource SystemAccentColor}" Foreground="White"
-                                                    BorderThickness="0">
-                                                <material:MaterialIcon Kind="Plus" Width="14" Height="14"/>
-                                            </Button>
-                                        </Grid>
+
+                                            <!-- Volumes -->
+                                            <StackPanel Spacing="8">
+                                                <Grid ColumnDefinitions="*, Auto">
+                                                    <TextBlock Grid.Column="0" Text="{DynamicResource l.anime.labels.volumes}" Classes="FieldLabel" Margin="0"/>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Anime.VolumesRead}" FontSize="16" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="из" FontSize="13" Opacity="0.35" VerticalAlignment="Center" Margin="4,0"/>
+                                                        <TextBlock Text="{Binding Anime.Volumes}" FontSize="13" Opacity="0.55" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                                <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
+                                                    <ProgressBar Grid.Column="0" Minimum="0"
+                                                                 Maximum="{Binding Anime.Volumes}"
+                                                                 Value="{Binding Anime.VolumesRead}"
+                                                                 Height="6" MinHeight="6" CornerRadius="3"
+                                                                 VerticalAlignment="Center"/>
+                                                    <NumericUpDown Grid.Column="1" Value="{Binding Anime.VolumesRead}"
+                                                                   Minimum="0" Maximum="{Binding Anime.Volumes}"
+                                                                   Width="70" ShowButtonSpinner="False" CornerRadius="6" FontSize="12"/>
+                                                    <Button Grid.Column="2" Command="{Binding IncrementVolumesCommand}"
+                                                            ToolTip.Tip="+1"
+                                                            Width="32" Height="32" Padding="0" CornerRadius="6"
+                                                            Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                                            BorderThickness="0">
+                                                        <material:MaterialIcon Kind="Plus" Width="14" Height="14"/>
+                                                    </Button>
+                                                </Grid>
+                                            </StackPanel>
+                                        </StackPanel>
                                     </StackPanel>
 
                                     <!-- STATUS | SCORE (2 columns) + Rewatch -->
@@ -455,6 +523,71 @@
                             </Button>
                         </Border>
 
+                        <!-- RELATIONS -->
+                        <Border Classes="ContentCard" IsVisible="{Binding Relations.Count, Converter={StaticResource IntToBoolConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="Связанное" Classes="SectionTitle"/>
+                                <ItemsControl ItemsSource="{Binding Relations}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:RelationItemVm">
+                                            <Button Classes="Flat" HorizontalAlignment="Stretch" Padding="8" Margin="0,0,0,4"
+                                                    Command="{Binding #Root.((vm:AnimeDetailsViewModel)DataContext).NavigateToRelationCommand}"
+                                                    CommandParameter="{Binding Relation}">
+                                                <Grid ColumnDefinitions="Auto, *, Auto">
+                                                    <!-- Image -->
+                                                    <Border Grid.Column="0" Width="40" Height="56" CornerRadius="4" Margin="0,0,12,0" ClipToBounds="True">
+                                                        <Panel>
+                                                            <Border Background="{DynamicResource CardBackgroundBrush}"/>
+                                                            <Image asyncImageLoader:ImageLoader.Source="{Binding ImageUrl}" Stretch="UniformToFill"/>
+                                                        </Panel>
+                                                    </Border>
+                                                    
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Relation.TargetName}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                        <TextBlock Text="{Binding Relation.RelationType}" FontSize="12" Opacity="0.7"/>
+                                                    </StackPanel>
+                                                    
+                                                    <Border Grid.Column="2" Background="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" IsVisible="{Binding Relation.TargetType, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                        <TextBlock Text="{Binding Relation.TargetType}" FontSize="11" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                                    </Border>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- STAFF -->
+                        <Border Classes="ContentCard" IsVisible="{Binding Staff.Count, Converter={StaticResource IntToBoolConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="Персонал" Classes="SectionTitle"/>
+                                <ItemsControl ItemsSource="{Binding Staff}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:StaffItemVm">
+                                            <Border Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="6" Padding="8" Margin="0,0,0,4">
+                                                <Grid ColumnDefinitions="Auto, *">
+                                                    <!-- Image -->
+                                                    <Border Grid.Column="0" Width="40" Height="56" CornerRadius="4" Margin="0,0,12,0" ClipToBounds="True">
+                                                        <Panel>
+                                                            <Border Background="{DynamicResource CardBackgroundBrush}"/>
+                                                            <Image asyncImageLoader:ImageLoader.Source="{Binding Staff.PersonImageUrl}" Stretch="UniformToFill" IsVisible="{Binding Staff.PersonImageUrl, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                            <material:MaterialIcon Kind="Account" Width="24" Height="24" Opacity="0.5" IsVisible="{Binding Staff.PersonImageUrl, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
+                                                        </Panel>
+                                                    </Border>
+                                                    
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Staff.PersonName}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                        <TextBlock Text="{Binding Staff.Positions}" FontSize="12" Opacity="0.7" TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
                     </StackPanel>
 
                     <!-- RIGHT COLUMN: Tabbed info card (Details / Synopsis / Alt titles) -->
@@ -479,25 +612,33 @@
                                 <!-- Details -->
                                 <Grid IsVisible="{Binding #TabDetails.IsChecked}"
                                       Classes="DetailsGrid" ColumnDefinitions="Auto, *"
-                                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="3">
+                                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="3">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource l.anime.labels.status}" Classes="Label"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Anime.DisplayAiringStatus}"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource l.anime.labels.episodes}" Classes="Label"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Anime.TotalEpisodes}"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource l.anime.labels.aired_episodes}" Classes="Label">
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource l.anime.labels.episodes}" Classes="Label" IsVisible="{Binding Anime.IsAnime}"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Anime.EpisodesDisplay}" IsVisible="{Binding Anime.IsAnime}"/>
+                                    
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource l.anime.labels.chapters}" Classes="Label" IsVisible="{Binding Anime.IsManga}"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Anime.ChaptersDisplay}" IsVisible="{Binding Anime.IsManga}"/>
+                                    
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource l.anime.labels.volumes}" Classes="Label" IsVisible="{Binding Anime.IsManga}"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Anime.VolumesDisplay}" IsVisible="{Binding Anime.IsManga}"/>
+                                    
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource l.anime.labels.aired_episodes}" Classes="Label">
                                         <TextBlock.IsVisible><MultiBinding Converter="{x:Static BoolConverters.And}"><Binding Path="Settings.Current.UI.ShowAiringInfo"/><Binding Path="Anime.ShowAiredInfo"/></MultiBinding></TextBlock.IsVisible>
                                     </TextBlock>
-                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Anime, Converter={StaticResource LocConverter}, ConverterParameter='format:l.anime.labels.aired_format'}">
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Anime, Converter={StaticResource LocConverter}, ConverterParameter='format:l.anime.labels.aired_format'}">
                                         <TextBlock.IsVisible><MultiBinding Converter="{x:Static BoolConverters.And}"><Binding Path="Settings.Current.UI.ShowAiringInfo"/><Binding Path="Anime.ShowAiredInfo"/></MultiBinding></TextBlock.IsVisible>
                                     </TextBlock>
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource l.anime.labels.next_episode}" Classes="Label" IsVisible="{Binding Anime.NextEpisodeAt, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Anime.NextEpisodeAtDisplay}" IsVisible="{Binding Anime.NextEpisodeAt, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource l.anime.labels.genres}" Classes="Label"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Anime.Genres, Converter={StaticResource LocConverter}}" TextWrapping="Wrap"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource l.anime.labels.studios}" Classes="Label"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Anime.Studios, Converter={StaticResource LocConverter}}" TextWrapping="Wrap"/>
-                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="{DynamicResource l.anime.labels.score}" Classes="Label"/>
-                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Anime.MeanScore}"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource l.anime.labels.next_episode}" Classes="Label" IsVisible="{Binding Anime.NextEpisodeAt, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Anime.NextEpisodeAtDisplay}" IsVisible="{Binding Anime.NextEpisodeAt, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource l.anime.labels.genres}" Classes="Label"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Anime.Genres, Converter={StaticResource LocConverter}}" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="{DynamicResource l.anime.labels.studios}" Classes="Label" IsVisible="{Binding Anime.IsAnime}"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="{DynamicResource l.anime.labels.authors}" Classes="Label" IsVisible="{Binding Anime.IsManga}"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Anime.Studios, Converter={StaticResource LocConverter}}" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="{DynamicResource l.anime.labels.score}" Classes="Label"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding Anime.MeanScore}"/>
                                 </Grid>
 
                                 <!-- Synopsis -->

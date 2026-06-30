@@ -42,11 +42,13 @@ public sealed class AvaloniaDialogService : IDialogService
             item,
             _services.GetRequiredService<MalApiService>(),
             _services.GetRequiredService<ShikiApiService>(),
+            _services.GetRequiredService<JikanApiService>(),
             _services.GetRequiredService<SyncManager>(),
             _services.GetRequiredService<AnimeService>(),
             _services.GetRequiredService<AiringInfoService>(),
             _services.GetRequiredService<SettingsService>(),
-            _services.GetRequiredService<HistoryService>());
+            _services.GetRequiredService<HistoryService>(),
+            this);
 
         var window = new Views.AnimeDetailsWindow { DataContext = vm };
 

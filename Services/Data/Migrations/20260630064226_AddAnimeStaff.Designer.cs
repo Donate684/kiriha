@@ -3,6 +3,7 @@ using System;
 using Kiriha.Services.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kiriha.Services.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260630064226_AddAnimeStaff")]
+    partial class AddAnimeStaff
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -43,14 +46,6 @@ namespace Kiriha.Services.Data.Migrations
                     b.Property<string>("BroadcastTime")
                         .HasColumnType("TEXT")
                         .HasColumnName("broadcast_time");
-
-                    b.Property<int>("Chapters")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("chapters");
-
-                    b.Property<int>("ChaptersRead")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("chapters_read");
 
                     b.Property<DateTime?>("DateCompleted")
                         .HasColumnType("TEXT")
@@ -100,13 +95,6 @@ namespace Kiriha.Services.Data.Migrations
                     b.Property<string>("MeanScore")
                         .HasColumnType("TEXT")
                         .HasColumnName("mean_score");
-
-                    b.Property<string>("MediaKind")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Anime")
-                        .HasColumnName("media_kind");
 
                     b.Property<DateTime?>("NextEpisodeAt")
                         .HasColumnType("TEXT")
@@ -192,14 +180,6 @@ namespace Kiriha.Services.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("type");
-
-                    b.Property<int>("Volumes")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("volumes");
-
-                    b.Property<int>("VolumesRead")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("volumes_read");
 
                     b.HasKey("Id");
 

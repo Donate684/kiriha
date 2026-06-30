@@ -479,7 +479,7 @@
         <!-- Search Bar + Sorting + Filters + Sync -->
         <Border Grid.Row="0" Margin="20,4,20,12" Padding="8,6" Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="10"
                 BorderBrush="{DynamicResource CardStrokeColorDefault}" BorderThickness="1">
-            <Grid ColumnDefinitions="*, Auto, Auto">
+            <Grid ColumnDefinitions="*, Auto, Auto, Auto">
                 <!-- Search -->
                 <TextBox Grid.Column="0" PlaceholderText="{DynamicResource l.common.actions.search}"
                          Text="{Binding SearchQuery}"
@@ -492,7 +492,13 @@
                     </TextBox.InnerRightContent>
                 </TextBox>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="12,0">
+                <!-- MediaKind Slider Toggle -->
+                <ToggleButton Grid.Column="1" Margin="12,0" VerticalAlignment="Center"
+                              Classes="MediaKindIconToggle"
+                              IsChecked="{Binding IsMangaSelected, Mode=OneWay}"
+                              Command="{Binding ToggleMediaKindCommand}"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="12,0">
                     <Button x:Name="ReleaseMapButton"
                             Background="Transparent" BorderThickness="0" Padding="8,6" CornerRadius="6"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -598,7 +604,7 @@
                 </StackPanel>
 
                 <!-- Sync -->
-                <Button Grid.Column="2" Command="{Binding SyncMalCommand}"
+                <Button Grid.Column="3" Command="{Binding SyncMalCommand}"
                         Padding="12,0" Height="34"
                         CornerRadius="8" FontSize="12" FontWeight="SemiBold"
                         Background="{DynamicResource SystemAccentColor}" Foreground="White">

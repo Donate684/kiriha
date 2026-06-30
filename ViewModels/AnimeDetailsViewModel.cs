@@ -14,8 +14,33 @@ using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
 using Kiriha.Utils;
+using Serilog;
+using Kiriha.Core.Dialogs;
 
 namespace Kiriha.ViewModels;
+
+public partial class RelationItemVm : ObservableObject
+{
+    public Models.Entities.AnimeRelation Relation { get; }
+    
+    [ObservableProperty]
+    private string? _imageUrl;
+
+    public RelationItemVm(Models.Entities.AnimeRelation relation)
+    {
+        Relation = relation;
+    }
+}
+
+public partial class StaffItemVm : ObservableObject
+{
+    public Models.Entities.AnimeStaff Staff { get; }
+
+    public StaffItemVm(Models.Entities.AnimeStaff staff)
+    {
+        Staff = staff;
+    }
+}
 
 public partial class AnimeDetailsViewModel : ViewModelBase
 {
@@ -30,7 +55,11 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     private bool _isLoading;
 
     [ObservableProperty]
-    private System.Collections.ObjectModel.ObservableCollection<AnimeOfflineItem> _relatedAnime = new();
+    public System.Collections.ObjectModel.ObservableCollection<AnimeOfflineItem> _relatedAnime = new();
+
+    public System.Collections.ObjectModel.ObservableCollection<RelationItemVm> Relations { get; } = new();
+    
+    public System.Collections.ObjectModel.ObservableCollection<StaffItemVm> Staff { get; } = new();
 
     /// <summary>
     /// User-defined share buttons resolved against the current anime. Rebuilt
@@ -42,10 +71,12 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     private readonly SettingsService _settingsService;
     private readonly MalApiService _malApiService;
     private readonly ShikiApiService _shikiApiService;
+    private readonly JikanApiService _jikanApiService;
     private readonly SyncManager _syncManager;
     private readonly AnimeService _animeService;
     private readonly AiringInfoService _airingInfoService;
     private readonly HistoryService _historyService;
+    private readonly IDialogService _dialogs;
 
     public SettingsService Settings => _settingsService;
 
@@ -134,22 +165,26 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         AnimeItem anime,
         MalApiService malApiService,
         ShikiApiService shikiApiService,
+        JikanApiService jikanApiService,
         SyncManager syncManager,
         AnimeService animeService,
         AiringInfoService airingInfoService,
         SettingsService settingsService,
-        HistoryService historyService)
+        HistoryService historyService,
+        IDialogService dialogs)
     {
         _originalAnime = anime;
         _anime = anime.Clone();
 
         _malApiService = malApiService;
         _shikiApiService = shikiApiService;
+        _jikanApiService = jikanApiService;
         _syncManager = syncManager;
         _animeService = animeService;
         _airingInfoService = airingInfoService;
         _settingsService = settingsService;
         _historyService = historyService;
+        _dialogs = dialogs;
         
         Anime.PropertyChanged += (s, e) => {
             if (e.PropertyName == nameof(Anime.Status))
@@ -199,11 +234,73 @@ public partial class AnimeDetailsViewModel : ViewModelBase
                 IsLoading = false;
             }
         }
+
+        try
+        {
+            var relations = await _jikanApiService.GetRelationsAsync(Anime.Id);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                Relations.Clear();
+                foreach (var r in relations) 
+                {
+                    var vm = new RelationItemVm(r);
+                    Relations.Add(vm);
+                    _ = FetchRelationImageAsync(vm);
+                }
+            });
+        }
+        catch (System.Exception ex)
+        {
+            Log.Warning(ex, "Failed to fetch relations for {Id}", Anime.Id);
+        }
+
+        try
+        {
+            var staffList = await _jikanApiService.GetStaffAsync(Anime.Id);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                Staff.Clear();
+                foreach (var s in staffList)
+                {
+                    Staff.Add(new StaffItemVm(s));
+                }
+            });
+        }
+        catch (System.Exception ex)
+        {
+            Log.Warning(ex, "Failed to fetch staff for {Id}", Anime.Id);
+        }
+    }
+
+    private async Task FetchRelationImageAsync(RelationItemVm vm)
+    {
+        var existing = _animeService.Collection.FirstOrDefault(x => x.Id == vm.Relation.TargetMalId);
+        if (existing != null && !string.IsNullOrEmpty(existing.MainPictureUrl))
+        {
+            vm.ImageUrl = existing.MainPictureUrl;
+            return;
+        }
+
+        try
+        {
+            var details = await _malApiService.GetAnimeDetailsAsync(vm.Relation.TargetMalId);
+            if (details != null && !string.IsNullOrEmpty(details.MainPictureUrl))
+            {
+                vm.ImageUrl = details.MainPictureUrl;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Log.Warning(ex, "Failed to fetch image for relation {TargetMalId}", vm.Relation.TargetMalId);
+        }
     }
 
     private async Task LoadFullDetailsAsync()
     {
-        var full = await _malApiService.GetAnimeDetailsAsync(Anime.Id);
+        var full = Anime.IsManga 
+            ? await _malApiService.GetMangaDetailsAsync(Anime.Id)
+            : await _malApiService.GetAnimeDetailsAsync(Anime.Id);
+            
         if (full != null)
         {
             // Sync metadata and user list properties to our CLONED object
@@ -250,6 +347,9 @@ public partial class AnimeDetailsViewModel : ViewModelBase
             Anime.StartSeason = full.StartSeason;
             Anime.StartYear = full.StartYear;
             
+            if (!string.IsNullOrEmpty(full.MainPictureUrl)) Anime.MainPictureUrl = full.MainPictureUrl;
+            if (!string.IsNullOrEmpty(full.LocalPosterPath)) Anime.LocalPosterPath = full.LocalPosterPath;
+            
             // Re-trigger Season display evaluation
             Anime.Season = full.Season;
 
@@ -270,14 +370,17 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     [RelayCommand]
     private async Task CopyMalLink()
     {
-        string url = $"https://myanimelist.net/anime/{Anime.Id}";
+        string type = Anime.MediaKind == MediaKind.Anime ? "anime" : "manga";
+        string url = $"https://myanimelist.net/{type}/{Anime.Id}";
         await CopyToClipboard(url);
     }
 
     [RelayCommand]
     private async Task CopyShikiLink()
     {
-        string url = $"{Kiriha.Core.ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{Anime.Id}";
+        string baseUrl = Kiriha.Core.ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror);
+        if (Anime.MediaKind != MediaKind.Anime) baseUrl = baseUrl.Replace("/animes/", "/mangas/");
+        string url = $"{baseUrl}{Anime.Id}";
         await CopyToClipboard(url);
     }
 
@@ -289,22 +392,38 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     [RelayCommand]
     private void OpenMalLink()
     {
-        OpenInBrowser($"https://myanimelist.net/anime/{Anime.Id}");
+        string type = Anime.MediaKind == MediaKind.Anime ? "anime" : "manga";
+        OpenInBrowser($"https://myanimelist.net/{type}/{Anime.Id}");
     }
 
     [RelayCommand]
     private void OpenShikiLink()
     {
-        OpenInBrowser($"{ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{Anime.Id}");
+        string baseUrl = ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror);
+        if (Anime.MediaKind != MediaKind.Anime) baseUrl = baseUrl.Replace("/animes/", "/mangas/");
+        OpenInBrowser($"{baseUrl}{Anime.Id}");
     }
 
     [RelayCommand]
     private void IncrementProgress()
     {
-        if (Anime.Progress < Anime.TotalEpisodes || Anime.TotalEpisodes == 0)
+        if (Anime.MediaKind != MediaKind.Anime)
         {
-            Anime.Progress++;
+            if (Anime.ChaptersRead < Anime.Chapters || Anime.Chapters == 0)
+                Anime.ChaptersRead++;
         }
+        else
+        {
+            if (Anime.Progress < Anime.TotalEpisodes || Anime.TotalEpisodes == 0)
+                Anime.Progress++;
+        }
+    }
+
+    [RelayCommand]
+    private void IncrementVolumes()
+    {
+        if (Anime.VolumesRead < Anime.Volumes || Anime.Volumes == 0)
+            Anime.VolumesRead++;
     }
 
     [RelayCommand]
@@ -345,6 +464,8 @@ public partial class AnimeDetailsViewModel : ViewModelBase
 
         bool hasChanges = _originalAnime.Status != Anime.Status ||
                           _originalAnime.Progress != Anime.Progress ||
+                          _originalAnime.ChaptersRead != Anime.ChaptersRead ||
+                          _originalAnime.VolumesRead != Anime.VolumesRead ||
                           _originalAnime.Score != Anime.Score ||
                           _originalAnime.IsRewatching != Anime.IsRewatching ||
                           _originalAnime.RewatchCount != Anime.RewatchCount ||
@@ -411,5 +532,21 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         {
             await desktop.MainWindow.Clipboard.SetTextAsync(text);
         }
+    }
+
+    [RelayCommand]
+    private async Task NavigateToRelation(Models.Entities.AnimeRelation relation)
+    {
+        if (relation == null || relation.TargetType != "anime") return;
+
+        var targetAnime = new AnimeItem
+        {
+            Id = relation.TargetMalId,
+            Title = relation.TargetName
+        };
+
+        // If the item exists in the collection, use the full one to ensure all offline fields are loaded.
+        var existing = _animeService.Collection.FirstOrDefault(x => x.Id == targetAnime.Id);
+        await _dialogs.ShowAnimeDetailsAsync(null, existing ?? targetAnime);
     }
 }

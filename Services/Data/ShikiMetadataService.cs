@@ -57,6 +57,9 @@ public class ShikiMetadataService : IDisposable
     // "ShikiClient" has no HttpClient.BaseAddress, so we must always send absolute URLs.
     private string ShikiBaseUrl => ShikiEndpoints.BaseUrl(_settingsService.Current.Api.ShikiMirror);
 
+    private static int GetCacheId(int malId, MediaKind mediaKind) =>
+        mediaKind != MediaKind.Anime ? malId | 0x40000000 : malId;
+
     /// <summary>
     /// Returns Shikimori metadata for <paramref name="animeId"/>, fetching from
     /// the API on miss. <paramref name="maxAge"/> bounds the cache freshness:
@@ -68,9 +71,10 @@ public class ShikiMetadataService : IDisposable
     /// cache hit or fresh fetch — so periodic syncs (e.g. AiringInfoService's
     /// Shiki fallback) keep applying current values to the UI.
     /// </summary>
-    public async Task<ShikiMetadata?> GetOrFetchMetadataAsync(int animeId, TimeSpan? maxAge = null, Func<ShikiMetadata, Task>? onFetched = null)
+    public async Task<ShikiMetadata?> GetOrFetchMetadataAsync(int animeId, TimeSpan? maxAge = null, Func<ShikiMetadata, Task>? onFetched = null, MediaKind mediaKind = MediaKind.Anime)
     {
-        var cached = await _metadataRepo.GetAsync(animeId);
+        int cacheId = GetCacheId(animeId, mediaKind);
+        var cached = await _metadataRepo.GetAsync(cacheId);
         // When a TTL is requested, treat both genuinely-old entries and pre-TTL
         // legacy rows (FetchedAt == default after the schema migration) as stale —
         // otherwise a user's existing metadata would skip the airing refresh
@@ -89,18 +93,18 @@ public class ShikiMetadataService : IDisposable
 
         lock (_activeFetches)
         {
-            if (_activeFetches.Contains(animeId))
+            if (_activeFetches.Contains(cacheId))
             {
                 // Another fetch is already in flight; serve whatever we have
                 // (possibly stale) rather than spinning a duplicate request.
                 return cached;
             }
-            _activeFetches.Add(animeId);
+            _activeFetches.Add(cacheId);
         }
 
         try
         {
-            var fetched = await FetchMetadataFromApiAsync(animeId, CancellationToken.None);
+            var fetched = await FetchMetadataFromApiAsync(animeId, CancellationToken.None, mediaKind);
             if (fetched != null)
             {
                 await _metadataRepo.UpsertAsync(fetched);
@@ -124,17 +128,17 @@ public class ShikiMetadataService : IDisposable
         }
         finally
         {
-            lock (_activeFetches) { _activeFetches.Remove(animeId); }
+            lock (_activeFetches) { _activeFetches.Remove(cacheId); }
         }
     }
 
     /// <summary>
     /// Backwards-compatible overload: caller doesn't need a TTL window.
     /// </summary>
-    public Task<ShikiMetadata?> GetOrFetchMetadataAsync(int animeId, Func<ShikiMetadata, Task>? onFetched)
-        => GetOrFetchMetadataAsync(animeId, maxAge: null, onFetched);
+    public Task<ShikiMetadata?> GetOrFetchMetadataAsync(int animeId, Func<ShikiMetadata, Task>? onFetched, MediaKind mediaKind = MediaKind.Anime)
+        => GetOrFetchMetadataAsync(animeId, maxAge: null, onFetched, mediaKind);
 
-    private async Task<ShikiMetadata?> FetchMetadataFromApiAsync(int animeId, CancellationToken ct = default)
+    private async Task<ShikiMetadata?> FetchMetadataFromApiAsync(int animeId, CancellationToken ct = default, MediaKind mediaKind = MediaKind.Anime)
     {
         // Conditional GET via http_response_cache: on a 304 we skip JSON parse
         // entirely (the helper replays the persisted body, which we then parse).
@@ -145,7 +149,8 @@ public class ShikiMetadataService : IDisposable
             var result = await _httpCache.SendForResultAsync(
                 requestFactory: innerCt =>
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, $"{ShikiBaseUrl}animes/{animeId}");
+                    string endpoint = mediaKind == MediaKind.Anime ? "animes" : "mangas";
+                    var request = new HttpRequestMessage(HttpMethod.Get, $"{ShikiBaseUrl}{endpoint}/{animeId}");
                     request.Headers.Add("User-Agent", AppInfo.UserAgent);
                     return Task.FromResult(request);
                 },
@@ -157,12 +162,15 @@ public class ShikiMetadataService : IDisposable
             // of the manual retry loop).
             if (result.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                return new ShikiMetadata { Id = animeId, Russian = "", Description = "" };
+                return new ShikiMetadata { Id = GetCacheId(animeId, mediaKind), Russian = "", Description = "" };
             }
 
             if (result.Body == null) return null; // transient failure — retry next tick
 
-            return System.Text.Json.JsonSerializer.Deserialize<ShikiMetadata>(result.Body);
+            var metadata = System.Text.Json.JsonSerializer.Deserialize<ShikiMetadata>(result.Body);
+            if (metadata != null)
+                metadata.Id = GetCacheId(animeId, mediaKind);
+            return metadata;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -208,7 +216,8 @@ public class ShikiMetadataService : IDisposable
             if (!useRussian && showAiring && item.Status != UserAnimeStatus.Watching && item.Status != UserAnimeStatus.PlanToWatch)
                 continue;
 
-            var meta = await _metadataRepo.GetAsync(item.Id);
+            int cacheId = GetCacheId(item.Id, item.MediaKind);
+            var meta = await _metadataRepo.GetAsync(cacheId);
             if (meta != null)
             {
                 // ApplyMetadata mutates ObservableObject properties — dispatch to UI thread.
@@ -229,16 +238,17 @@ public class ShikiMetadataService : IDisposable
             var tasks = new List<Task>();
             foreach (var item in uncached)
             {
+                int cacheId = GetCacheId(item.Id, item.MediaKind);
                 lock (_activeFetches) {
-                    if (_activeFetches.Contains(item.Id)) continue;
-                    _activeFetches.Add(item.Id);
+                    if (_activeFetches.Contains(cacheId)) continue;
+                    _activeFetches.Add(cacheId);
                 }
 
                 tasks.Add(Task.Run(async () => 
                 {
                     try {
                         await _concurrentFetches.WaitAsync(ct);
-                        var fetchedMeta = await FetchMetadataFromApiAsync(item.Id, ct);
+                        var fetchedMeta = await FetchMetadataFromApiAsync(item.Id, ct, item.MediaKind);
                         if (fetchedMeta != null)
                         {
                             await _metadataRepo.UpsertAsync(fetchedMeta);
@@ -251,7 +261,7 @@ public class ShikiMetadataService : IDisposable
                     }
                     finally {
                         _concurrentFetches.Release();
-                        lock (_activeFetches) { _activeFetches.Remove(item.Id); }
+                        lock (_activeFetches) { _activeFetches.Remove(cacheId); }
                     }
                 }, ct));
             }
@@ -275,7 +285,7 @@ public class ShikiMetadataService : IDisposable
         if (!useRussian) return;
         if (!string.IsNullOrEmpty(item.RussianTitle) && !string.IsNullOrEmpty(item.RussianSynopsis)) return;
 
-        var meta = await GetOrFetchMetadataAsync(item.Id, maxAge: null, onFetched: null);
+        var meta = await GetOrFetchMetadataAsync(item.Id, maxAge: null, onFetched: null, item.MediaKind);
         if (meta == null) return;
 
         bool changed = await _uiDispatcher.InvokeAsync(() => ApplyMetadata(item, meta));

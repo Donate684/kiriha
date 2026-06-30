@@ -39,6 +39,8 @@ public class JikanApiService
 
     private readonly HttpClient _httpClient;
     private readonly IEpisodeReleaseRepository _episodes;
+    private readonly IAnimeRelationRepository _relations;
+    private readonly IAnimeStaffRepository _staff;
     private readonly HttpConditionalCache _httpCache;
     // Jikan official limit: 3 RPS / 60 RPM. 1100 ms between calls (~0.9 RPS) keeps us
     // under both windows even when the per-second bucket resets at the end of a minute.
@@ -59,10 +61,12 @@ public class JikanApiService
     // (latestEpisodeOrNull, fetchedAtUtc).
     private readonly ConcurrentDictionary<int, (int? Value, DateTime FetchedAt)> _forumCache = new();
 
-    public JikanApiService(HttpClient httpClient, IEpisodeReleaseRepository episodes, IHttpCacheRepository httpCacheRepo)
+    public JikanApiService(HttpClient httpClient, IEpisodeReleaseRepository episodes, IAnimeRelationRepository relations, IAnimeStaffRepository staff, IHttpCacheRepository httpCacheRepo)
     {
         _httpClient = httpClient;
         _episodes = episodes;
+        _relations = relations;
+        _staff = staff;
         _httpCache = new HttpConditionalCache(httpClient, httpCacheRepo, "Jikan");
     }
 
@@ -246,6 +250,157 @@ public class JikanApiService
         {
             _forumCache[malId] = (result, DateTime.UtcNow);
         }
+
+        return result;
+    }
+
+    public async Task<List<AnimeRelation>> GetRelationsAsync(int malId, EpisodeFreshness freshness = EpisodeFreshness.Default, CancellationToken ct = default)
+    {
+        if (freshness != EpisodeFreshness.ForceRefresh)
+        {
+            try
+            {
+                var fetchedAt = await _relations.GetFetchedAtAsync(malId);
+                if (fetchedAt != null)
+                {
+                    // For relations, default TTL is long (7 days) because they rarely change.
+                    bool fresh = freshness == EpisodeFreshness.Completed
+                                 || (DateTime.UtcNow - fetchedAt.Value < TimeSpan.FromDays(7));
+                    if (fresh)
+                    {
+                        var cached = await _relations.GetBySourceIdAsync(malId);
+                        Log.Debug("Jikan: returning cached relations list for ID {Id} ({Count} entries, age {Age})",
+                            malId, cached.Count, DateTime.UtcNow - fetchedAt.Value);
+                        return cached;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Jikan: cache lookup failed for relations ID {Id}", malId);
+            }
+        }
+
+        using var json = await GetJsonAsync($"anime/{malId}/relations", ct);
+        if (json == null) return new List<AnimeRelation>();
+
+        var result = new List<AnimeRelation>();
+        if (json.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var relationNode in data.EnumerateArray())
+            {
+                var relationType = relationNode.TryGetProperty("relation", out var r) ? r.GetString() ?? "Unknown" : "Unknown";
+                if (relationNode.TryGetProperty("entry", out var entries) && entries.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var entryNode in entries.EnumerateArray())
+                    {
+                        var targetId = entryNode.TryGetProperty("mal_id", out var id) ? id.GetInt32() : 0;
+                        var targetType = entryNode.TryGetProperty("type", out var type) ? type.GetString() ?? "" : "";
+                        var targetName = entryNode.TryGetProperty("name", out var name) ? name.GetString() ?? "" : "";
+                        var targetUrl = entryNode.TryGetProperty("url", out var url) ? url.GetString() ?? "" : "";
+
+                        result.Add(new AnimeRelation
+                        {
+                            SourceMalId = malId,
+                            RelationType = relationType,
+                            TargetMalId = targetId,
+                            TargetType = targetType,
+                            TargetName = targetName,
+                            TargetUrl = targetUrl
+                        });
+                    }
+                }
+            }
+        }
+        
+        Log.Information("Jikan: Parsed {Count} relations for ID {Id}", result.Count, malId);
+
+        // Even if empty, we save it so we don't hammer the API for missing relations
+        try { await _relations.ReplaceAsync(malId, result); }
+        catch (Exception ex) { Log.Debug(ex, "Jikan: failed to persist relations list for ID {Id}", malId); }
+
+        return result;
+    }
+
+    public async Task<List<AnimeStaff>> GetStaffAsync(int malId, EpisodeFreshness freshness = EpisodeFreshness.Default, CancellationToken ct = default)
+    {
+        if (freshness != EpisodeFreshness.ForceRefresh)
+        {
+            try
+            {
+                var fetchedAt = await _staff.GetFetchedAtAsync(malId);
+                if (fetchedAt != null)
+                {
+                    // For staff, default TTL is long (7 days) because they rarely change.
+                    bool fresh = freshness == EpisodeFreshness.Completed
+                                 || (DateTime.UtcNow - fetchedAt.Value < TimeSpan.FromDays(7));
+                    if (fresh)
+                    {
+                        var cached = await _staff.GetBySourceIdAsync(malId);
+                        Log.Debug("Jikan: returning cached staff list for ID {Id} ({Count} entries, age {Age})",
+                            malId, cached.Count, DateTime.UtcNow - fetchedAt.Value);
+                        return cached;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Jikan: cache lookup failed for staff ID {Id}", malId);
+            }
+        }
+
+        using var json = await GetJsonAsync($"anime/{malId}/staff", ct);
+        if (json == null) return new List<AnimeStaff>();
+
+        var result = new List<AnimeStaff>();
+        if (json.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var staffNode in data.EnumerateArray())
+            {
+                if (staffNode.TryGetProperty("person", out var personNode))
+                {
+                    var personId = personNode.TryGetProperty("mal_id", out var id) ? id.GetInt32() : 0;
+                    var personUrl = personNode.TryGetProperty("url", out var url) ? url.GetString() ?? "" : "";
+                    var personName = personNode.TryGetProperty("name", out var name) ? name.GetString() ?? "" : "";
+                    
+                    string imageUrl = "";
+                    if (personNode.TryGetProperty("images", out var imagesNode) && 
+                        imagesNode.TryGetProperty("jpg", out var jpgNode) &&
+                        jpgNode.TryGetProperty("image_url", out var imgUrlNode))
+                    {
+                        imageUrl = imgUrlNode.GetString() ?? "";
+                    }
+
+                    var positionsList = new List<string>();
+                    if (staffNode.TryGetProperty("positions", out var positionsNode) && positionsNode.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var pos in positionsNode.EnumerateArray())
+                        {
+                            var posStr = pos.GetString();
+                            if (!string.IsNullOrEmpty(posStr))
+                            {
+                                positionsList.Add(posStr);
+                            }
+                        }
+                    }
+
+                    result.Add(new AnimeStaff
+                    {
+                        SourceMalId = malId,
+                        PersonMalId = personId,
+                        PersonName = personName,
+                        PersonUrl = personUrl,
+                        PersonImageUrl = imageUrl,
+                        Positions = string.Join(", ", positionsList)
+                    });
+                }
+            }
+        }
+        
+        Log.Information("Jikan: Parsed {Count} staff for ID {Id}", result.Count, malId);
+
+        try { await _staff.ReplaceAsync(malId, result); }
+        catch (Exception ex) { Log.Debug(ex, "Jikan: failed to persist staff list for ID {Id}", malId); }
 
         return result;
     }

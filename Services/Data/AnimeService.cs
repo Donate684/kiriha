@@ -163,7 +163,7 @@ public class AnimeService
             // diff. Otherwise we'd "remove" the missing half of the user's library from the local
             // DB on every retry. Threshold: lose >30% relative to current cache when cache is
             // non-trivial. The user can always do a full re-sync after restart if this triggers.
-            var currentItems = await _uiDispatcher.InvokeAsync(() => Collection.ToList());
+            var currentItems = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Anime).ToList());
             var localCount = currentItems.Count;
             if (localCount >= 50 && apiList.Count < localCount * 0.7)
             {
@@ -189,6 +189,57 @@ public class AnimeService
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             Log.Error(ex, "Failed to sync with {Tracker}", primaryTracker.Name);
+            return false;
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _syncing, 0);
+        }
+    }
+
+    public async Task<bool> SyncMangaWithTrackersAsync(IProgress<string>? status = null, CancellationToken ct = default)
+    {
+        if (Interlocked.CompareExchange(ref _syncing, 1, 0) != 0) return false;
+
+        var primaryTracker = _trackers.FirstOrDefault(t => t.IsEnabled);
+        if (primaryTracker == null)
+        {
+            Log.Warning("No active trackers found for synchronization.");
+            Interlocked.Exchange(ref _syncing, 0);
+            return false;
+        }
+
+        try
+        {
+            status?.Report(UIUtils.GetLoc("sync.syncing.with", primaryTracker.Name));
+            var apiList = await primaryTracker.GetUserMangaListAsync(ct);
+            if (apiList == null) return false;
+
+            var currentItems = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Manga || x.MediaKind == MediaKind.LightNovel).ToList());
+            var localCount = currentItems.Count;
+            if (localCount >= 50 && apiList.Count < localCount * 0.7)
+            {
+                Log.Warning("SyncMangaWithTrackers: aborting - incoming list ({Incoming}) is much smaller than local cache ({Local}). Likely a partial fetch.",
+                    apiList.Count, localCount);
+                return false;
+            }
+
+            if (!IsRemoteSnapshotSafe(currentItems, apiList))
+                return false;
+
+            await ProcessSyncResults(apiList, currentItems, status, ct);
+            
+            status?.Report(UIUtils.GetLoc("sync.saving.to_db"));
+            var snapshot = await _uiDispatcher.InvokeAsync(() => Collection.ToList());
+            await _userAnimeRepo.SyncFromRemoteAsync(snapshot);
+            
+            // Reusing AnimeListRefreshMessage for now to trigger UI refresh
+            WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
+            return true;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Log.Error(ex, "Failed to sync manga with {Tracker}", primaryTracker.Name);
             return false;
         }
         finally
@@ -389,14 +440,37 @@ public class AnimeService
         UserAnimeStatus? nextStatus = null;
         if (item.Status != UserAnimeStatus.Watching && item.Status != UserAnimeStatus.Completed)
             nextStatus = UserAnimeStatus.Watching;
-        else if (item.TotalEpisodes > 0 && nextProgress >= item.TotalEpisodes && item.Status == UserAnimeStatus.Watching)
+        
+        bool isManga = item.MediaKind != MediaKind.Anime;
+        
+        // Manga completion
+        if (isManga && item.Chapters > 0 && nextProgress >= item.Chapters && item.Status == UserAnimeStatus.Watching)
+            nextStatus = UserAnimeStatus.Completed;
+        // Anime completion
+        else if (!isManga && item.TotalEpisodes > 0 && nextProgress >= item.TotalEpisodes && item.Status == UserAnimeStatus.Watching)
             nextStatus = UserAnimeStatus.Completed;
 
-        if (await UpdateProgressAsync(item, nextProgress, nextStatus))
+        if (isManga)
         {
-            _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, nextStatus == UserAnimeStatus.Completed ? "Completed" : "Watched");
+            item.ChaptersRead = nextProgress;
+            if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None) 
+                item.Status = nextStatus.Value;
+
+            await _userAnimeRepo.UpdateProgressAsync(item, item.Progress, nextStatus);
+            await _syncManager.EnqueueFullUpdateAsync(item);
+            
+            _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, nextStatus == UserAnimeStatus.Completed ? "Completed" : "Read");
             return nextStatus;
         }
+        else
+        {
+            if (await UpdateProgressAsync(item, nextProgress, nextStatus))
+            {
+                _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, nextStatus == UserAnimeStatus.Completed ? "Completed" : "Watched");
+                return nextStatus;
+            }
+        }
+        
         return null;
     }
 

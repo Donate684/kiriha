@@ -57,6 +57,8 @@ internal static class DataServicesRegistration
         services.AddSingleton<IMalSearchCacheRepository, MalSearchCacheRepository>();
         services.AddSingleton<IHttpCacheRepository, HttpCacheRepository>();
         services.AddSingleton<IEpisodeReleaseRepository, EpisodeReleaseRepository>();
+        services.AddSingleton<IAnimeRelationRepository, AnimeRelationRepository>();
+        services.AddSingleton<IAnimeStaffRepository, AnimeStaffRepository>();
         services.AddSingleton<IHistoryRepository, HistoryRepository>();
         services.AddSingleton<ISyncTaskRepository, SyncTaskRepository>();
         services.AddSingleton<LocalizationService>();

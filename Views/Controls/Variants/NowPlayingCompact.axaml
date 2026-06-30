@@ -630,8 +630,10 @@
                               ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource l.anime.labels.type}" Classes="Label"/>
                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MatchedAnime.Type, Converter={StaticResource LocConverter}}" Classes="Value"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource l.anime.labels.episodes}" Classes="Label"/>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MatchedAnime.TotalEpisodes}" Classes="Value"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource l.anime.labels.episodes}" Classes="Label" IsVisible="{Binding MatchedAnime.IsAnime}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MatchedAnime.TotalEpisodes}" Classes="Value" IsVisible="{Binding MatchedAnime.IsAnime}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource l.anime.labels.chapters}" Classes="Label" IsVisible="{Binding MatchedAnime.IsManga}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MatchedAnime.TotalPart}" Classes="Value" IsVisible="{Binding MatchedAnime.IsManga}"/>
                             <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource l.anime.labels.status}" Classes="Label"/>
                             <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MatchedAnime.Presentation.DisplayAiringStatus}" Classes="Value"/>
                             <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource l.anime.labels.season}" Classes="Label"/>
@@ -639,7 +641,8 @@
                             <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource l.anime.labels.genres}" Classes="Label"/>
                             <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MatchedAnime.Genres, Converter={StaticResource LocConverter}}"
                                        Classes="Value" TextWrapping="Wrap"/>
-                            <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource l.anime.labels.studios}" Classes="Label"/>
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource l.anime.labels.studios}" Classes="Label" IsVisible="{Binding MatchedAnime.IsAnime}"/>
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource l.anime.labels.authors}" Classes="Label" IsVisible="{Binding MatchedAnime.IsManga}"/>
                             <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MatchedAnime.Studios, Converter={StaticResource LocConverter}}"
                                        Classes="Value" TextWrapping="Wrap"/>
                         </Grid>

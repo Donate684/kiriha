@@ -10,6 +10,61 @@ public partial class AnimeItem : ObservableObject
 {
     public int Id { get; set; }
 
+    private MediaKind _mediaKind = MediaKind.Anime;
+    public MediaKind MediaKind
+    {
+        get => _mediaKind;
+        set
+        {
+            if (SetProperty(ref _mediaKind, value))
+                NotifyProgressChanges();
+        }
+    }
+
+    private int _chapters;
+    public int Chapters
+    {
+        get => _chapters;
+        set
+        {
+            if (SetProperty(ref _chapters, value))
+                NotifyProgressChanges();
+        }
+    }
+
+    private int _volumes;
+    public int Volumes
+    {
+        get => _volumes;
+        set
+        {
+            if (SetProperty(ref _volumes, value))
+                NotifyProgressChanges();
+        }
+    }
+
+    private int _chaptersRead;
+    public int ChaptersRead
+    {
+        get => _chaptersRead;
+        set
+        {
+            if (SetProperty(ref _chaptersRead, value))
+                NotifyProgressChanges();
+        }
+    }
+
+    private int _volumesRead;
+    public int VolumesRead
+    {
+        get => _volumesRead;
+        set
+        {
+            if (SetProperty(ref _volumesRead, value))
+                NotifyProgressChanges();
+        }
+    }
+
     /// <summary>
     /// Priority of the source for EpisodesAired.
     /// 0 = None, 1 = Estimated (Math), 2 = Official (MAL/Shiki), 3 = Torrents (RSS/Search)

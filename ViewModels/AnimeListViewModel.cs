@@ -113,6 +113,14 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(IsPlanToWatchSelected))]
     private UserAnimeStatus _selectedStatus = UserAnimeStatus.Watching;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnimeSelected))]
+    [NotifyPropertyChangedFor(nameof(IsMangaSelected))]
+    private MediaKind _selectedMediaKind = MediaKind.Anime;
+
+    public bool IsAnimeSelected => SelectedMediaKind == MediaKind.Anime;
+    public bool IsMangaSelected => SelectedMediaKind == MediaKind.Manga;
+
     public bool IsWatchingSelected => SelectedStatus == UserAnimeStatus.Watching;
     public bool IsCompletedSelected => SelectedStatus == UserAnimeStatus.Completed;
     public bool IsOnHoldSelected => SelectedStatus == UserAnimeStatus.OnHold;
@@ -198,6 +206,25 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         IsFilterActive = false;
     }
 
+    [RelayCommand]
+    public async Task SwitchMediaKind(string kindString)
+    {
+        if (Enum.TryParse<MediaKind>(kindString, true, out var kind))
+        {
+            SelectedMediaKind = kind;
+            await UpdateCountsAsync();
+            await ApplyCurrentFiltersAsync();
+        }
+    }
+
+    [RelayCommand]
+    public async Task ToggleMediaKind()
+    {
+        SelectedMediaKind = SelectedMediaKind == MediaKind.Anime ? MediaKind.Manga : MediaKind.Anime;
+        await UpdateCountsAsync();
+        await ApplyCurrentFiltersAsync();
+    }
+
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (_animeService.IsSyncing || _animeService.IsInitializing)
@@ -280,11 +307,11 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     {
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            var watching = _listProjection.Count(UserAnimeStatus.Watching);
-            var completed = _listProjection.Count(UserAnimeStatus.Completed);
-            var onHold = _listProjection.Count(UserAnimeStatus.OnHold);
-            var dropped = _listProjection.Count(UserAnimeStatus.Dropped);
-            var ptw = _listProjection.Count(UserAnimeStatus.PlanToWatch);
+            var watching = _listProjection.Count(UserAnimeStatus.Watching, SelectedMediaKind);
+            var completed = _listProjection.Count(UserAnimeStatus.Completed, SelectedMediaKind);
+            var onHold = _listProjection.Count(UserAnimeStatus.OnHold, SelectedMediaKind);
+            var dropped = _listProjection.Count(UserAnimeStatus.Dropped, SelectedMediaKind);
+            var ptw = _listProjection.Count(UserAnimeStatus.PlanToWatch, SelectedMediaKind);
 
             WatchingHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.watching"), watching.ToString());
             CompletedHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.completed"), completed.ToString());
@@ -300,7 +327,9 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         IsBusy = true;
         try
         {
-            bool success = await _animeService.SyncWithTrackersAsync();
+            bool success = SelectedMediaKind == MediaKind.Manga || SelectedMediaKind == MediaKind.LightNovel
+                ? await _animeService.SyncMangaWithTrackersAsync()
+                : await _animeService.SyncWithTrackersAsync();
             
             if (success)
             {
@@ -346,7 +375,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     {
         var version = Interlocked.Increment(ref _filterRefreshVersion);
         var filtered = await Dispatcher.UIThread.InvokeAsync(() =>
-            _listProjection.Query(SelectedStatus, SearchQuery, FilterNsfw, SortBy));
+            _listProjection.Query(SelectedStatus, SearchQuery, FilterNsfw, SortBy, SelectedMediaKind));
 
         if (cancellationToken.IsCancellationRequested || version != Volatile.Read(ref _filterRefreshVersion))
             return;

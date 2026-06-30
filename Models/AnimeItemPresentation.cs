@@ -25,13 +25,17 @@ public readonly struct AnimeItemPresentation
 
     public string? DisplaySynopsis => !string.IsNullOrEmpty(_item.RussianSynopsis) ? _item.RussianSynopsis : _item.Synopsis;
 
+    public bool IsAnime => _item.MediaKind == MediaKind.Anime;
+    public bool IsManga => _item.MediaKind != MediaKind.Anime;
+
     public double ProgressValue
     {
         get
         {
             var total = EffectiveTotal;
             if (total <= 0) return 0;
-            return Math.Clamp((double)_item.Progress / total * 100, 0, 100);
+            var progress = IsManga ? _item.ChaptersRead : _item.Progress;
+            return Math.Clamp((double)progress / total * 100, 0, 100);
         }
     }
 
@@ -54,6 +58,7 @@ public readonly struct AnimeItemPresentation
         get
         {
             if (_item.Status != UserAnimeStatus.Watching || IsCompleted) return false;
+            if (IsManga) return false; // Manga doesn't have an aired schedule in Kiriha yet
             var aired = ResolvedAiredEpisodes;
             if (aired <= 0) return false;
             return _item.Progress < aired;
@@ -65,6 +70,8 @@ public readonly struct AnimeItemPresentation
         get
         {
             if (IsCompleted && !_item.IsRewatching) return TotalPart;
+            if (IsManga && _item.VolumesRead > 0)
+                return $"{ProgressPart} {TotalPart} | {_item.VolumesRead} {UIUtils.GetLoc("anime.labels.total_vol_format", _item.Volumes > 0 ? _item.Volumes.ToString() : "?")}";
             return $"{ProgressPart} {TotalPart}";
         }
     }
@@ -131,16 +138,60 @@ public readonly struct AnimeItemPresentation
         }
     }
 
-    public string ProgressPart => _item.Progress.ToString();
+    public string ProgressPart => IsManga ? _item.ChaptersRead.ToString() : _item.Progress.ToString();
 
     public string TotalPart
     {
         get
         {
-            var total = _item.TotalEpisodes > 0 ? _item.TotalEpisodes.ToString() : "?";
+            var isManga = _item.MediaKind != MediaKind.Anime;
+            var totalCount = isManga ? _item.Chapters : _item.TotalEpisodes;
+            var total = totalCount > 0 ? totalCount.ToString() : "?";
+            if (isManga)
+            {
+                if (IsCompleted && !_item.IsRewatching)
+                    return UIUtils.GetLoc("anime.labels.total_ch_finished", total);
+                return UIUtils.GetLoc("anime.labels.total_ch_format", total);
+            }
             if (IsCompleted && !_item.IsRewatching)
                 return UIUtils.GetLoc("anime.labels.total_ep_finished", total);
             return UIUtils.GetLoc("anime.labels.total_ep_format", total);
+        }
+    }
+
+    public string EpisodesDisplay
+    {
+        get
+        {
+            var episodes = _item.TotalEpisodes > 0 ? _item.TotalEpisodes.ToString() : "?";
+            var format = IsCompleted && !_item.IsRewatching ? "anime.labels.total_ep_finished" : "anime.labels.total_ep_format";
+            var totalPart = UIUtils.GetLoc(format, episodes);
+            if (IsCompleted && !_item.IsRewatching) return totalPart;
+            return $"{_item.Progress} {totalPart}";
+        }
+    }
+
+    public string ChaptersDisplay
+    {
+        get
+        {
+            var chapters = _item.Chapters > 0 ? _item.Chapters.ToString() : "?";
+            var format = IsCompleted && !_item.IsRewatching ? "anime.labels.total_ch_finished" : "anime.labels.total_ch_format";
+            var totalPart = UIUtils.GetLoc(format, chapters);
+            if (IsCompleted && !_item.IsRewatching) return totalPart;
+            return $"{_item.ChaptersRead} {totalPart}";
+        }
+    }
+
+    public string VolumesDisplay
+    {
+        get
+        {
+            var volumes = _item.Volumes > 0 ? _item.Volumes.ToString() : "?";
+            var format = IsCompleted && !_item.IsRewatching ? "anime.labels.total_vol_finished" : "anime.labels.total_vol_format";
+            var totalPart = UIUtils.GetLoc(format, volumes);
+            if (IsCompleted && !_item.IsRewatching) return totalPart;
+            return $"{_item.VolumesRead} {totalPart}";
         }
     }
 
@@ -158,7 +209,7 @@ public readonly struct AnimeItemPresentation
         }
     }
 
-    public bool ShowAiredInfo => !(_item.StatusDetailed?.Equals("finished_airing", StringComparison.OrdinalIgnoreCase) == true || _item.StatusDetailed?.Equals("finished airing", StringComparison.OrdinalIgnoreCase) == true);
+    public bool ShowAiredInfo => IsAnime && !(_item.StatusDetailed?.Equals("finished_airing", StringComparison.OrdinalIgnoreCase) == true || _item.StatusDetailed?.Equals("finished airing", StringComparison.OrdinalIgnoreCase) == true);
 
     public bool HasGenres => _item.Genres != null && _item.Genres.Count > 0;
 
@@ -170,6 +221,11 @@ public readonly struct AnimeItemPresentation
     {
         get
         {
+            if (_item.MediaKind != MediaKind.Anime)
+            {
+                return _item.Chapters > 0 ? _item.Chapters : Math.Max(_item.Progress, 1);
+            }
+
             if (_item.TotalEpisodes > 0) return _item.TotalEpisodes;
             int maxKnownEpisode = Math.Max(_item.Progress, _item.EpisodesAired);
             if (maxKnownEpisode <= 0) return 12;

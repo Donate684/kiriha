@@ -97,7 +97,47 @@ public class ShikiApiService : ITrackerService
 
     public async Task<SyncOutcome> SaveFullListStatusAsync(AnimeItem item, CancellationToken ct = default)
     {
-        return await UpdateProgressAsync(item.Id, item.Progress, item.Status, int.TryParse(item.Score, out var s) ? s : 0, item.IsRewatching, item.RewatchCount, ct);
+        var tokens = _settingsService.Current.Api.Shiki;
+        if (tokens == null) return SyncOutcome.PermanentFailure;
+        
+        if (tokens.UserId == null)
+        {
+            var userId = await GetCurrentUserIdAsync(ct);
+            if (userId == null) return SyncOutcome.TransientFailure;
+            _settingsService.Update(settings =>
+            {
+                if (settings.Api.Shiki != null) settings.Api.Shiki.UserId = userId;
+            }, SettingsSection.Api, save: false);
+            _settingsService.SaveImmediate();
+            tokens = _settingsService.Current.Api.Shiki;
+            if (tokens == null) return SyncOutcome.PermanentFailure;
+        }
+
+        bool isManga = item.MediaKind != MediaKind.Anime;
+        var userRate = new Dictionary<string, object>
+        {
+            ["user_id"] = tokens.UserId!,
+            ["target_id"] = item.Id,
+            ["target_type"] = isManga ? "Manga" : "Anime"
+        };
+        
+        if (isManga)
+        {
+            userRate["chapters"] = item.ChaptersRead;
+            userRate["volumes"] = item.VolumesRead;
+        }
+        else
+        {
+            userRate["episodes"] = item.Progress;
+        }
+
+        var shikiStatus = StatusMapper.ToShiki(item.Status);
+        if (!string.IsNullOrEmpty(shikiStatus)) userRate["status"] = shikiStatus;
+        if (int.TryParse(item.Score, out var score) && score > 0) userRate["score"] = score;
+        if (item.RewatchCount > 0) userRate["rewatches"] = item.RewatchCount;
+
+        var payload = new { user_rate = userRate };
+        return await PostAsync("v2/user_rates", payload, ct);
     }
 
     public Task<List<AnimeItem>> SearchAnimeAsync(string query, CancellationToken ct = default)
@@ -106,6 +146,60 @@ public class ShikiApiService : ITrackerService
     }
 
     public Task<AnimeItem?> GetAnimeDetailsAsync(int animeId, CancellationToken ct = default)
+    {
+        return Task.FromResult<AnimeItem?>(null);
+    }
+
+    public Task<List<AnimeItem>?> GetUserMangaListAsync(CancellationToken ct = default)
+    {
+        Log.Warning("Shikimori full-list manga sync is disabled; skipping destructive local mirror update.");
+        return Task.FromResult<List<AnimeItem>?>(null);
+    }
+
+    public async Task<SyncOutcome> UpdateMangaProgressAsync(int mangaId, int chapters, int? volumes = null, UserAnimeStatus? status = null, int? score = null, CancellationToken ct = default)
+    {
+        if (_settingsService.Current.Api.Shiki == null) return SyncOutcome.PermanentFailure;
+        
+        if (_settingsService.Current.Api.Shiki.UserId == null)
+        {
+            var userId = await GetCurrentUserIdAsync(ct);
+            if (userId == null) return SyncOutcome.TransientFailure;
+            var current = _settingsService.Current.Api.Shiki;
+            if (current == null) return SyncOutcome.PermanentFailure;
+            _settingsService.Update(settings =>
+            {
+                if (settings.Api.Shiki != null) settings.Api.Shiki.UserId = userId;
+            }, SettingsSection.Api, save: false);
+            _settingsService.SaveImmediate();
+        }
+
+        var tokens = _settingsService.Current.Api.Shiki;
+        if (tokens == null) return SyncOutcome.PermanentFailure;
+
+        var userRate = new Dictionary<string, object>
+        {
+            ["user_id"] = tokens.UserId!,
+            ["target_id"] = mangaId,
+            ["target_type"] = "Manga",
+            ["chapters"] = chapters
+        };
+        
+        if (volumes.HasValue) userRate["volumes"] = volumes.Value;
+
+        var shikiStatus = StatusMapper.ToShiki(status);
+        if (!string.IsNullOrEmpty(shikiStatus)) userRate["status"] = shikiStatus;
+        if (score.HasValue && score.Value > 0) userRate["score"] = score.Value;
+
+        var payload = new { user_rate = userRate };
+        return await PostAsync("v2/user_rates", payload, ct);
+    }
+
+    public Task<List<AnimeItem>> SearchMangaAsync(string query, CancellationToken ct = default)
+    {
+        return Task.FromResult(new List<AnimeItem>());
+    }
+
+    public Task<AnimeItem?> GetMangaDetailsAsync(int mangaId, CancellationToken ct = default)
     {
         return Task.FromResult<AnimeItem?>(null);
     }

@@ -19,8 +19,8 @@ public sealed class AnimeCollectionProjectionTests
             Item(3, "Rewatching", UserAnimeStatus.Completed, isRewatching: true),
         ]);
 
-        Assert.Equal(2, projection.Count(UserAnimeStatus.Watching));
-        Assert.Equal(1, projection.Count(UserAnimeStatus.Completed));
+        Assert.Equal(2, projection.Count(UserAnimeStatus.Watching, MediaKind.Anime));
+        Assert.Equal(1, projection.Count(UserAnimeStatus.Completed, MediaKind.Anime));
     }
 
     [Fact]
@@ -35,8 +35,8 @@ public sealed class AnimeCollectionProjectionTests
             Item(3, "Frieren Completed", UserAnimeStatus.Completed),
         ]);
 
-        var sfw = projection.Query(UserAnimeStatus.Watching, "volshebnitsa", filterNsfw: false, sortBy: Constants.Sorting.Title);
-        var nsfw = projection.Query(UserAnimeStatus.Watching, "frieren", filterNsfw: true, sortBy: Constants.Sorting.Title);
+        var sfw = projection.Query(UserAnimeStatus.Watching, "volshebnitsa", filterNsfw: false, sortBy: Constants.Sorting.Title, kind: MediaKind.Anime);
+        var nsfw = projection.Query(UserAnimeStatus.Watching, "frieren", filterNsfw: true, sortBy: Constants.Sorting.Title, kind: MediaKind.Anime);
 
         Assert.Equal(new[] { 1 }, sfw.Select(x => x.Id));
         Assert.Equal(new[] { 2 }, nsfw.Select(x => x.Id));
@@ -51,8 +51,8 @@ public sealed class AnimeCollectionProjectionTests
         projection.Rebuild([item]);
         item.Status = UserAnimeStatus.Watching;
 
-        Assert.Equal(1, projection.Count(UserAnimeStatus.Watching));
-        Assert.Equal(0, projection.Count(UserAnimeStatus.PlanToWatch));
+        Assert.Equal(1, projection.Count(UserAnimeStatus.Watching, MediaKind.Anime));
+        Assert.Equal(0, projection.Count(UserAnimeStatus.PlanToWatch, MediaKind.Anime));
     }
 
     [Fact]
@@ -64,8 +64,8 @@ public sealed class AnimeCollectionProjectionTests
         projection.Rebuild([item]);
         item.IsRewatching = true;
 
-        Assert.Equal(1, projection.Count(UserAnimeStatus.Watching));
-        Assert.Equal(0, projection.Count(UserAnimeStatus.Completed));
+        Assert.Equal(1, projection.Count(UserAnimeStatus.Watching, MediaKind.Anime));
+        Assert.Equal(0, projection.Count(UserAnimeStatus.Completed, MediaKind.Anime));
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public sealed class AnimeCollectionProjectionTests
             new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, added),
             []);
 
-        Assert.Equal(0, projection.Count(UserAnimeStatus.Watching));
+        Assert.Equal(0, projection.Count(UserAnimeStatus.Watching, MediaKind.Anime));
     }
 
     private static AnimeItem Item(

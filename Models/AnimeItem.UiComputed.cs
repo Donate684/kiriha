@@ -42,6 +42,12 @@ public partial class AnimeItem
     public string? DisplaySynopsis => Presentation.DisplaySynopsis;
 
     [JsonIgnore]
+    public bool IsAnime => Presentation.IsAnime;
+
+    [JsonIgnore]
+    public bool IsManga => Presentation.IsManga;
+
+    [JsonIgnore]
     public double ProgressValue => Presentation.ProgressValue;
 
     [JsonIgnore]
@@ -88,6 +94,15 @@ public partial class AnimeItem
 
     [JsonIgnore]
     public string TotalPart => Presentation.TotalPart;
+
+    [JsonIgnore]
+    public string EpisodesDisplay => Presentation.EpisodesDisplay;
+
+    [JsonIgnore]
+    public string ChaptersDisplay => Presentation.ChaptersDisplay;
+
+    [JsonIgnore]
+    public string VolumesDisplay => Presentation.VolumesDisplay;
 
     [JsonIgnore]
     public string DisplayAiringStatus => Presentation.DisplayAiringStatus;

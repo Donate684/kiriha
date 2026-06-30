@@ -52,12 +52,14 @@ public sealed class AnimeCollectionProjection : IDisposable
         }
     }
 
-    public int Count(UserAnimeStatus status)
+    public int Count(UserAnimeStatus status, MediaKind kind)
     {
-        return _buckets.TryGetValue(status, out var bucket) ? bucket.Count : 0;
+        return _buckets.TryGetValue(status, out var bucket) 
+            ? bucket.Values.Count(x => x.Kind == kind) 
+            : 0;
     }
 
-    public List<AnimeItem> Query(UserAnimeStatus status, string? searchQuery, bool filterNsfw, string? sortBy)
+    public List<AnimeItem> Query(UserAnimeStatus status, string? searchQuery, bool filterNsfw, string? sortBy, MediaKind kind)
     {
         if (!_buckets.TryGetValue(status, out var bucket))
         {
@@ -65,7 +67,7 @@ public sealed class AnimeCollectionProjection : IDisposable
         }
 
         var normalizedSearch = Normalize(searchQuery);
-        var query = bucket.Values.AsEnumerable();
+        var query = bucket.Values.Where(x => x.Kind == kind);
 
         if (normalizedSearch.Length > 0)
         {
@@ -154,7 +156,8 @@ public sealed class AnimeCollectionProjection : IDisposable
             or nameof(AnimeItem.JapaneseTitle)
             or nameof(AnimeItem.Rating)
             or nameof(AnimeItem.Status)
-            or nameof(AnimeItem.IsRewatching);
+            or nameof(AnimeItem.IsRewatching)
+            or nameof(AnimeItem.MediaKind);
     }
 
     private static UserAnimeStatus GetListStatus(AnimeItem item)
@@ -190,11 +193,12 @@ public sealed class AnimeCollectionProjection : IDisposable
         AnimeItem Item,
         UserAnimeStatus ListStatus,
         string SearchableText,
-        bool IsNsfw)
+        bool IsNsfw,
+        MediaKind Kind)
     {
         public static Entry From(AnimeItem item)
         {
-            return new Entry(item, GetListStatus(item), BuildSearchableText(item), ComputeIsNsfw(item));
+            return new Entry(item, GetListStatus(item), BuildSearchableText(item), ComputeIsNsfw(item), item.MediaKind);
         }
     }
 }

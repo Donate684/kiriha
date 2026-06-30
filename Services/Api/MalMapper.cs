@@ -28,6 +28,18 @@ public static class MalMapper
             Type = node.GetOptionalString("media_type")?.ToUpper() ?? "TV"
         };
 
+        if (item.Type == "MANGA" || item.Type == "LIGHT_NOVEL" || item.Type == "NOVEL" || item.Type == "ONE_SHOT" || item.Type == "DOUJINSHI" || item.Type == "MANHWA" || item.Type == "MANHUA" || item.Type == "OEL")
+        {
+            item.MediaKind = item.Type == "LIGHT_NOVEL" || item.Type == "NOVEL" ? MediaKind.LightNovel : MediaKind.Manga;
+        }
+        else
+        {
+            item.MediaKind = MediaKind.Anime;
+        }
+
+        item.Chapters = node.GetOptionalInt("num_chapters") ?? 0;
+        item.Volumes = node.GetOptionalInt("num_volumes") ?? 0;
+
         if (node.TryGetProperty("start_season", out var ss))
         {
             item.StartYear = ss.GetOptionalInt("year");
@@ -88,12 +100,31 @@ public static class MalMapper
             item.Studios.Clear();
             item.Studios.AddRange(sts.EnumerateArray().Select(s => s.GetProperty("name").GetString() ?? ""));
         }
+        else if (node.TryGetProperty("authors", out var authors))
+        {
+            item.Studios.Clear();
+            foreach (var authorNode in authors.EnumerateArray())
+            {
+                if (authorNode.TryGetProperty("node", out var n))
+                {
+                    var firstName = n.TryGetProperty("first_name", out var f) ? f.GetString() : null;
+                    var lastName = n.TryGetProperty("last_name", out var l) ? l.GetString() : null;
+                    var name = string.Join(" ", new[] { firstName, lastName }.Where(x => !string.IsNullOrEmpty(x)));
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        item.Studios.Add(name);
+                    }
+                }
+            }
+        }
     }
 
     public static void MapListStatus(JsonElement listStatus, AnimeItem item)
     {
         item.Status = StatusMapper.FromMal(listStatus.GetOptionalString("status"));
         item.Progress = listStatus.GetOptionalInt("num_watched_episodes") ?? listStatus.GetOptionalInt("num_episodes_watched") ?? 0;
+        item.ChaptersRead = listStatus.GetOptionalInt("num_chapters_read") ?? 0;
+        item.VolumesRead = listStatus.GetOptionalInt("num_volumes_read") ?? 0;
 
         if (listStatus.TryGetProperty("score", out var scoreElement))
         {

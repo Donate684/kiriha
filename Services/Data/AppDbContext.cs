@@ -24,7 +24,10 @@ public class AppDbContext : DbContext
     public DbSet<MalSearchCache> MalSearchCache { get; set; } = null!;
     public DbSet<HttpCacheEntry> HttpResponseCache { get; set; } = null!;
     public DbSet<EpisodeListMeta> EpisodeListMeta { get; set; } = null!;
-
+    public DbSet<AnimeRelation> AnimeRelations { get; set; } = null!;
+    public DbSet<AnimeRelationMeta> AnimeRelationMeta { get; set; } = null!;
+    public DbSet<AnimeStaff> AnimeStaff { get; set; } = null!;
+    public DbSet<AnimeStaffMeta> AnimeStaffMeta { get; set; } = null!;
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // 1. Automated Naming (PascalCase -> snake_case)
@@ -46,6 +49,10 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedNever();
             
+            entity.Property(e => e.MediaKind)
+                  .HasConversion<string>()
+                  .HasDefaultValue(MediaKind.Anime);
+
             entity.Property(e => e.Status)
                   .HasConversion(
                       v => StatusMapper.ToDbString(v),
@@ -110,6 +117,36 @@ public class AppDbContext : DbContext
         {
             entity.ToTable("sync_tasks");
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
+        });
+
+        modelBuilder.Entity<AnimeRelation>(entity =>
+        {
+            entity.ToTable("anime_relations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.HasIndex(e => e.SourceMalId).HasDatabaseName("idx_anime_relations_source_mal_id");
+        });
+
+        modelBuilder.Entity<AnimeRelationMeta>(entity =>
+        {
+            entity.ToTable("anime_relation_meta");
+            entity.HasKey(e => e.MalId);
+            entity.Property(e => e.MalId).ValueGeneratedNever();
+        });
+
+        modelBuilder.Entity<AnimeStaff>(entity =>
+        {
+            entity.ToTable("anime_staff");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.HasIndex(e => e.SourceMalId).HasDatabaseName("idx_anime_staff_source_mal_id");
+        });
+
+        modelBuilder.Entity<AnimeStaffMeta>(entity =>
+        {
+            entity.ToTable("anime_staff_meta");
+            entity.HasKey(e => e.MalId);
+            entity.Property(e => e.MalId).ValueGeneratedNever();
         });
     }
 

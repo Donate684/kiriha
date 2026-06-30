@@ -25,6 +25,7 @@ namespace Kiriha.Services.Data.Repositories;
 public interface IUserAnimeRepository
 {
     Task<List<AnimeItem>> GetAllAsync();
+    Task<List<AnimeItem>> GetByMediaKindAsync(MediaKind kind);
     Task UpsertAsync(AnimeItem item);
     Task UpdateAsync(AnimeItem item);
     Task UpdateProgressAsync(AnimeItem item, int progress, UserAnimeStatus? status = null);
@@ -60,7 +61,15 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
     {
         using var context = await _contextFactory.CreateDbContextAsync();
         var list = await context.UserAnime.AsNoTracking().ToListAsync();
-        Log.Information("Loaded {Count} anime items from database", list.Count);
+        Log.Information("Loaded {Count} anime/manga items from database", list.Count);
+        return list;
+    }
+
+    public async Task<List<AnimeItem>> GetByMediaKindAsync(MediaKind kind)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+        var list = await context.UserAnime.AsNoTracking().Where(x => x.MediaKind == kind).ToListAsync();
+        Log.Information("Loaded {Count} {Kind} items from database", list.Count, kind);
         return list;
     }
 
@@ -112,16 +121,22 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
         using var context = await _contextFactory.CreateDbContextAsync();
 
         var shouldUpdateStatus = status.HasValue && status.Value != UserAnimeStatus.None;
+        var isManga = item.MediaKind != MediaKind.Anime;
+        
         var affected = shouldUpdateStatus
             ? await context.UserAnime
                 .Where(x => x.Id == item.Id)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(x => x.Progress, progress)
+                    .SetProperty(x => x.ChaptersRead, item.ChaptersRead)
+                    .SetProperty(x => x.VolumesRead, item.VolumesRead)
                     .SetProperty(x => x.Status, status!.Value))
             : await context.UserAnime
                 .Where(x => x.Id == item.Id)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.Progress, progress));
+                    .SetProperty(x => x.Progress, progress)
+                    .SetProperty(x => x.ChaptersRead, item.ChaptersRead)
+                    .SetProperty(x => x.VolumesRead, item.VolumesRead));
 
         if (affected == 0)
         {

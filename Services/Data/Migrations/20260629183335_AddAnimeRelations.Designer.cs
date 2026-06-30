@@ -3,6 +3,7 @@ using System;
 using Kiriha.Services.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kiriha.Services.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260629183335_AddAnimeRelations")]
+    partial class AddAnimeRelations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -43,14 +46,6 @@ namespace Kiriha.Services.Data.Migrations
                     b.Property<string>("BroadcastTime")
                         .HasColumnType("TEXT")
                         .HasColumnName("broadcast_time");
-
-                    b.Property<int>("Chapters")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("chapters");
-
-                    b.Property<int>("ChaptersRead")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("chapters_read");
 
                     b.Property<DateTime?>("DateCompleted")
                         .HasColumnType("TEXT")
@@ -100,13 +95,6 @@ namespace Kiriha.Services.Data.Migrations
                     b.Property<string>("MeanScore")
                         .HasColumnType("TEXT")
                         .HasColumnName("mean_score");
-
-                    b.Property<string>("MediaKind")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Anime")
-                        .HasColumnName("media_kind");
 
                     b.Property<DateTime?>("NextEpisodeAt")
                         .HasColumnType("TEXT")
@@ -192,14 +180,6 @@ namespace Kiriha.Services.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("type");
-
-                    b.Property<int>("Volumes")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("volumes");
-
-                    b.Property<int>("VolumesRead")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("volumes_read");
 
                     b.HasKey("Id");
 
@@ -312,64 +292,6 @@ namespace Kiriha.Services.Data.Migrations
                     b.HasKey("MalId");
 
                     b.ToTable("anime_relation_meta", (string)null);
-                });
-
-            modelBuilder.Entity("Kiriha.Models.Entities.AnimeStaff", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("id");
-
-                    b.Property<string>("PersonImageUrl")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("person_image_url");
-
-                    b.Property<int>("PersonMalId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("person_mal_id");
-
-                    b.Property<string>("PersonName")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("person_name");
-
-                    b.Property<string>("PersonUrl")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("person_url");
-
-                    b.Property<string>("Positions")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("positions");
-
-                    b.Property<int>("SourceMalId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("source_mal_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SourceMalId")
-                        .HasDatabaseName("idx_anime_staff_source_mal_id");
-
-                    b.ToTable("anime_staff", (string)null);
-                });
-
-            modelBuilder.Entity("Kiriha.Models.Entities.AnimeStaffMeta", b =>
-                {
-                    b.Property<int>("MalId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("mal_id");
-
-                    b.Property<DateTime>("FetchedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("fetched_at");
-
-                    b.HasKey("MalId");
-
-                    b.ToTable("anime_staff_meta", (string)null);
                 });
 
             modelBuilder.Entity("Kiriha.Models.Entities.EpisodeListMeta", b =>
