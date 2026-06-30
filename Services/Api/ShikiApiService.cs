@@ -89,6 +89,7 @@ public class ShikiApiService : ITrackerService
         var shikiStatus = StatusMapper.ToShiki(status);
         if (!string.IsNullOrEmpty(shikiStatus)) userRate["status"] = shikiStatus;
         if (score.HasValue && score.Value > 0) userRate["score"] = score.Value;
+        if (isRewatching.HasValue) userRate["is_rewatching"] = isRewatching.Value;
         if (rewatchCount.HasValue) userRate["rewatches"] = rewatchCount.Value;
 
         var payload = new { user_rate = userRate };
@@ -134,7 +135,8 @@ public class ShikiApiService : ITrackerService
         var shikiStatus = StatusMapper.ToShiki(item.Status);
         if (!string.IsNullOrEmpty(shikiStatus)) userRate["status"] = shikiStatus;
         if (int.TryParse(item.Score, out var score) && score > 0) userRate["score"] = score;
-        if (item.RewatchCount > 0) userRate["rewatches"] = item.RewatchCount;
+        userRate["is_rewatching"] = item.IsRewatching;
+        userRate["rewatches"] = item.RewatchCount;
 
         var payload = new { user_rate = userRate };
         return await PostAsync("v2/user_rates", payload, ct);

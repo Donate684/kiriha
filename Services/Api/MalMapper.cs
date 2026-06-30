@@ -22,7 +22,7 @@ public static class MalMapper
             Popularity = node.GetOptionalInt("popularity") ?? 0,
             Rank = node.GetOptionalInt("rank") ?? 0,
             AiringDate = node.GetOptionalDateTime("start_date"),
-            Nsfw = node.GetOptionalString("nsfw") == "white" ? "No" : "Yes",
+            Nsfw = node.GetOptionalString("nsfw"),
             StatusDetailed = node.GetOptionalString("status"),
             Rating = node.GetOptionalString("rating"),
             Type = node.GetOptionalString("media_type")?.ToUpper() ?? "TV"

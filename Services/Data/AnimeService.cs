@@ -180,8 +180,8 @@ public class AnimeService
             status?.Report(UIUtils.GetLoc("sync.saving.to_db"));
             // Snapshot Collection on the UI thread to avoid "Collection was modified" if
             // the UI is iterating concurrently. ObservableCollection is not thread-safe.
-            var snapshot = await _uiDispatcher.InvokeAsync(() => Collection.ToList());
-            await _userAnimeRepo.SyncFromRemoteAsync(snapshot);
+            var snapshot = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Anime).ToList());
+            await _userAnimeRepo.SyncFromRemoteAsync(snapshot, new[] { MediaKind.Anime });
             
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
             return true;
@@ -230,8 +230,8 @@ public class AnimeService
             await ProcessSyncResults(apiList, currentItems, status, ct);
             
             status?.Report(UIUtils.GetLoc("sync.saving.to_db"));
-            var snapshot = await _uiDispatcher.InvokeAsync(() => Collection.ToList());
-            await _userAnimeRepo.SyncFromRemoteAsync(snapshot);
+            var snapshot = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Manga || x.MediaKind == MediaKind.LightNovel).ToList());
+            await _userAnimeRepo.SyncFromRemoteAsync(snapshot, new[] { MediaKind.Manga, MediaKind.LightNovel });
             
             // Reusing AnimeListRefreshMessage for now to trigger UI refresh
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
@@ -476,12 +476,30 @@ public class AnimeService
 
     public async Task SmartDecrementProgressAsync(AnimeItem item)
     {
-        if (item.Progress > 0)
+        bool isManga = item.MediaKind != MediaKind.Anime;
+
+        if (isManga)
         {
-            int nextProgress = item.Progress - 1;
-            if (await UpdateProgressAsync(item, nextProgress))
+            if (item.ChaptersRead > 0)
             {
+                int nextProgress = item.ChaptersRead - 1;
+                item.ChaptersRead = nextProgress;
+
+                await _userAnimeRepo.UpdateProgressAsync(item, item.Progress, null);
+                await _syncManager.EnqueueFullUpdateAsync(item);
+                
                 _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, "Reverted");
+            }
+        }
+        else
+        {
+            if (item.Progress > 0)
+            {
+                int nextProgress = item.Progress - 1;
+                if (await UpdateProgressAsync(item, nextProgress))
+                {
+                    _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, "Reverted");
+                }
             }
         }
     }

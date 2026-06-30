@@ -31,11 +31,13 @@ public static class AnimeFilterEngine
         {
             return query.Where(x =>
                 string.Equals(x.Rating, "rx", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(x.Nsfw, "black", StringComparison.OrdinalIgnoreCase) ||
                 x.Genres.Any(g => string.Equals(g, "Hentai", StringComparison.OrdinalIgnoreCase)));
         }
 
         return query.Where(x =>
             !string.Equals(x.Rating, "rx", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(x.Nsfw, "black", StringComparison.OrdinalIgnoreCase) &&
             !x.Genres.Any(g => string.Equals(g, "Hentai", StringComparison.OrdinalIgnoreCase)));
     }
 

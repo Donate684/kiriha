@@ -223,7 +223,7 @@ public readonly struct AnimeItemPresentation
         {
             if (_item.MediaKind != MediaKind.Anime)
             {
-                return _item.Chapters > 0 ? _item.Chapters : Math.Max(_item.Progress, 1);
+                return _item.Chapters > 0 ? _item.Chapters : Math.Max(_item.ChaptersRead, 1);
             }
 
             if (_item.TotalEpisodes > 0) return _item.TotalEpisodes;

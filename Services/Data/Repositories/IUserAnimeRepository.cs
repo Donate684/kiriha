@@ -39,7 +39,7 @@ public interface IUserAnimeRepository
     /// non-empty local list when the incoming list is empty (defensive against
     /// transient API failures returning an empty body).
     /// </summary>
-    Task SyncFromRemoteAsync(IEnumerable<AnimeItem> items);
+    Task SyncFromRemoteAsync(IEnumerable<AnimeItem> items, MediaKind[]? syncKinds = null);
 
     /// <summary>Local poster paths for items currently tracked. Used by image cache cleanup.</summary>
     Task<List<string>> GetActiveLocalImagePathsAsync();
@@ -123,20 +123,38 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
         var shouldUpdateStatus = status.HasValue && status.Value != UserAnimeStatus.None;
         var isManga = item.MediaKind != MediaKind.Anime;
         
-        var affected = shouldUpdateStatus
-            ? await context.UserAnime
-                .Where(x => x.Id == item.Id)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.Progress, progress)
-                    .SetProperty(x => x.ChaptersRead, item.ChaptersRead)
-                    .SetProperty(x => x.VolumesRead, item.VolumesRead)
-                    .SetProperty(x => x.Status, status!.Value))
-            : await context.UserAnime
-                .Where(x => x.Id == item.Id)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.Progress, progress)
-                    .SetProperty(x => x.ChaptersRead, item.ChaptersRead)
-                    .SetProperty(x => x.VolumesRead, item.VolumesRead));
+        int affected;
+        
+        if (isManga)
+        {
+            affected = shouldUpdateStatus
+                ? await context.UserAnime
+                    .Where(x => x.Id == item.Id)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(x => x.Progress, progress)
+                        .SetProperty(x => x.ChaptersRead, item.ChaptersRead)
+                        .SetProperty(x => x.VolumesRead, item.VolumesRead)
+                        .SetProperty(x => x.Status, status!.Value))
+                : await context.UserAnime
+                    .Where(x => x.Id == item.Id)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(x => x.Progress, progress)
+                        .SetProperty(x => x.ChaptersRead, item.ChaptersRead)
+                        .SetProperty(x => x.VolumesRead, item.VolumesRead));
+        }
+        else
+        {
+            affected = shouldUpdateStatus
+                ? await context.UserAnime
+                    .Where(x => x.Id == item.Id)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(x => x.Progress, progress)
+                        .SetProperty(x => x.Status, status!.Value))
+                : await context.UserAnime
+                    .Where(x => x.Id == item.Id)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(x => x.Progress, progress));
+        }
 
         if (affected == 0)
         {
@@ -193,7 +211,7 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
         await context.SaveChangesAsync();
     }
 
-    public async Task SyncFromRemoteAsync(IEnumerable<AnimeItem> items)
+    public async Task SyncFromRemoteAsync(IEnumerable<AnimeItem> items, MediaKind[]? syncKinds = null)
     {
         var incomingItems = items.ToList(); // materialize to avoid multiple evaluations
         var incomingIds = incomingItems.Select(x => x.Id).ToHashSet();
@@ -204,7 +222,13 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
         // local state, treat it as a transient failure and refuse to wipe.
         if (incomingItems.Count == 0)
         {
-            var localCount = await context.UserAnime.CountAsync();
+            var query = context.UserAnime.AsQueryable();
+            if (syncKinds != null && syncKinds.Length > 0)
+            {
+                query = query.Where(x => syncKinds.Contains(x.MediaKind));
+            }
+            
+            var localCount = await query.CountAsync();
             if (localCount > 10)
             {
                 Log.Warning("Sync: Incoming list is empty but local DB has {Count} items. Skipping full deletion for safety.", localCount);
@@ -218,7 +242,13 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
 
         try
         {
-            var existingItems = await context.UserAnime.ToListAsync();
+            var query = context.UserAnime.AsQueryable();
+            if (syncKinds != null && syncKinds.Length > 0)
+            {
+                query = query.Where(x => syncKinds.Contains(x.MediaKind));
+            }
+
+            var existingItems = await query.ToListAsync();
             var toRemove = existingItems.Where(x => !incomingIds.Contains(x.Id)).ToList();
             if (toRemove.Count > 0)
             {

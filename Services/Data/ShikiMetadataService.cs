@@ -58,7 +58,12 @@ public class ShikiMetadataService : IDisposable
     private string ShikiBaseUrl => ShikiEndpoints.BaseUrl(_settingsService.Current.Api.ShikiMirror);
 
     private static int GetCacheId(int malId, MediaKind mediaKind) =>
-        mediaKind != MediaKind.Anime ? malId | 0x40000000 : malId;
+        mediaKind switch
+        {
+            MediaKind.Manga => malId | 0x40000000,
+            MediaKind.LightNovel => malId | 0x20000000,
+            _ => malId
+        };
 
     /// <summary>
     /// Returns Shikimori metadata for <paramref name="animeId"/>, fetching from

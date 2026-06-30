@@ -19,6 +19,14 @@ public sealed class AnimeCollectionProjection : IDisposable
         [UserAnimeStatus.Dropped] = new(),
         [UserAnimeStatus.PlanToWatch] = new(),
     };
+    private readonly Dictionary<UserAnimeStatus, Dictionary<MediaKind, int>> _counts = new()
+    {
+        [UserAnimeStatus.Watching] = new(),
+        [UserAnimeStatus.Completed] = new(),
+        [UserAnimeStatus.OnHold] = new(),
+        [UserAnimeStatus.Dropped] = new(),
+        [UserAnimeStatus.PlanToWatch] = new(),
+    };
 
     public void Rebuild(IEnumerable<AnimeItem> items)
     {
@@ -54,8 +62,8 @@ public sealed class AnimeCollectionProjection : IDisposable
 
     public int Count(UserAnimeStatus status, MediaKind kind)
     {
-        return _buckets.TryGetValue(status, out var bucket) 
-            ? bucket.Values.Count(x => x.Kind == kind) 
+        return _counts.TryGetValue(status, out var countsByKind) && countsByKind.TryGetValue(kind, out var count) 
+            ? count 
             : 0;
     }
 
@@ -107,6 +115,12 @@ public sealed class AnimeCollectionProjection : IDisposable
         if (_buckets.TryGetValue(entry.ListStatus, out var bucket))
         {
             bucket[item.Id] = entry;
+
+            if (!_counts[entry.ListStatus].TryGetValue(entry.Kind, out var count))
+            {
+                count = 0;
+            }
+            _counts[entry.ListStatus][entry.Kind] = count + 1;
         }
 
         item.PropertyChanged += OnItemPropertyChanged;
@@ -119,6 +133,11 @@ public sealed class AnimeCollectionProjection : IDisposable
         if (_buckets.TryGetValue(entry.ListStatus, out var bucket))
         {
             bucket.Remove(item.Id);
+
+            if (_counts[entry.ListStatus].TryGetValue(entry.Kind, out var count))
+            {
+                _counts[entry.ListStatus][entry.Kind] = count - 1;
+            }
         }
 
         item.PropertyChanged -= OnItemPropertyChanged;
@@ -135,6 +154,10 @@ public sealed class AnimeCollectionProjection : IDisposable
         foreach (var bucket in _buckets.Values)
         {
             bucket.Clear();
+        }
+        foreach (var countBucket in _counts.Values)
+        {
+            countBucket.Clear();
         }
     }
 
@@ -181,6 +204,7 @@ public sealed class AnimeCollectionProjection : IDisposable
     private static bool ComputeIsNsfw(AnimeItem item)
     {
         return string.Equals(item.Rating, "rx", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(item.Nsfw, "black", StringComparison.OrdinalIgnoreCase)
             || item.Genres.Any(g => string.Equals(g, "Hentai", StringComparison.OrdinalIgnoreCase));
     }
 

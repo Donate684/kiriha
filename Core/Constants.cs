@@ -27,13 +27,15 @@ public static class Constants
                 BaseUrl:    "https://shikimori.one/api/",
                 TokenUrl:   "https://shikimori.one/oauth/token",
                 AuthUrl:    "https://shikimori.one/oauth/authorize",
-                WebsiteUrl: "https://shikimori.one/animes/");
+                WebsiteUrl: "https://shikimori.one/animes/",
+                MangaWebsiteUrl: "https://shikimori.one/mangas/");
 
             public static readonly ShikiHost Net = new(
                 BaseUrl:    "https://shikimori.net/api/",
                 TokenUrl:   "https://shikimori.net/oauth/token",
                 AuthUrl:    "https://shikimori.net/oauth/authorize",
-                WebsiteUrl: "https://shikimori.net/animes/");
+                WebsiteUrl: "https://shikimori.net/animes/",
+                MangaWebsiteUrl: "https://shikimori.net/mangas/");
         }
     }
 

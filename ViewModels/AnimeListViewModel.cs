@@ -305,13 +305,14 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
     private async Task UpdateCountsAsync()
     {
+        var kind = SelectedMediaKind;
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            var watching = _listProjection.Count(UserAnimeStatus.Watching, SelectedMediaKind);
-            var completed = _listProjection.Count(UserAnimeStatus.Completed, SelectedMediaKind);
-            var onHold = _listProjection.Count(UserAnimeStatus.OnHold, SelectedMediaKind);
-            var dropped = _listProjection.Count(UserAnimeStatus.Dropped, SelectedMediaKind);
-            var ptw = _listProjection.Count(UserAnimeStatus.PlanToWatch, SelectedMediaKind);
+            var watching = _listProjection.Count(UserAnimeStatus.Watching, kind);
+            var completed = _listProjection.Count(UserAnimeStatus.Completed, kind);
+            var onHold = _listProjection.Count(UserAnimeStatus.OnHold, kind);
+            var dropped = _listProjection.Count(UserAnimeStatus.Dropped, kind);
+            var ptw = _listProjection.Count(UserAnimeStatus.PlanToWatch, kind);
 
             WatchingHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.watching"), watching.ToString());
             CompletedHeader = UIUtils.GetLoc("filters.header_format", GetLoc("anime.status.completed"), completed.ToString());
@@ -374,8 +375,14 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     private async Task ApplyCurrentFiltersAsync(CancellationToken cancellationToken = default)
     {
         var version = Interlocked.Increment(ref _filterRefreshVersion);
+        var status = SelectedStatus;
+        var query = SearchQuery;
+        var nsfw = FilterNsfw;
+        var sort = SortBy;
+        var kind = SelectedMediaKind;
+
         var filtered = await Dispatcher.UIThread.InvokeAsync(() =>
-            _listProjection.Query(SelectedStatus, SearchQuery, FilterNsfw, SortBy, SelectedMediaKind));
+            _listProjection.Query(status, query, nsfw, sort, kind));
 
         if (cancellationToken.IsCancellationRequested || version != Volatile.Read(ref _filterRefreshVersion))
             return;

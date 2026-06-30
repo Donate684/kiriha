@@ -23,7 +23,11 @@ public static class ShikiEndpoints
     public static string BaseUrl(ShikiMirror mirror)    => Host(mirror).BaseUrl;
     public static string TokenUrl(ShikiMirror mirror)   => Host(mirror).TokenUrl;
     public static string AuthUrl(ShikiMirror mirror)    => Host(mirror).AuthUrl;
-    public static string WebsiteUrl(ShikiMirror mirror) => Host(mirror).WebsiteUrl;
+    public static string WebsiteUrl(ShikiMirror mirror, MediaKind mediaKind = MediaKind.Anime)
+    {
+        var host = Host(mirror);
+        return mediaKind == MediaKind.Anime ? host.WebsiteUrl : host.MangaWebsiteUrl;
+    }
 
     public static string ClientId(ShikiMirror mirror) => mirror switch
     {

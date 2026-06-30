@@ -378,8 +378,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     [RelayCommand]
     private async Task CopyShikiLink()
     {
-        string baseUrl = Kiriha.Core.ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror);
-        if (Anime.MediaKind != MediaKind.Anime) baseUrl = baseUrl.Replace("/animes/", "/mangas/");
+        string baseUrl = Kiriha.Core.ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror, Anime.MediaKind);
         string url = $"{baseUrl}{Anime.Id}";
         await CopyToClipboard(url);
     }
@@ -399,8 +398,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     [RelayCommand]
     private void OpenShikiLink()
     {
-        string baseUrl = ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror);
-        if (Anime.MediaKind != MediaKind.Anime) baseUrl = baseUrl.Replace("/animes/", "/mangas/");
+        string baseUrl = ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror, Anime.MediaKind);
         OpenInBrowser($"{baseUrl}{Anime.Id}");
     }
 
@@ -537,16 +535,33 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     [RelayCommand]
     private async Task NavigateToRelation(Models.Entities.AnimeRelation relation)
     {
-        if (relation == null || relation.TargetType != "anime") return;
+        if (relation == null || string.IsNullOrEmpty(relation.TargetType)) return;
+
+        var type = relation.TargetType.ToLowerInvariant();
+        MediaKind kind;
+
+        if (type == "manga" || type == "manhwa" || type == "manhua" || type == "novel" || type == "light novel" || type == "one-shot" || type == "doujinshi" || type == "light_novel")
+        {
+            kind = type.Contains("novel") ? MediaKind.LightNovel : MediaKind.Manga;
+        }
+        else if (type == "anime" || type == "tv" || type == "movie" || type == "ova" || type == "ona" || type == "special")
+        {
+            kind = MediaKind.Anime;
+        }
+        else
+        {
+            kind = MediaKind.Anime;
+        }
 
         var targetAnime = new AnimeItem
         {
             Id = relation.TargetMalId,
-            Title = relation.TargetName
+            Title = relation.TargetName,
+            MediaKind = kind
         };
 
         // If the item exists in the collection, use the full one to ensure all offline fields are loaded.
-        var existing = _animeService.Collection.FirstOrDefault(x => x.Id == targetAnime.Id);
+        var existing = _animeService.Collection.FirstOrDefault(x => x.Id == targetAnime.Id && x.MediaKind == targetAnime.MediaKind);
         await _dialogs.ShowAnimeDetailsAsync(null, existing ?? targetAnime);
     }
 }

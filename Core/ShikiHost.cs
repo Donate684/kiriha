@@ -10,4 +10,5 @@ public sealed record ShikiHost(
     string BaseUrl,
     string TokenUrl,
     string AuthUrl,
-    string WebsiteUrl);
+    string WebsiteUrl,
+    string MangaWebsiteUrl);
