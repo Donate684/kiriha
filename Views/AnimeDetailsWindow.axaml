@@ -526,7 +526,12 @@
                         <!-- RELATIONS -->
                         <Border Classes="ContentCard" IsVisible="{Binding Relations.Count, Converter={StaticResource IntToBoolConverter}}">
                             <StackPanel>
-                                <TextBlock Text="Связанное" Classes="SectionTitle"/>
+                                <Grid ColumnDefinitions="*, Auto" Margin="0,0,0,8">
+                                    <TextBlock Grid.Column="0" Text="Связанное" Classes="SectionTitle" Margin="0" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="Граф франшизы" Command="{Binding ShowFranchiseGraphCommand}" 
+                                            FontSize="11" Padding="8,4" CornerRadius="4" 
+                                            Background="{DynamicResource SubtleFillColorSecondary}" />
+                                </Grid>
                                 <ItemsControl ItemsSource="{Binding Relations}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:RelationItemVm">

@@ -215,6 +215,24 @@ public class ShikiApiService : ITrackerService
         return Task.FromResult(SyncOutcome.Success);
     }
 
+    public async Task<ShikiFranchiseResponse?> GetFranchiseAsync(int animeId, CancellationToken ct = default)
+    {
+        var response = await GetAsync($"animes/{animeId}/franchise", ct);
+        if (!response.IsSuccessStatusCode) return null;
+
+        using var stream = await response.Content.ReadAsStreamAsync(ct);
+        try
+        {
+            return await JsonSerializer.DeserializeAsync<ShikiFranchiseResponse>(stream, cancellationToken: ct);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "ShikiApiService: failed to deserialize franchise for {AnimeId}", animeId);
+            return null;
+        }
+    }
+
+
     private async Task<int?> GetCurrentUserIdAsync(CancellationToken ct)
     {
         var response = await GetAsync("users/whoami", ct);

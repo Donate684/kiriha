@@ -1,0 +1,114 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kiriha.ViewModels"
+        xmlns:controls="using:Kiriha.Views.Controls"
+        xmlns:u="using:Kiriha.Utils"
+        xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+        xmlns:material="using:Material.Icons.Avalonia"
+        x:Class="Kiriha.Views.FranchiseGraphWindow"
+        x:DataType="vm:FranchiseGraphViewModel"
+        x:Name="Root"
+        Title="Граф франшизы"
+        Width="1000" Height="700"
+        WindowStartupLocation="CenterOwner"
+        Background="{x:Null}"
+        TransparencyLevelHint="Mica, AcrylicBlur"
+        TransparencyBackgroundFallback="Transparent"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="34"
+        WindowDecorations="BorderOnly">
+
+    <Grid RowDefinitions="Auto, *">
+        <Border Grid.Row="0" Height="34" VerticalAlignment="Top" Background="Transparent" IsHitTestVisible="True" PointerPressed="OnTitleBarPressed" ZIndex="10"/>
+        
+        <controls:TitleBarButtons Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" ZIndex="999"/>
+        
+        <TextBlock Grid.Row="0" Text="Граф франшизы" FontWeight="SemiBold" FontSize="14" Margin="16,8,0,0" IsHitTestVisible="False"/>
+
+        <Grid Grid.Row="1" IsVisible="{Binding IsLoading}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                <ProgressBar IsIndeterminate="True" Width="200" Height="4" CornerRadius="2" Foreground="{DynamicResource SystemAccentColor}"/>
+                <TextBlock Text="Загрузка структуры франшизы..." Opacity="0.6" HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- Use a Grid with white/dark background to make the graph visible -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" IsVisible="{Binding !IsLoading}">
+            <Grid Width="{Binding Layout.Width}" Height="{Binding Layout.Height}" Margin="40">
+                
+                <!-- Lines Layer -->
+                <ItemsControl ItemsSource="{Binding Layout.Links}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Canvas/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="u:FranchiseGraphVisualLink">
+                            <Line StartPoint="{Binding Source.CenterPoint}"
+                                  EndPoint="{Binding Target.CenterPoint}" 
+                                  Stroke="{DynamicResource DividerStrokeColorDefault}" 
+                                  StrokeThickness="2" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Nodes Layer -->
+                <ItemsControl ItemsSource="{Binding Layout.Nodes}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Canvas Width="{Binding Layout.Width}" Height="{Binding Layout.Height}"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.Styles>
+                        <Style Selector="ContentPresenter" x:DataType="u:FranchiseGraphVisualNode">
+                            <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                            <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                        </Style>
+                    </ItemsControl.Styles>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="u:FranchiseGraphVisualNode">
+                            <Button Command="{Binding #Root.((vm:FranchiseGraphViewModel)DataContext).NodeClickedCommand}"
+                                    CommandParameter="{Binding}"
+                                    Width="200" Height="90" Padding="0" CornerRadius="8"
+                                    Background="{DynamicResource CardBackgroundFillDefault}"
+                                    BorderBrush="{DynamicResource CardStrokeColorDefault}" BorderThickness="1">
+                                <Button.Styles>
+                                    <Style Selector="Button:pointerover">
+                                        <Setter Property="RenderTransform" Value="scale(1.02)"/>
+                                    </Style>
+                                    <Style Selector="Button.current">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}"/>
+                                        <Setter Property="BorderThickness" Value="2"/>
+                                    </Style>
+                                </Button.Styles>
+                                <Classes.current>
+                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding Path="IsCurrent"/>
+                                    </MultiBinding>
+                                </Classes.current>
+                                
+                                <Grid ColumnDefinitions="Auto, *">
+                                    <Border Grid.Column="0" Width="60" CornerRadius="8,0,0,8" ClipToBounds="True">
+                                        <Image asyncImageLoader:ImageLoader.Source="{Binding Node.ImageUrl}" Stretch="UniformToFill"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="8,6" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Node.Name}" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Node.Year}" FontSize="11" Opacity="0.6" Margin="0,2,0,0" IsVisible="{Binding Node.Year, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                        <Border Background="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="4" Padding="4,1" HorizontalAlignment="Left" Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding Node.Kind}" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Window>

@@ -1,4 +1,5 @@
 using Kiriha.Models;
+using Kiriha.Models.Entities;
 
 namespace Kiriha.Core;
 

@@ -237,7 +237,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
 
         try
         {
-            var relations = await _jikanApiService.GetRelationsAsync(Anime.Id);
+            var relations = await _jikanApiService.GetRelationsAsync(Anime.Id, Anime.MediaKind);
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 Relations.Clear();
@@ -256,7 +256,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
 
         try
         {
-            var staffList = await _jikanApiService.GetStaffAsync(Anime.Id);
+            var staffList = await _jikanApiService.GetStaffAsync(Anime.Id, Anime.MediaKind);
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 Staff.Clear();
@@ -563,5 +563,18 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         // If the item exists in the collection, use the full one to ensure all offline fields are loaded.
         var existing = _animeService.Collection.FirstOrDefault(x => x.Id == targetAnime.Id && x.MediaKind == targetAnime.MediaKind);
         await _dialogs.ShowAnimeDetailsAsync(null, existing ?? targetAnime);
+    }
+
+    [RelayCommand]
+    private void ShowFranchiseGraph()
+    {
+        var vm = new FranchiseGraphViewModel(Anime.Id, _shikiApiService, _dialogs);
+        var window = new Kiriha.Views.FranchiseGraphWindow
+        {
+            DataContext = vm
+        };
+        
+        // Show as a non-modal window or modal, depending on preference. Non-modal is better so user can keep it open.
+        window.Show();
     }
 }

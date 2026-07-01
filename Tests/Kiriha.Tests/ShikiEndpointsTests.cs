@@ -1,5 +1,6 @@
 using Kiriha.Core;
 using Kiriha.Models;
+using Kiriha.Models.Entities;
 
 namespace Kiriha.Tests;
 
