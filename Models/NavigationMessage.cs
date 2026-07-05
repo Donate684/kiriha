@@ -19,4 +19,3 @@ public class NavigationMessage
     public NavigationMessage(NavigationPage page) => Page = page;
 }
 
-public record CardStyleChangedMessage(int Style);

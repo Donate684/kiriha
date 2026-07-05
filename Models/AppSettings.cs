@@ -21,7 +21,7 @@ public class AppSettings
     public class UiConfig
     {
         public ThemeType Theme { get; set; } = ThemeType.System;
-        public int CardStyle { get; set; } = 1;
+
         public string LanguageCode { get; set; } = Constants.Languages.En;
         public bool UseRussianTitles { get; set; } = false;
         public bool UseRussianDescriptions { get; set; } = false;

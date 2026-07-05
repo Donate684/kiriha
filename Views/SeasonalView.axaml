@@ -25,51 +25,32 @@
             </Panel>
         </ControlTemplate>
 
-        <!-- ═══ Card Template ═══ -->
-        <DataTemplate x:Key="CardTemplateClassic" x:DataType="models:AnimeItem">
-            <Border Classes="AnimeCard revealItem" Margin="4" Width="155" ClipToBounds="True">
-                <Grid RowDefinitions="210, *">
-                    <Panel Grid.Row="0" Background="Transparent" DoubleTapped="Poster_DoubleTapped">
-                        <!-- Loading Placeholder (visible behind the image) -->
+        <!-- ═══════════ Compact Horizontal Card ═══════════ -->
+        <DataTemplate x:Key="AnimeGridItemTemplate" x:DataType="models:AnimeItem">
+            <Border Classes="AnimeCard revealItem FloatingMagCard" Margin="4" ClipToBounds="False"
+                    CornerRadius="10" Background="{DynamicResource CardBackgroundFillSecondary}"
+                    BorderBrush="{DynamicResource DividerStrokeColorDefault}" BorderThickness="1">
+                <Border CornerRadius="10" ClipToBounds="True">
+                <Grid ColumnDefinitions="110, *" DoubleTapped="Poster_DoubleTapped">
+
+                    <!-- ─── Left: Poster ─── -->
+                    <Panel Grid.Column="0" Width="110">
                         <TemplatedControl Template="{DynamicResource PosterLoadingTemplate}"/>
+                        <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill"
+                               Height="165" Width="110"/>
 
-                        <!-- Actual Image -->
-                        <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill" />
-
-                        <!-- Top gradient for badge readability (soft) -->
-                        <Border VerticalAlignment="Top" Height="52" IsHitTestVisible="False">
-                            <Border.Background>
-                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                                    <GradientStop Color="#66000000" Offset="0"/>
-                                    <GradientStop Color="#00000000" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Border.Background>
-                        </Border>
-
-                        <!-- Status badge (Left) -->
-                        <Border Classes="Badge" VerticalAlignment="Top" HorizontalAlignment="Left"
-                                Margin="8"
+                        <!-- Status badge top-left -->
+                        <Border Classes="Badge" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,5"
                                 IsVisible="{Binding Status, Converter={StaticResource StatusNotNoneConverter}}"
                                 Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}">
                             <TextBlock Text="{Binding Status, Converter={StaticResource LocConverter}}"
-                                     FontSize="9" Foreground="White" FontWeight="SemiBold"/>
+                                     FontSize="8" Foreground="White" FontWeight="SemiBold"/>
                         </Border>
 
-                        <!-- Popularity badge (Right) -->
-                        <Border Classes="Badge" VerticalAlignment="Top" HorizontalAlignment="Right"
-                                Margin="8" Background="#CC000000">
-                            <TextBlock Text="{Binding Popularity, StringFormat='#{0}'}"
-                                     FontSize="9" Foreground="White" FontWeight="SemiBold"/>
-                        </Border>
-
-                        <!-- Hide / Un-hide (client-only "not interested").
-                             Visible only for titles NOT in the user's list, or for already-hidden ones
-                             (so the user can un-hide them while "Show hidden" is on).
-                             Double-click toggles the state - single clicks must NOT fire to avoid
-                             accidental hides. -->
-                        <Border Classes="HideBtn" Classes.confirming="{Binding IsHideConfirming}"
-                                VerticalAlignment="Top" HorizontalAlignment="Left"
-                                Margin="6" Tapped="HideBtn_Tapped"
+                        <!-- Hide btn top-right, appears on card hover -->
+                        <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0"
+                                Classes="HideBtn" Classes.confirming="{Binding IsHideConfirming}"
+                                Tapped="HideBtn_Tapped"
                                 ToolTip.Tip="{DynamicResource l.filters.options.hide_tooltip}">
                             <Border.IsVisible>
                                 <MultiBinding Converter="{x:Static BoolConverters.Or}">
@@ -77,13 +58,10 @@
                                     <Binding Path="IsHiddenInSeasons"/>
                                 </MultiBinding>
                             </Border.IsVisible>
-                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <material:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" Foreground="White"
-                                                       IsVisible="{Binding !IsHiddenInSeasons}"/>
-                                <material:MaterialIcon Kind="EyeOutline" Width="14" Height="14" Foreground="White"
-                                                       IsVisible="{Binding IsHiddenInSeasons}"/>
-                                <TextBlock IsVisible="{Binding IsHideConfirming}"
-                                           FontSize="10" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                <material:MaterialIcon Kind="EyeOffOutline" Width="12" Height="12" Foreground="White" IsVisible="{Binding !IsHiddenInSeasons}"/>
+                                <material:MaterialIcon Kind="EyeOutline" Width="12" Height="12" Foreground="White" IsVisible="{Binding IsHiddenInSeasons}"/>
+                                <TextBlock IsVisible="{Binding IsHideConfirming}" FontSize="9" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center">
                                     <TextBlock.Text>
                                         <MultiBinding Converter="{x:Static conv:HideConfirmTextConverter.Instance}">
                                             <Binding Path="IsHiddenInSeasons"/>
@@ -92,234 +70,105 @@
                                 </TextBlock>
                             </StackPanel>
                         </Border>
-                    </Panel>
 
-                    <!-- Info block -->
-                    <Grid Grid.Row="1" RowDefinitions="*, Auto" Margin="10,8,10,8">
-                        <StackPanel Grid.Row="0" Spacing="1" Height="57" VerticalAlignment="Top" ClipToBounds="True">
-                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
-                                       MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                       LineHeight="15"
-                                       Foreground="{DynamicResource SystemBaseHighColor}"/>
-                            <TextBlock Text="{Binding RussianTitle}" FontSize="10"
-                                       MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                       LineHeight="13"
-                                       Foreground="{DynamicResource SystemAccentColor}" Opacity="0.85"
-                                       IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </StackPanel>
-
-                        <Grid Grid.Row="1" ColumnDefinitions="*, Auto" Margin="0,6,0,0" VerticalAlignment="Center">
-                            <TextBlock Grid.Column="0" Text="{Binding Type, Converter={StaticResource LocConverter}}"
-                                       FontSize="10" Opacity="0.6" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource SystemBaseHighColor}"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource SystemBaseHighColor}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Grid>
-                    </Grid>
-                </Grid>
-            </Border>
-        </DataTemplate>
-
-        <!-- ═══════════ VARIANT C: Floating Magazine ═══════════ -->
-        <DataTemplate x:Key="CardTemplateFloatingMagazine" x:DataType="models:AnimeItem">
-            <Border Classes="AnimeCard revealItem FloatingMagCard" Margin="4" Width="158" Height="325" ClipToBounds="False"
-                    CornerRadius="10" Background="{DynamicResource CardBackgroundFillSecondary}"
-                    BorderBrush="{DynamicResource DividerStrokeColorDefault}" BorderThickness="1">
-                <Border CornerRadius="10" ClipToBounds="True">
-                <Grid RowDefinitions="210, *">
-                    <!-- Poster -->
-                    <Panel Grid.Row="0" Background="Transparent" DoubleTapped="Poster_DoubleTapped">
-                        <TemplatedControl Template="{DynamicResource PosterLoadingTemplate}"/>
-                        <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill"/>
-
-                        <!-- Top gradient for badge readability -->
-                        <Border VerticalAlignment="Top" Height="52" IsHitTestVisible="False">
-                            <Border.Background>
-                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                                    <GradientStop Color="#66000000" Offset="0"/>
-                                    <GradientStop Color="#00000000" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Border.Background>
+                        <!-- Quick-add (+) btn — top-right, only when not in list -->
+                        <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,30,5,0"
+                                Classes="HideBtn"
+                                IsVisible="{Binding Status, Converter={StaticResource StatusNoneConverter}}"
+                                Tapped="QuickAddBtn_Tapped"
+                                ToolTip.Tip="Добавить в список">
+                            <Border.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuItem Header="Планы" Click="QuickAddMenuItem_Click" Tag="PlanToWatch">
+                                        <MenuItem.Icon><material:MaterialIcon Kind="BookmarkOutline"/></MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Смотрю" Click="QuickAddMenuItem_Click" Tag="Watching">
+                                        <MenuItem.Icon><material:MaterialIcon Kind="PlayCircleOutline"/></MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Отложено" Click="QuickAddMenuItem_Click" Tag="OnHold">
+                                        <MenuItem.Icon><material:MaterialIcon Kind="PauseCircleOutline"/></MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Завершено" Click="QuickAddMenuItem_Click" Tag="Completed">
+                                        <MenuItem.Icon><material:MaterialIcon Kind="CheckCircleOutline"/></MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Брошено" Click="QuickAddMenuItem_Click" Tag="Dropped">
+                                        <MenuItem.Icon><material:MaterialIcon Kind="CloseCircleOutline"/></MenuItem.Icon>
+                                    </MenuItem>
+                                </MenuFlyout>
+                            </Border.ContextFlyout>
+                            <material:MaterialIcon Kind="Plus" Width="12" Height="12" Foreground="White"/>
                         </Border>
 
-                        <!-- Top-Left Badges (Status & Hide) -->
-                        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Margin="6" Spacing="4">
-                            <!-- Status badge -->
-                            <Border Classes="Badge" HorizontalAlignment="Left" Margin="2"
-                                    IsVisible="{Binding Status, Converter={StaticResource StatusNotNoneConverter}}"
-                                    Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}">
-                                <TextBlock Text="{Binding Status, Converter={StaticResource LocConverter}}"
-                                         FontSize="9" Foreground="White" FontWeight="SemiBold"/>
-                            </Border>
-
-                            <!-- Hide / Un-hide button -->
-                            <Border Classes="HideBtn" Classes.confirming="{Binding IsHideConfirming}"
-                                    HorizontalAlignment="Left" Margin="2" Tapped="HideBtn_Tapped"
-                                    ToolTip.Tip="{DynamicResource l.filters.options.hide_tooltip}">
-                                <Border.IsVisible>
-                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                        <Binding Path="Status" Converter="{StaticResource StatusNoneConverter}"/>
-                                        <Binding Path="IsHiddenInSeasons"/>
-                                    </MultiBinding>
-                                </Border.IsVisible>
-                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <material:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" Foreground="White" IsVisible="{Binding !IsHiddenInSeasons}"/>
-                                    <material:MaterialIcon Kind="EyeOutline" Width="14" Height="14" Foreground="White" IsVisible="{Binding IsHiddenInSeasons}"/>
-                                    <TextBlock IsVisible="{Binding IsHideConfirming}" FontSize="10" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center">
-                                        <TextBlock.Text>
-                                            <MultiBinding Converter="{x:Static conv:HideConfirmTextConverter.Instance}">
-                                                <Binding Path="IsHiddenInSeasons"/>
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
+                        <!-- Bottom overlay: gradient + Score/Type/Eps pills -->
+                        <Border VerticalAlignment="Bottom" IsHitTestVisible="False">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                    <GradientStop Color="#00000000" Offset="0"/>
+                                    <GradientStop Color="#BB000000" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <StackPanel Orientation="Horizontal" Spacing="3" Margin="5,10,5,6" VerticalAlignment="Bottom">
+                                <!-- Score pill -->
+                                <Border Background="#88000000" CornerRadius="5" Padding="5,2"
+                                        IsVisible="{Binding MeanScore, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <StackPanel Orientation="Horizontal" Spacing="3">
+                                        <material:MaterialIcon Kind="Star" Width="9" Height="9" Foreground="#F6D365" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding MeanScore}" FontSize="9" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                                <!-- Type pill -->
+                                <Border Background="#88000000" CornerRadius="5" Padding="5,2"
+                                        IsVisible="{Binding Type, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Text="{Binding Type, Converter={StaticResource LocConverter}}"
+                                               FontSize="9" FontWeight="SemiBold" Foreground="White"/>
+                                </Border>
+                                <!-- Eps pill -->
+                                <Border Background="#88000000" CornerRadius="5" Padding="5,2"
+                                        IsVisible="{Binding TotalEpisodes, Converter={StaticResource IntToBoolConverter}}">
+                                    <TextBlock Text="{Binding TotalEpisodes, StringFormat='{}{0} эп'}"
+                                               FontSize="9" FontWeight="SemiBold" Foreground="White" Opacity="0.85"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
                     </Panel>
 
-                    <!-- Bottom Info -->
-                    <StackPanel Grid.Row="1" Margin="11,10,11,12" Spacing="8">
-                        <StackPanel Spacing="2" Height="36" VerticalAlignment="Top">
-                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                    <!-- ─── Right: Info ─── -->
+                    <Grid Grid.Column="1" RowDefinitions="*, Auto" Margin="11,10,10,10">
+
+                        <!-- Row 0: EN title + RU title -->
+                        <StackPanel Grid.Row="0" Spacing="3">
+                            <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold"
                                        MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                       LineHeight="15" Foreground="{DynamicResource SystemBaseHighColor}"/>
-                            <TextBlock Text="{Binding RussianTitle}" FontSize="10"
-                                       MaxLines="1" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                       LineHeight="13" Foreground="{DynamicResource SystemBaseMediumColor}" Opacity="0.85"
+                                       LineHeight="16" Foreground="{DynamicResource SystemBaseHighColor}"/>
+                            <TextBlock Text="{Binding RussianTitle}" FontSize="10.5" FontWeight="Medium"
+                                       MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       LineHeight="14" Opacity="0.6"
+                                       Foreground="{DynamicResource SystemBaseHighColor}"
                                        IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         </StackPanel>
 
-                        <!-- Info Badges (Type, Score, Episodes) -->
-                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,6" VerticalAlignment="Bottom">
-                            <!-- Type Badge -->
-                            <Border Background="{DynamicResource PillBgBrush}" CornerRadius="5" Padding="5,2" VerticalAlignment="Center"
-                                    IsVisible="{Binding Type, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                <TextBlock Text="{Binding Type, Converter={StaticResource LocConverter}}"
-                                           FontSize="9" Foreground="{DynamicResource PillFgPurpleBrush}" FontWeight="Medium"/>
-                            </Border>
+                        <!-- Row 1: Genre pills -->
+                        <ItemsRepeater Grid.Row="1" ItemsSource="{Binding Genres}"
+                                       Margin="0,7,0,0"
+                                       IsVisible="{Binding HasGenres}">
+                            <ItemsRepeater.Layout>
+                                <WrapLayout Orientation="Horizontal" HorizontalSpacing="4" VerticalSpacing="4"/>
+                            </ItemsRepeater.Layout>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Border Background="{DynamicResource PillBgBrush}" CornerRadius="5" Padding="6,3"
+                                            BorderBrush="{DynamicResource DividerStrokeColorDefault}" BorderThickness="1">
+                                        <TextBlock Text="{Binding Converter={StaticResource LocConverter}}"
+                                                   FontSize="9.5" FontWeight="Medium" Opacity="0.85"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
 
-                            <!-- Score Badge -->
-                            <Border Background="{DynamicResource PillBgBrush}" CornerRadius="5" Padding="5,2" VerticalAlignment="Center"
-                                    IsVisible="{Binding MeanScore, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                <StackPanel Orientation="Horizontal" Spacing="3">
-                                    <material:MaterialIcon Kind="Star" Width="10" Height="10" Foreground="{DynamicResource PillFgGoldBrush}" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding MeanScore}" FontSize="9" FontWeight="Medium" Foreground="{DynamicResource PillFgGoldBrush}" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
+                    </Grid>
 
-                            <!-- Episodes Badge -->
-                            <Border Background="{DynamicResource PillBgBrush}" CornerRadius="5" Padding="5,2" VerticalAlignment="Center"
-                                    IsVisible="{Binding TotalEpisodes, Converter={StaticResource IntToBoolConverter}}">
-                                <TextBlock Text="{Binding TotalEpisodes, StringFormat='{}{0} эп'}" FontSize="9" FontWeight="Medium" Foreground="{DynamicResource PillFgGrayBrush}"/>
-                            </Border>
-                        </StackPanel>
-                    </StackPanel>
                 </Grid>
                 </Border>
-            </Border>
-        </DataTemplate>
-
-        <!-- ═══════════ VARIANT B: Cinematic Overlay ═══════════ -->
-        <DataTemplate x:Key="CardTemplateCinematic" x:DataType="models:AnimeItem">
-            <Border Classes="AnimeCard revealItem" Margin="4" Width="155" Height="265" ClipToBounds="True">
-                <Panel Background="Transparent" DoubleTapped="Poster_DoubleTapped">
-                    <!-- Loading Placeholder -->
-                    <TemplatedControl Template="{DynamicResource PosterLoadingTemplate}"/>
-
-                    <!-- Actual Image -->
-                    <Image core:CachedImage.Source="{Binding MainPictureUrl}" Stretch="UniformToFill" />
-
-                    <!-- Top gradient for badge readability (soft) -->
-                    <Border VerticalAlignment="Top" Height="56" IsHitTestVisible="False"
-                            Background="{DynamicResource CinematicTopGradient}"/>
-
-                    <!-- Bottom cinematic gradient -->
-                    <Border VerticalAlignment="Bottom" Height="160" IsHitTestVisible="False"
-                            Background="{DynamicResource CinematicBottomGradient}"/>
-
-                    <!-- Status badge (Left) -->
-                    <Border Classes="Badge" VerticalAlignment="Top" HorizontalAlignment="Left"
-                            Margin="8"
-                            IsVisible="{Binding Status, Converter={StaticResource StatusNotNoneConverter}}"
-                            Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}">
-                        <TextBlock Text="{Binding Status, Converter={StaticResource LocConverter}}"
-                                 FontSize="9" Foreground="White" FontWeight="SemiBold"/>
-                    </Border>
-
-                    <!-- Popularity badge (Right) -->
-                    <Border Classes="Badge" VerticalAlignment="Top" HorizontalAlignment="Right"
-                            Margin="8" Background="#CC000000">
-                        <TextBlock Text="{Binding Popularity, StringFormat='#{0}'}"
-                                 FontSize="9" Foreground="White" FontWeight="SemiBold"/>
-                    </Border>
-
-                    <!-- Hide / Un-hide (client-only "not interested") -->
-                    <Border Classes="HideBtn" Classes.confirming="{Binding IsHideConfirming}"
-                            VerticalAlignment="Top" HorizontalAlignment="Left"
-                            Margin="6,26,6,6" Tapped="HideBtn_Tapped"
-                            ToolTip.Tip="{DynamicResource l.filters.options.hide_tooltip}">
-                        <Border.IsVisible>
-                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                <Binding Path="Status" Converter="{StaticResource StatusNoneConverter}"/>
-                                <Binding Path="IsHiddenInSeasons"/>
-                            </MultiBinding>
-                        </Border.IsVisible>
-                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <material:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" Foreground="White"
-                                                   IsVisible="{Binding !IsHiddenInSeasons}"/>
-                            <material:MaterialIcon Kind="EyeOutline" Width="14" Height="14" Foreground="White"
-                                                   IsVisible="{Binding IsHiddenInSeasons}"/>
-                            <TextBlock IsVisible="{Binding IsHideConfirming}"
-                                       FontSize="10" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center">
-                                <TextBlock.Text>
-                                    <MultiBinding Converter="{x:Static conv:HideConfirmTextConverter.Instance}">
-                                        <Binding Path="IsHiddenInSeasons"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Bottom overlay info -->
-                    <StackPanel VerticalAlignment="Bottom" Margin="10,0,10,8" Spacing="2">
-                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold"
-                                   MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                   LineHeight="15" Foreground="{DynamicResource CinematicTitleForeground}">
-                            <TextBlock.Effect>
-                                <DropShadowEffect BlurRadius="4" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
-                            </TextBlock.Effect>
-                        </TextBlock>
-                        <TextBlock Text="{Binding RussianTitle}" FontSize="10"
-                                   MaxLines="1" TextTrimming="CharacterEllipsis"
-                                   LineHeight="13" Foreground="{DynamicResource CinematicSubtitleForeground}"
-                                   IsVisible="{Binding RussianTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <TextBlock.Effect>
-                                <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
-                            </TextBlock.Effect>
-                        </TextBlock>
-
-                        <Grid ColumnDefinitions="*, Auto" Margin="0,4,0,0" VerticalAlignment="Center">
-                            <TextBlock Grid.Column="0" Text="{Binding Type, Converter={StaticResource LocConverter}}"
-                                       FontSize="10" VerticalAlignment="Center" Foreground="{DynamicResource CinematicSubtitleForeground}">
-                                <TextBlock.Effect>
-                                    <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
-                                </TextBlock.Effect>
-                            </TextBlock>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                <material:MaterialIcon Kind="Star" Width="12" Height="12" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding MeanScore}" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource CinematicTitleForeground}" VerticalAlignment="Center">
-                                    <TextBlock.Effect>
-                                        <DropShadowEffect BlurRadius="3" Color="#000000" OffsetX="0" OffsetY="1" Opacity="0.85"/>
-                                    </TextBlock.Effect>
-                                </TextBlock>
-                            </StackPanel>
-                        </Grid>
-                    </StackPanel>
-                </Panel>
             </Border>
         </DataTemplate>
     </UserControl.Resources>
@@ -797,8 +646,8 @@
                                ItemsSource="{Binding DisplayItems}"
                                Margin="20,0,20,16">
                     <ItemsRepeater.Layout>
-                        <UniformGridLayout MinItemWidth="163" 
-                                          MinItemHeight="310"
+                        <UniformGridLayout MinItemWidth="360" 
+                                          MinItemHeight="175"
                                           MinColumnSpacing="0"
                                           MinRowSpacing="0"
                                           ItemsJustification="Start"/>

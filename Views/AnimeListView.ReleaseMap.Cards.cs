@@ -132,18 +132,15 @@ public partial class AnimeListView
             MaxLines = 1
         });
 
-        if (!string.IsNullOrWhiteSpace(release.RussianTitle))
+        infoPanel.Children.Add(new TextBlock
         {
-            infoPanel.Children.Add(new TextBlock
-            {
-                Text = release.RussianTitle,
-                FontSize = 11,
-                FontWeight = FontWeight.Medium,
-                Foreground = BrushFrom(palette.SecondaryTitleText),
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                MaxLines = 1
-            });
-        }
+            DataContext = release.Item,
+            [!TextBlock.TextProperty] = new Avalonia.Data.Binding("RussianTitle") { FallbackValue = release.Title },
+            FontSize = 11,
+            Foreground = BrushFrom(palette.SecondaryTitleText),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            [!TextBlock.IsVisibleProperty] = new Avalonia.Data.Binding("RussianTitle") { Converter = Avalonia.Data.Converters.StringConverters.IsNotNullOrEmpty }
+        });
 
         // Meta pills
         var metaRow = new StackPanel

@@ -69,12 +69,7 @@
                     <SolidColorBrush x:Key="ScoreFlyoutItemHover" Color="#0C000000"/>
                     <SolidColorBrush x:Key="ScoreFlyoutItemPressed" Color="#18000000"/>
                     <SolidColorBrush x:Key="ScoreFlyoutItemForeground" Color="#E4000000"/>
-                    <!-- Card style radio (light) -->
-                    <SolidColorBrush x:Key="CardStyleRadioForeground" Color="#AA000000"/>
-                    <SolidColorBrush x:Key="CardStyleRadioBackground" Color="#09000000"/>
-                    <SolidColorBrush x:Key="CardStyleRadioBorder" Color="#0C000000"/>
-                    <SolidColorBrush x:Key="CardStyleRadioHoverBg" Color="#12000000"/>
-                    <SolidColorBrush x:Key="CardStyleRadioHoverBorder" Color="#18000000"/>
+
                     <!-- Cinematic overlay (light) -->
                     <LinearGradientBrush x:Key="CinematicBottomGradient" StartPoint="0%,0%" EndPoint="0%,100%">
                         <GradientStop Color="#00000000" Offset="0"/>
@@ -128,22 +123,17 @@
                     <SolidColorBrush x:Key="CardBorderBrush" Color="Transparent"/>
                     <SolidColorBrush x:Key="ProgressStepHoverBrush" Color="#15FFFFFF"/>
                     <SolidColorBrush x:Key="SegmentedTrackBrush" Color="#2AFFFFFF"/>
-                    <SolidColorBrush x:Key="PillBgBrush" Color="#2A2540"/>
+                    <SolidColorBrush x:Key="PillBgBrush" Color="#22FFFFFF"/>
                     <SolidColorBrush x:Key="PillFgPurpleBrush" Color="#B388FF"/>
                     <SolidColorBrush x:Key="PillFgGoldBrush" Color="#F6D365"/>
-                    <SolidColorBrush x:Key="PillFgGrayBrush" Color="#8B95A5"/>
+                    <SolidColorBrush x:Key="PillFgGrayBrush" Color="#B0BAC8"/>
                     <!-- Score flyout (dark) -->
                     <SolidColorBrush x:Key="ScoreFlyoutBackground" Color="#F5101010"/>
                     <SolidColorBrush x:Key="ScoreFlyoutBorder" Color="#20FFFFFF"/>
                     <SolidColorBrush x:Key="ScoreFlyoutItemHover" Color="#15FFFFFF"/>
                     <SolidColorBrush x:Key="ScoreFlyoutItemPressed" Color="#30FFFFFF"/>
                     <SolidColorBrush x:Key="ScoreFlyoutItemForeground" Color="#FFFFFFFF"/>
-                    <!-- Card style radio (dark) -->
-                    <SolidColorBrush x:Key="CardStyleRadioForeground" Color="#CCFFFFFF"/>
-                    <SolidColorBrush x:Key="CardStyleRadioBackground" Color="#10FFFFFF"/>
-                    <SolidColorBrush x:Key="CardStyleRadioBorder" Color="#10FFFFFF"/>
-                    <SolidColorBrush x:Key="CardStyleRadioHoverBg" Color="#1AFFFFFF"/>
-                    <SolidColorBrush x:Key="CardStyleRadioHoverBorder" Color="#20FFFFFF"/>
+
                     <!-- Cinematic overlay (dark) -->
                     <LinearGradientBrush x:Key="CinematicBottomGradient" StartPoint="0%,0%" EndPoint="0%,100%">
                         <GradientStop Color="#00000000" Offset="0"/>

@@ -26,17 +26,6 @@ public partial class SeasonalView : UserControl
     // Reveal duration: about 12 cards * 45 ms plus the 450 ms transition.
     private static readonly TimeSpan InitialRevealWindow = TimeSpan.FromMilliseconds(1100);
 
-    // ═══ Card style switching ═══
-    private int _currentCardStyle = 1; // 0=Classic, 1=Cinematic
-    private static readonly string[] CardTemplateKeys =
-        { "CardTemplateClassic", "CardTemplateCinematic", "CardTemplateFloatingMagazine" };
-
-    private static readonly (double w, double h)[] LayoutParams =
-    {
-        (163, 310),  // Classic
-        (163, 275),  // Cinematic
-        (166, 335),  // Floating Magazine
-    };
 
     public SeasonalView()
     {
@@ -48,48 +37,17 @@ public partial class SeasonalView : UserControl
             _gridRepeater.ElementClearing += OnGridElementClearing;
         }
         DataContextChanged += OnDataContextChanged;
-
-        CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Register<CardStyleChangedMessage>(this, (r, m) =>
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyCardStyle(m.Style));
-        });
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
 
-        var settings = App.Services.GetRequiredService<Kiriha.Services.Data.SettingsService>();
-        _currentCardStyle = settings.Current.UI.CardStyle;
-        ApplyCardStyle(_currentCardStyle);
-
         BeginInitialRevealWindow();
         // Initial viewport kickstart
         Avalonia.Threading.Dispatcher.UIThread.Post(QueueVisibleItems, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
-    private void ApplyCardStyle(int style)
-    {
-        if (style < 0 || style >= CardTemplateKeys.Length) return;
-        _currentCardStyle = style;
-
-        var key = CardTemplateKeys[style];
-        if (this.TryFindResource(key, this.ActualThemeVariant, out var resource) && resource is Avalonia.Controls.Templates.IDataTemplate dt)
-        {
-            if (_gridRepeater != null)
-                _gridRepeater.ItemTemplate = dt;
-        }
-
-        // Adjust layout dimensions for the selected style
-        if (_gridRepeater?.Layout is Avalonia.Layout.UniformGridLayout layout)
-        {
-            var (w, h) = LayoutParams[style];
-            layout.MinItemWidth = w;
-            layout.MinItemHeight = h;
-        }
-
-        BeginInitialRevealWindow();
-    }
 
     /// <summary>
     /// Opens a short window where prepared cards play the reveal cascade.
@@ -277,6 +235,41 @@ public partial class SeasonalView : UserControl
         {
             _hideConfirmItem.IsHideConfirming = false;
             _hideConfirmItem = null;
+        }
+    }
+
+    private void QuickAddBtn_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        try
+        {
+            e.Handled = true; // Prevent poster double-tap from firing
+            if (sender is Control c && c.ContextFlyout != null)
+            {
+                c.ContextFlyout.ShowAt(c);
+            }
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "SeasonalView.QuickAddBtn_Tapped failed");
+        }
+    }
+
+    private void QuickAddMenuItem_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is MenuItem menuItem && 
+                menuItem.Tag is string statusStr && Enum.TryParse<Models.Entities.UserAnimeStatus>(statusStr, out var status) &&
+                menuItem.DataContext is Models.AnimeItem item &&
+                DataContext is SeasonalViewModel vm)
+            {
+                // Fire and forget the async command
+                _ = vm.QuickAddToList(item, status);
+            }
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "SeasonalView.QuickAddMenuItem_Click failed");
         }
     }
 }

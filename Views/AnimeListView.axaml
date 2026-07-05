@@ -55,9 +55,8 @@
                         </StackPanel>
 
                         <!-- Top-Right: clickable score -->
-                        <Button VerticalAlignment="Top" HorizontalAlignment="Right"
-                                Margin="8" Padding="2" Background="Transparent"
-                                BorderThickness="0" CornerRadius="6"
+                        <Button Classes="ScoreBadgeButton" VerticalAlignment="Top" HorizontalAlignment="Right"
+                                Margin="8" BorderThickness="0"
                                 Command="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).OpenScoreMenuCommand}"
                                 CommandParameter="{Binding}"
                                 IsVisible="{Binding Score, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
@@ -70,8 +69,8 @@
                                             Opened="ScoreMenu_Opened"/>
                             </Button.Flyout>
                             <StackPanel Orientation="Horizontal" Spacing="3">
-                                <material:MaterialIcon Kind="Star" Width="13" Height="13" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Score}" FontSize="11" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <material:MaterialIcon Kind="Star" Width="11" Height="11" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Score}" FontSize="10" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </Panel>
@@ -158,9 +157,8 @@
                                        LineHeight="17"
                                        Foreground="{DynamicResource SystemBaseHighColor}"/>
                             <!-- Score badge -->
-                            <Button Grid.Column="1" Padding="2" Background="Transparent"
-                                    BorderThickness="0" CornerRadius="6" Margin="6,0,0,0"
-                                    VerticalAlignment="Top"
+                            <Button Classes="ScoreBadgeButton" Grid.Column="1" Margin="6,0,0,0"
+                                    BorderThickness="0" VerticalAlignment="Top"
                                     Command="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).OpenScoreMenuCommand}"
                                     CommandParameter="{Binding}"
                                     IsVisible="{Binding Score, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
@@ -273,9 +271,8 @@
                     </StackPanel>
 
                     <!-- Top-Right: score (always visible) -->
-                    <Button VerticalAlignment="Top" HorizontalAlignment="Right"
-                            Margin="8" Padding="2" Background="Transparent"
-                            BorderThickness="0" CornerRadius="6"
+                    <Button Classes="ScoreBadgeButton" VerticalAlignment="Top" HorizontalAlignment="Right"
+                            Margin="8" BorderThickness="0"
                             Command="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).OpenScoreMenuCommand}"
                             CommandParameter="{Binding}"
                             IsVisible="{Binding Score, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
@@ -288,8 +285,8 @@
                                         Opened="ScoreMenu_Opened"/>
                         </Button.Flyout>
                         <StackPanel Orientation="Horizontal" Spacing="3">
-                            <material:MaterialIcon Kind="Star" Width="13" Height="13" Foreground="#f1c40f" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Score}" FontSize="11" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <material:MaterialIcon Kind="Star" Width="11" Height="11" Foreground="#f1c40f" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Score}" FontSize="10" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
@@ -375,9 +372,8 @@
                         </StackPanel>
 
                         <!-- Score badge (top-right) -->
-                        <Button VerticalAlignment="Top" HorizontalAlignment="Right"
-                                Margin="9" Padding="2" Background="Transparent"
-                                BorderThickness="0" CornerRadius="6"
+                        <Button Classes="ScoreBadgeButton" VerticalAlignment="Top" HorizontalAlignment="Right"
+                                Margin="9" BorderThickness="0"
                                 Command="{Binding #animeListRoot.((vm:AnimeListViewModel)DataContext).OpenScoreMenuCommand}"
                                 CommandParameter="{Binding}"
                                 IsVisible="{Binding Score, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">

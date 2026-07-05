@@ -34,11 +34,7 @@ public partial class SettingsViewModel
         };
     }
 
-    partial void OnSelectedCardStyleChanged(int value)
-    {
-        _settingsService.Update(settings => settings.UI.CardStyle = value, SettingsSection.UI);
-        CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new CardStyleChangedMessage(value));
-    }
+
 
     partial void OnUseRussianTitlesChanged(bool value)
     {

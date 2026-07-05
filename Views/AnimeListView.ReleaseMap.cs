@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -97,8 +98,9 @@ public partial class AnimeListView
 
         var first = releases[0];
         ReleaseHeroAnimeTitle.Text = first.Title;
-        ReleaseHeroRussianTitle.Text = first.RussianTitle ?? string.Empty;
-        ReleaseHeroRussianTitle.IsVisible = !string.IsNullOrWhiteSpace(first.RussianTitle);
+        ReleaseHeroRussianTitle.DataContext = first.Item;
+        ReleaseHeroRussianTitle[!TextBlock.TextProperty] = new Avalonia.Data.Binding("RussianTitle");
+        ReleaseHeroRussianTitle[!TextBlock.IsVisibleProperty] = new Avalonia.Data.Binding("RussianTitle") { Converter = Avalonia.Data.Converters.StringConverters.IsNotNullOrEmpty };
         ReleaseHeroKindText.Text = GetHeroReleaseKind(first);
         ReleaseHeroCountdownText.Text = FormatUntilRelease(first.ReleaseAt);
         ReleaseHeroTimeText.Text = first.ReleaseAt.ToString("HH:mm");
@@ -163,6 +165,12 @@ public partial class AnimeListView
             IsHitTestVisible = false,
             Background = Brushes.Transparent
         });
+
+        if (App.Services.GetService(typeof(Kiriha.Services.Data.ShikiMetadataService)) is Kiriha.Services.Data.ShikiMetadataService shiki)
+        {
+            var tasks = releases.Select(r => shiki.EnsureLocalizedAsync(r.Item));
+            _ = Task.WhenAll(tasks);
+        }
     }
 
     private IEnumerable<ReleaseMapItem> GetUpcomingReleases()
@@ -190,7 +198,7 @@ public partial class AnimeListView
                 nextEpisode = Math.Min(nextEpisode, item.TotalEpisodes);
             return new ReleaseMapItem(
                 GetPrimaryReleaseTitle(item),
-                item.RussianTitle,
+                item,
                 item.NextEpisodeAt.Value,
                 nextEpisode > 0 ? $"{nextEpisode} серия" : "следующая серия",
                 item.AiringBadgeText,
@@ -201,7 +209,7 @@ public partial class AnimeListView
         {
             return new ReleaseMapItem(
                 GetPrimaryReleaseTitle(item),
-                item.RussianTitle,
+                item,
                 item.AiringDate.Value,
                 "премьера",
                 item.Season,

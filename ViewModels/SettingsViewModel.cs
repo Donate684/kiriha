@@ -61,8 +61,6 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private ThemeOption _selectedTheme;
 
-    [ObservableProperty]
-    private int _selectedCardStyle;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanLoginShikiOne))]
@@ -265,7 +263,7 @@ public partial class SettingsViewModel : ViewModelBase
 
         _selectedLanguage = AvailableLanguages.FirstOrDefault(x => x.Code == _settingsService.Current.UI.LanguageCode) ?? AvailableLanguages[0];
         _selectedTheme = AvailableThemes.FirstOrDefault(x => x.Value == _settingsService.Current.UI.Theme) ?? AvailableThemes[0];
-        SelectedCardStyle = _settingsService.Current.UI.CardStyle;
+
         
         IsLoggedIn = _settingsService.Current.Api.Mal != null;
         IsShikiLoggedIn = _settingsService.Current.Api.Shiki != null;

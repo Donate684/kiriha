@@ -20,19 +20,22 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
     private readonly LoadQueueService _queueService;
     private readonly AnimeService _animeService;
     private readonly SeasonalCacheStore _cacheStore;
+    private readonly SyncManager _syncManager;
 
     public SeasonalViewModel(
         MalApiService apiService,
         SettingsService settingsService,
         LoadQueueService queueService,
         AnimeService animeService,
-        SeasonalCacheStore cacheStore)
+        SeasonalCacheStore cacheStore,
+        SyncManager syncManager)
     {
         _apiService = apiService;
         _settingsService = settingsService;
         _queueService = queueService;
         _animeService = animeService;
         _cacheStore = cacheStore;
+        _syncManager = syncManager;
 
         HydrateDiskCacheOnce();
         LoadSettingsState();

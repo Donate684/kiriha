@@ -1,10 +1,11 @@
 using System;
-
+using Kiriha.Models;
+using Kiriha.Models.Entities;
 namespace Kiriha.Views;
 
 public partial class AnimeListView
 {
-    private sealed record ReleaseMapItem(string Title, string? RussianTitle, DateTime ReleaseAt, string Kind, string Note, string? PosterUrl);
+    private sealed record ReleaseMapItem(string Title, AnimeItem Item, DateTime ReleaseAt, string Kind, string Note, string? PosterUrl);
 
     private sealed record ReleasePalette(
         string Surface,

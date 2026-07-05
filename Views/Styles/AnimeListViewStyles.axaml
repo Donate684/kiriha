@@ -24,6 +24,16 @@
             <Setter Property="Background" Value="{DynamicResource ScoreFlyoutItemPressed}"/>
             <Setter Property="Foreground" Value="{DynamicResource ScoreFlyoutItemForeground}"/>
         </Style>
+        <Style Selector="Button.ScoreBadgeButton">
+            <Setter Property="Background" Value="#88000000"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
         <Style Selector="Button.ScoreBadgeButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#EE000000"/>
         </Style>
@@ -242,47 +252,7 @@
             <Setter Property="RenderTransform" Value="translate(0,0)"/>
         </Style>
 
-        <!-- ═══ Card Style Menu: radio button options ═══ -->
-        <Style Selector="RadioButton.CardStyleRadio">
-            <Setter Property="Padding" Value="14,10"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="{DynamicResource CardStyleRadioForeground}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Background" Value="{DynamicResource CardStyleRadioBackground}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardStyleRadioBorder}"/>
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <Border Background="{TemplateBinding Background}"
-                            CornerRadius="{TemplateBinding CornerRadius}"
-                            Padding="{TemplateBinding Padding}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}">
-                        <Border.Transitions>
-                            <Transitions>
-                                <BrushTransition Property="Background" Duration="0:0:0.15"/>
-                                <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
-                            </Transitions>
-                        </Border.Transitions>
-                        <ContentPresenter Content="{TemplateBinding Content}"
-                                          HorizontalAlignment="Left"
-                                          VerticalAlignment="Center"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter>
-        </Style>
-        <Style Selector="RadioButton.CardStyleRadio:pointerover /template/ Border">
-            <Setter Property="Background" Value="{DynamicResource CardStyleRadioHoverBg}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardStyleRadioHoverBorder}"/>
-        </Style>
-        <Style Selector="RadioButton.CardStyleRadio:checked /template/ Border">
-            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}"/>
-        </Style>
-        <Style Selector="RadioButton.CardStyleRadio:checked">
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
+
         <!-- ═══ MediaKind Segmented Toggle (Anime | Manga) ═══ -->
         <!-- Container track -->
         <Style Selector="StackPanel.MediaKindSegment">

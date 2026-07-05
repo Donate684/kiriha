@@ -290,7 +290,11 @@ public class ShikiMetadataService : IDisposable
         if (!useRussian) return;
         if (!string.IsNullOrEmpty(item.RussianTitle) && !string.IsNullOrEmpty(item.RussianSynopsis)) return;
 
-        var meta = await GetOrFetchMetadataAsync(item.Id, maxAge: null, onFetched: null, item.MediaKind);
+        bool missingData = (string.IsNullOrEmpty(item.RussianTitle) && _settingsService.Current.UI.UseRussianTitles) ||
+                           (string.IsNullOrEmpty(item.RussianSynopsis) && _settingsService.Current.UI.UseRussianDescriptions);
+        TimeSpan? maxAge = missingData ? TimeSpan.FromHours(12) : null;
+
+        var meta = await GetOrFetchMetadataAsync(item.Id, maxAge: maxAge, onFetched: null, item.MediaKind);
         if (meta == null) return;
 
         bool changed = await _uiDispatcher.InvokeAsync(() => ApplyMetadata(item, meta));
