@@ -99,6 +99,8 @@ public readonly struct AnimeItemPresentation
     {
         get
         {
+            if (_item.Status == UserAnimeStatus.Dropped) return string.Empty;
+
             if (IsNewEpisode && HasNewEpisodes) return UIUtils.GetLoc("anime.labels.new_ep");
             if (_item.NextEpisodeAt.HasValue)
             {

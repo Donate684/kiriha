@@ -180,6 +180,9 @@ public partial class AnimeListView
 
     private static ReleaseMapItem? CreateReleaseMapItem(AnimeItem item, DateTime now)
     {
+        if (item.Status == UserAnimeStatus.Dropped)
+            return null;
+
         if (item.NextEpisodeAt.HasValue && item.NextEpisodeAt.Value >= now.AddMinutes(-10))
         {
             var nextEpisode = item.EpisodesAired + 1;

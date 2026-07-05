@@ -552,8 +552,8 @@
                                                         <TextBlock Text="{Binding Relation.RelationType}" FontSize="12" Opacity="0.7"/>
                                                     </StackPanel>
                                                     
-                                                    <Border Grid.Column="2" Background="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" IsVisible="{Binding Relation.TargetType, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                        <TextBlock Text="{Binding Relation.TargetType}" FontSize="11" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                                    <Border Grid.Column="2" Background="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" IsVisible="{Binding DisplayTargetType, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                        <TextBlock Text="{Binding DisplayTargetType}" FontSize="11" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
                                                     </Border>
                                                 </Grid>
                                             </Button>

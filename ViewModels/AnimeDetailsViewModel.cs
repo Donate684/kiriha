@@ -26,9 +26,13 @@ public partial class RelationItemVm : ObservableObject
     [ObservableProperty]
     private string? _imageUrl;
 
+    [ObservableProperty]
+    private string? _displayTargetType;
+
     public RelationItemVm(Models.Entities.AnimeRelation relation)
     {
         Relation = relation;
+        DisplayTargetType = relation.TargetType;
     }
 }
 
@@ -274,25 +278,72 @@ public partial class AnimeDetailsViewModel : ViewModelBase
 
     private async Task FetchRelationImageAsync(RelationItemVm vm)
     {
-        var existing = _animeService.Collection.FirstOrDefault(x => x.Id == vm.Relation.TargetMalId);
+        var type = vm.Relation.TargetType?.ToLowerInvariant() ?? "";
+        bool isAnime = type == "anime" || type == "tv" || type == "movie" || type == "ova" || type == "ona" || type == "special";
+
+        var existing = _animeService.Collection.FirstOrDefault(x => x.Id == vm.Relation.TargetMalId && (isAnime ? x.MediaKind == MediaKind.Anime : x.MediaKind != MediaKind.Anime));
         if (existing != null && !string.IsNullOrEmpty(existing.MainPictureUrl))
         {
             vm.ImageUrl = existing.MainPictureUrl;
+            if (!string.IsNullOrEmpty(existing.Type))
+            {
+                vm.DisplayTargetType = FormatMediaType(existing.Type);
+            }
             return;
         }
 
         try
         {
-            var details = await _malApiService.GetAnimeDetailsAsync(vm.Relation.TargetMalId);
-            if (details != null && !string.IsNullOrEmpty(details.MainPictureUrl))
+            AnimeItem? details = null;
+            if (isAnime)
             {
-                vm.ImageUrl = details.MainPictureUrl;
+                details = await _malApiService.GetAnimeDetailsAsync(vm.Relation.TargetMalId);
+            }
+            else
+            {
+                details = await _malApiService.GetMangaDetailsAsync(vm.Relation.TargetMalId);
+            }
+
+            if (details != null)
+            {
+                if (!string.IsNullOrEmpty(details.MainPictureUrl))
+                {
+                    vm.ImageUrl = details.MainPictureUrl;
+                }
+                if (!string.IsNullOrEmpty(details.Type))
+                {
+                    vm.DisplayTargetType = FormatMediaType(details.Type);
+                }
             }
         }
         catch (System.Exception ex)
         {
             Log.Warning(ex, "Failed to fetch image for relation {TargetMalId}", vm.Relation.TargetMalId);
         }
+    }
+
+    private static string FormatMediaType(string type)
+    {
+        if (string.IsNullOrEmpty(type)) return "Unknown";
+        var t = type.ToLowerInvariant();
+        return t switch
+        {
+            "light_novel" => "Light Novel",
+            "novel" => "Novel",
+            "one_shot" => "One-shot",
+            "doujinshi" => "Doujinshi",
+            "manhwa" => "Manhwa",
+            "manhua" => "Manhua",
+            "oel" => "OEL",
+            "manga" => "Manga",
+            "tv" => "TV",
+            "movie" => "Movie",
+            "ova" => "OVA",
+            "ona" => "ONA",
+            "special" => "Special",
+            "music" => "Music",
+            _ => char.ToUpper(t[0]) + t.Substring(1)
+        };
     }
 
     private async Task LoadFullDetailsAsync()
