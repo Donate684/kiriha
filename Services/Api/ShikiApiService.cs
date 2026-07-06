@@ -23,6 +23,7 @@ public class ShikiApiService : ITrackerService
     private readonly ShikiAuthService _authService;
     private readonly ShikiHostResolver _hostResolver;
     private readonly SemaphoreSlim _tokenLock = new(1, 1);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, (ShikiPersonResponse? Value, DateTime SystemDateTime)> _personCache = new();
 
     public string Name => "Shikimori";
 
@@ -232,6 +233,29 @@ public class ShikiApiService : ITrackerService
         }
     }
 
+    public async Task<ShikiPersonResponse?> GetPersonWorksAsync(int personId, CancellationToken ct = default)
+    {
+        if (_personCache.TryGetValue(personId, out var hit) && (DateTime.UtcNow - hit.SystemDateTime) < TimeSpan.FromHours(1))
+        {
+            return hit.Value;
+        }
+
+        var response = await GetAsync($"people/{personId}", ct);
+        if (!response.IsSuccessStatusCode) return null;
+
+        using var stream = await response.Content.ReadAsStreamAsync(ct);
+        try
+        {
+            var result = await JsonSerializer.DeserializeAsync<ShikiPersonResponse>(stream, cancellationToken: ct);
+            _personCache[personId] = (result, DateTime.UtcNow);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "ShikiApiService: failed to deserialize person data for {PersonId}", personId);
+            return null;
+        }
+    }
 
     private async Task<int?> GetCurrentUserIdAsync(CancellationToken ct)
     {

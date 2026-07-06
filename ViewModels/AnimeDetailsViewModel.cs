@@ -36,11 +36,31 @@ public partial class RelationItemVm : ObservableObject
     }
 }
 
-public partial class StaffItemVm : ObservableObject
+public partial class StaffWorkVm : ObservableObject
+{
+    [ObservableProperty]
+    private string _title = string.Empty;
+
+    [ObservableProperty]
+    private string _url = string.Empty;
+
+    [ObservableProperty]
+    private string _score = string.Empty;
+
+    [ObservableProperty]
+    private Avalonia.Media.IBrush _highlightColor = Avalonia.Media.Brushes.Transparent;
+}
+
+public partial class StaffPlusItemVm : ObservableObject
 {
     public Models.Entities.AnimeStaff Staff { get; }
+    
+    [ObservableProperty]
+    private string _role = string.Empty;
 
-    public StaffItemVm(Models.Entities.AnimeStaff staff)
+    public System.Collections.ObjectModel.ObservableCollection<StaffWorkVm> BestWorks { get; } = new();
+
+    public StaffPlusItemVm(Models.Entities.AnimeStaff staff)
     {
         Staff = staff;
     }
@@ -63,7 +83,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
 
     public System.Collections.ObjectModel.ObservableCollection<RelationItemVm> Relations { get; } = new();
     
-    public System.Collections.ObjectModel.ObservableCollection<StaffItemVm> Staff { get; } = new();
+    public System.Collections.ObjectModel.ObservableCollection<StaffPlusItemVm> StaffPlus { get; } = new();
 
     /// <summary>
     /// User-defined share buttons resolved against the current anime. Rebuilt
@@ -193,6 +213,9 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         Anime.PropertyChanged += (s, e) => {
             if (e.PropertyName == nameof(Anime.Status))
                 OnPropertyChanged(nameof(IsInList));
+            
+            OnPropertyChanged(nameof(HasChanges));
+            SaveCommand.NotifyCanExecuteChanged();
         };
 
         BuildCustomShareLinks();
@@ -261,19 +284,101 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         try
         {
             var staffList = await _jikanApiService.GetStaffAsync(Anime.Id, Anime.MediaKind);
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                Staff.Clear();
-                foreach (var s in staffList)
-                {
-                    Staff.Add(new StaffItemVm(s));
-                }
-            });
+            _ = ProcessStaffPlusAsync(staffList);
         }
         catch (System.Exception ex)
         {
             Log.Warning(ex, "Failed to fetch staff for {Id}", Anime.Id);
         }
+    }
+
+    private async Task ProcessStaffPlusAsync(System.Collections.Generic.List<Models.Entities.AnimeStaff> staffList)
+    {
+        var keyRoles = new[] { "Original Creator", "Director", "Series Composition", "Script", "Music", "Character Design" };
+        var staffPlusVms = new System.Collections.Generic.List<StaffPlusItemVm>();
+
+        foreach (var s in staffList)
+        {
+            if (string.IsNullOrEmpty(s.Positions)) continue;
+            var roles = s.Positions.Split(',').Select(r => r.Trim()).ToList();
+            var matchedRole = roles.FirstOrDefault(r => keyRoles.Contains(r));
+            if (matchedRole == null) continue;
+
+            if (staffPlusVms.Count >= 10) break;
+            if (s.PersonMalId == 0) continue;
+
+            var personData = await _shikiApiService.GetPersonWorksAsync(s.PersonMalId);
+            if (personData?.Works != null)
+            {
+                var vm = new StaffPlusItemVm(s) { Role = matchedRole };
+
+                var validWorks = personData.Works
+                    .Where(w => w.Anime != null && w.Anime.Id != Anime.Id)
+                    .Where(w => w.Role != null && IsRoleMatch(w.Role, matchedRole))
+                    .Select(w => new { Work = w, Score = double.TryParse(w.Anime!.Score, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var score) ? score : 0 })
+                    .OrderByDescending(x => x.Score)
+                    .ToList();
+
+                if (validWorks.Count > 0)
+                {
+                    foreach (var w in validWorks)
+                    {
+                        string scoreDisplay = w.Score > 0 ? w.Work.Anime!.Score! : "-";
+                        
+                        var localAnime = _animeService.Collection.FirstOrDefault(a => a.Id == w.Work.Anime!.Id);
+                        Avalonia.Media.IBrush highlight = Avalonia.Media.Brushes.Transparent;
+                        if (localAnime != null)
+                        {
+                            if (localAnime.Status == Models.Entities.UserAnimeStatus.Watching || localAnime.Status == Models.Entities.UserAnimeStatus.Completed)
+                                highlight = Avalonia.Media.SolidColorBrush.Parse("#334CAF50");
+                            else if (localAnime.Status == Models.Entities.UserAnimeStatus.Dropped)
+                                highlight = Avalonia.Media.SolidColorBrush.Parse("#33F44336");
+                        }
+
+                        vm.BestWorks.Add(new StaffWorkVm 
+                        { 
+                            Title = string.IsNullOrEmpty(w.Work.Anime!.Russian) ? (w.Work.Anime!.Name ?? "Unknown") : w.Work.Anime.Russian,
+                            Url = "https://shikimori.one" + w.Work.Anime.Url, 
+                            Score = scoreDisplay,
+                            HighlightColor = highlight
+                        });
+                    }
+                    staffPlusVms.Add(vm);
+                }
+            }
+        }
+
+        var sorted = staffPlusVms.OrderByDescending(x => x.Role == "Original Creator").ThenBy(x => x.Role).ToList();
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            StaffPlus.Clear();
+            foreach (var vm in sorted)
+            {
+                StaffPlus.Add(vm);
+            }
+        });
+    }
+
+    private bool IsRoleMatch(string role, string matchedRole)
+    {
+        var r = role.ToLowerInvariant();
+        return matchedRole switch
+        {
+            "Original Creator" => r.Contains("оригинал") || r.Contains("сюжет") || r.Contains("creator"),
+            "Director" => (r.Contains("режисс") || r.Contains("director")) &&
+                          !r.Contains("звук") && !r.Contains("sound") &&
+                          !r.Contains("эпизод") && !r.Contains("episode") &&
+                          !r.Contains("анимаци") && !r.Contains("animation") &&
+                          !r.Contains("cg") && !r.Contains("3d") &&
+                          !r.Contains("ассистент") && !r.Contains("assistant") &&
+                          !r.Contains("помощник") && !r.Contains("второй") && !r.Contains("co-director"),
+            "Series Composition" => r.Contains("компоновка") || r.Contains("структура") || r.Contains("series composition"),
+            "Script" => r.Contains("сценар") || r.Contains("script"),
+            "Music" => r.Contains("композитор") || r.Contains("музык") || r.Contains("music"),
+            "Character Design" => r.Contains("дизайн персонажей") || r.Contains("character design"),
+            _ => r.Contains(matchedRole.ToLowerInvariant())
+        };
     }
 
     private async Task FetchRelationImageAsync(RelationItemVm vm)
@@ -494,7 +599,34 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         // The property change notification for IsInList is handled by the ctor event handler
     }
 
-    [RelayCommand]
+    public bool HasChanges
+    {
+        get
+        {
+            if (_originalAnime == null || Anime == null) return false;
+            
+            string currentScore = Anime.Score ?? "";
+            if (currentScore != "-" && currentScore.Contains(" "))
+                currentScore = currentScore.Split(' ')[0];
+                
+            string origScore = _originalAnime.Score ?? "";
+            if (origScore != "-" && origScore.Contains(" "))
+                origScore = origScore.Split(' ')[0];
+
+            return _originalAnime.Status != Anime.Status ||
+                   _originalAnime.Progress != Anime.Progress ||
+                   _originalAnime.ChaptersRead != Anime.ChaptersRead ||
+                   _originalAnime.VolumesRead != Anime.VolumesRead ||
+                   origScore != currentScore ||
+                   _originalAnime.IsRewatching != Anime.IsRewatching ||
+                   _originalAnime.RewatchCount != Anime.RewatchCount ||
+                   _originalAnime.Notes != Anime.Notes ||
+                   _originalAnime.DateStarted != Anime.DateStarted ||
+                   _originalAnime.DateCompleted != Anime.DateCompleted;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasChanges))]
     private async Task Save(object? window)
     {
         if (_isRemoving) return;
