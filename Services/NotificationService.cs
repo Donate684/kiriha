@@ -10,9 +10,7 @@ using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;
 using Serilog;
 
-#if WINDOWS
-using Microsoft.Toolkit.Uwp.Notifications;
-#endif
+
 
 namespace Kiriha.Services;
 
@@ -35,10 +33,6 @@ public class NotificationService
 
     private const string AumId = "Kiriha";
 
-    // Lazily extracted PNG path used as the toast's appLogoOverride. We keep it under
-    // BasePath/toast-icon.png so the path is stable across launches and the Windows
-    // toast broker (different process) can read it as a regular file.
-    private static string? _toastIconPath;
 
     public NotificationService(SettingsService settingsService, IBackgroundTaskSupervisor backgroundTasks)
     {
@@ -152,17 +146,24 @@ public class NotificationService
 #if WINDOWS
             var clamped = lines.Count > 3 ? 3 : lines.Count;
 
-            var builder = new ToastContentBuilder();
+            var xmlString = "<toast><visual><binding template=\"ToastGeneric\">";
             for (int i = 0; i < clamped; i++)
             {
-                builder.AddText(lines[i] ?? string.Empty);
+                var text = (lines[i] ?? string.Empty)
+                    .Replace("&", "&amp;")
+                    .Replace("<", "&lt;")
+                    .Replace(">", "&gt;")
+                    .Replace("\"", "&quot;")
+                    .Replace("'", "&apos;");
+                xmlString += $"<text>{text}</text>";
             }
+            xmlString += "</binding></visual></toast>";
 
-            // By using ToastContentBuilder from the toolkit, we get automatic handling of the AUMID
-            // and Start Menu shortcut creation if running outside of Velopack (e.g. from IDE).
-            // We intentionally do NOT use AddAppLogoOverride, so Windows will use our app's executable icon
-            // in the tiny top header, giving us the exact look of MAA.
-            builder.Show();
+            var xmlDoc = new Windows.Data.Xml.Dom.XmlDocument();
+            xmlDoc.LoadXml(xmlString);
+
+            var toast = new Windows.UI.Notifications.ToastNotification(xmlDoc);
+            Windows.UI.Notifications.ToastNotificationManager.CreateToastNotifier(AumId).Show(toast);
 #else
             Log.Debug("NotificationService: Toast not shown (non-Windows build): {Lines}", string.Join(" | ", lines));
 #endif
@@ -193,42 +194,4 @@ public class NotificationService
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern int SetCurrentProcessExplicitAppUserModelID([MarshalAs(UnmanagedType.LPWStr)] string AppID);
 
-    /// <summary>
-    /// Copies the embedded <c>kiriha.png</c> to a stable disk path the Windows toast
-    /// broker can read. Returns the path on success, or null if extraction failed
-    /// (in which case we just send a text-only toast).
-    /// </summary>
-    private static string? EnsureToastIcon()
-    {
-        if (!string.IsNullOrEmpty(_toastIconPath) && File.Exists(_toastIconPath))
-            return _toastIconPath;
-
-        try
-        {
-            // Sit next to settings.json so it inherits the BasePath/portable layout.
-            var dir = Path.GetDirectoryName(PathHelper.GetSettingsPath());
-            if (string.IsNullOrEmpty(dir))
-                dir = Path.GetTempPath();
-            Directory.CreateDirectory(dir);
-
-            // Different filename than the previous "toast-icon.png" so we re-extract
-            // even if an older PNG is cached on disk from a prior build.
-            var dest = Path.Combine(dir, "toast-icon-v2.png");
-            if (!File.Exists(dest) || new FileInfo(dest).Length == 0)
-            {
-                var uri = new Uri("avares://Kiriha/Assets/kiriha_notif.png");
-                using var src = AssetLoader.Open(uri);
-                using var fs = new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.Read);
-                src.CopyTo(fs);
-            }
-
-            _toastIconPath = dest;
-            return dest;
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "NotificationService: failed to extract toast icon");
-            return null;
-        }
-    }
 }

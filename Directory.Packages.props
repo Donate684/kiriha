@@ -33,31 +33,15 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.9" />
-    <!-- BCL extension packages -->
-    <PackageVersion Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
-    <!-- Transitive security pin: Microsoft.Toolkit.Uwp.Notifications pulls an old System.Drawing.Common. -->
-    <PackageVersion Include="System.Drawing.Common" Version="10.0.9" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.9" />
     <PackageVersion Include="System.Threading.RateLimiting" Version="10.0.9" />
-    <!-- Transitive update pins: keep outdated reports clean while CPM is enabled. -->
-    <PackageVersion Include="Avalonia.Angle.Windows.Natives" Version="2.1.27548.20260419" />
-    <PackageVersion Include="HarfBuzzSharp" Version="8.3.1.5" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.5" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.WebAssembly" Version="8.3.1.5" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="8.3.1.5" />
-    <PackageVersion Include="Humanizer.Core" Version="3.0.10" />
-    <PackageVersion Include="MicroCom.Runtime" Version="0.11.6" />
-    <PackageVersion Include="Microsoft.Build.Framework" Version="18.6.3" />
-    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageVersion Include="Serilog" Version="4.3.1" />
-    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.WebAssembly" Version="3.119.4" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="3.119.4" />
+
+    <!-- Transitive security pins to resolve NU1903 (GHSA-2m69-gcr7-jv3q) -->
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="SQLitePCLRaw.core" Version="3.0.3" />
     <PackageVersion Include="SQLitePCLRaw.provider.e_sqlite3" Version="3.0.3" />
-    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.94.0" />
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.0.3" />
+
     <!-- Logging -->
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
