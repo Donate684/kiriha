@@ -54,7 +54,6 @@ public partial class AboutWindow : Window
         new CreditEntry("DiscordRichPresence",            "MIT · Lachee",                              "https://github.com/Lachee/discord-rpc-csharp"),
         new CreditEntry("AnitomySharp",                   "MPL 2.0 · Filename parsing",                "https://github.com/erengy/anitomy"),
         new CreditEntry("Anisthesia",                     "MPL 2.0 · Local media tracking",            "https://github.com/erengy/anisthesia"),
-        new CreditEntry("Microsoft.Toolkit.Uwp.Notifications", "MIT · Windows toast notifications",     "https://github.com/CommunityToolkit/WindowsCommunityToolkit"),
     };
 
     public AboutWindow()
