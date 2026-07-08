@@ -44,6 +44,7 @@ public class TrackingService : IDisposable
     private readonly object _state = new();
     private ParsedMedia? _currentMedia;
     private AnimeItem? _matchedAnime;
+    private bool _manualMapInProgress;
 
     public ParsedMedia? CurrentMedia { get { lock (_state) return _currentMedia; } }
     public AnimeItem? MatchedAnime { get { lock (_state) return _matchedAnime; } }
@@ -78,14 +79,25 @@ public class TrackingService : IDisposable
     public async Task ManualMapAsync(int animeId)
     {
         ParsedMedia? media;
-        lock (_state) { media = _currentMedia; }
-        if (media == null) return;
+        lock (_state)
+        {
+            media = _currentMedia;
+            if (media == null) return;
+            _manualMapInProgress = true;
+        }
 
-        Log.Information("TrackingService: Manually mapping '{Title}' to ID {Id}", media.AnimeTitle, animeId);
-        _mappingService.AddMapping(media.AnimeTitle, animeId);
+        try
+        {
+            Log.Information("TrackingService: Manually mapping '{Title}' to ID {Id}", media.AnimeTitle, animeId);
+            _mappingService.AddMapping(media.AnimeTitle, animeId);
 
-        // Use a temporary flag or bypass to ensure it works even if scrobbler is disabled
-        await MatchMediaAsync(media, forceMatch: true);
+            // Use a temporary flag or bypass to ensure it works even if scrobbler is disabled
+            await MatchMediaAsync(media, forceMatch: true);
+        }
+        finally
+        {
+            lock (_state) _manualMapInProgress = false;
+        }
     }
 
     public void SetInternalMedia(InternalPlayerState state)
@@ -226,25 +238,47 @@ public class TrackingService : IDisposable
     public async Task RemoveManualMappingAsync()
     {
         ParsedMedia? media;
-        lock (_state) { media = _currentMedia; }
-        if (media == null) return;
+        lock (_state)
+        {
+            media = _currentMedia;
+            if (media == null) return;
+            _manualMapInProgress = true;
+        }
 
-        Log.Information("TrackingService: Removing manual mapping for '{Title}'", media.AnimeTitle);
-        _mappingService.RemoveMapping(media.AnimeTitle);
+        try
+        {
+            Log.Information("TrackingService: Removing manual mapping for '{Title}'", media.AnimeTitle);
+            _mappingService.RemoveMapping(media.AnimeTitle);
 
-        await MatchMediaAsync(media, forceMatch: true);
+            await MatchMediaAsync(media, forceMatch: true);
+        }
+        finally
+        {
+            lock (_state) _manualMapInProgress = false;
+        }
     }
 
     public async Task AddNegativeMappingAsync()
     {
         ParsedMedia? media;
-        lock (_state) { media = _currentMedia; }
-        if (media == null) return;
+        lock (_state)
+        {
+            media = _currentMedia;
+            if (media == null) return;
+            _manualMapInProgress = true;
+        }
 
-        Log.Information("TrackingService: Adding negative mapping for '{Title}'", media.AnimeTitle);
-        _mappingService.AddNegativeMapping(media.AnimeTitle);
+        try
+        {
+            Log.Information("TrackingService: Adding negative mapping for '{Title}'", media.AnimeTitle);
+            _mappingService.AddNegativeMapping(media.AnimeTitle);
 
-        await MatchMediaAsync(media, forceMatch: true);
+            await MatchMediaAsync(media, forceMatch: true);
+        }
+        finally
+        {
+            lock (_state) _manualMapInProgress = false;
+        }
     }
 
     public bool IsManuallyMapped()
@@ -279,6 +313,12 @@ public class TrackingService : IDisposable
         try
         {
             if (!_settingsService.Current.System.Scrobbler.Enabled) return;
+            
+            lock (_state)
+            {
+                if (_manualMapInProgress) return;
+            }
+
             await MatchMediaAsync(media);
         }
         catch (OperationCanceledException) { /* shutdown */ }

@@ -372,7 +372,10 @@ public class AnimeService
                 }
                 
                 status?.Report($"{UIUtils.GetLoc("sync.updating.metadata")}: {i + 1}/{total}");
-                await Task.Delay(1, ct);
+                if (i < total - 1)
+                {
+                    await Task.Delay(1, ct);
+                }
             }
         }
     }
@@ -384,7 +387,11 @@ public class AnimeService
         {
             if (_recentlyDeletedIds.TryGetValue(item.Id, out var cts))
             {
-                cts.Cancel();
+                try
+                {
+                    cts.Cancel();
+                }
+                catch (ObjectDisposedException) { }
                 _recentlyDeletedIds.Remove(item.Id);
             }
         }
@@ -416,7 +423,11 @@ public class AnimeService
         {
             if (_recentlyDeletedIds.TryGetValue(animeId, out var oldCts))
             {
-                oldCts.Cancel();
+                try
+                {
+                    oldCts.Cancel();
+                }
+                catch (ObjectDisposedException) { }
             }
             _recentlyDeletedIds[animeId] = newCts;
         }
@@ -427,13 +438,6 @@ public class AnimeService
             try
             {
                 await Task.Delay(TimeSpan.FromSeconds(60), linkedCts.Token);
-                lock (_recentlyDeletedIds)
-                {
-                    if (_recentlyDeletedIds.TryGetValue(animeId, out var currentCts) && currentCts == newCts)
-                    {
-                        _recentlyDeletedIds.Remove(animeId);
-                    }
-                }
             }
             catch (OperationCanceledException)
             {
@@ -441,6 +445,13 @@ public class AnimeService
             }
             finally
             {
+                lock (_recentlyDeletedIds)
+                {
+                    if (_recentlyDeletedIds.TryGetValue(animeId, out var currentCts) && currentCts == newCts)
+                    {
+                        _recentlyDeletedIds.Remove(animeId);
+                    }
+                }
                 newCts.Dispose();
             }
         });

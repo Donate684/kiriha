@@ -37,7 +37,7 @@ public class ShikiMetadataService : IDisposable
 
     private readonly SemaphoreSlim _rateLimitLock = new(1, 1);
     private readonly SemaphoreSlim _concurrentFetches = new(2, 2);
-    private readonly HashSet<int> _activeFetches = new();
+    private readonly ConcurrentDictionary<int, byte> _activeFetches = new();
     private DateTime _lastRequest = DateTime.MinValue;
     private readonly TimeSpan _minInterval = TimeSpan.FromMilliseconds(250); 
 
@@ -106,15 +106,11 @@ public class ShikiMetadataService : IDisposable
             return cached;
         }
 
-        lock (_activeFetches)
+        if (!_activeFetches.TryAdd(cacheId, 0))
         {
-            if (_activeFetches.Contains(cacheId))
-            {
-                // Another fetch is already in flight; serve whatever we have
-                // (possibly stale) rather than spinning a duplicate request.
-                return cached;
-            }
-            _activeFetches.Add(cacheId);
+            // Another fetch is already in flight; serve whatever we have
+            // (possibly stale) rather than spinning a duplicate request.
+            return cached;
         }
 
         try
@@ -143,7 +139,7 @@ public class ShikiMetadataService : IDisposable
         }
         finally
         {
-            lock (_activeFetches) { _activeFetches.Remove(cacheId); }
+            _activeFetches.TryRemove(cacheId, out _);
         }
     }
 
@@ -254,10 +250,7 @@ public class ShikiMetadataService : IDisposable
             foreach (var item in uncached)
             {
                 int cacheId = GetCacheId(item.Id, item.MediaKind);
-                lock (_activeFetches) {
-                    if (_activeFetches.Contains(cacheId)) continue;
-                    _activeFetches.Add(cacheId);
-                }
+                if (!_activeFetches.TryAdd(cacheId, 0)) continue;
 
                 tasks.Add(Task.Run(async () => 
                 {
@@ -276,7 +269,7 @@ public class ShikiMetadataService : IDisposable
                     }
                     finally {
                         _concurrentFetches.Release();
-                        lock (_activeFetches) { _activeFetches.Remove(cacheId); }
+                        _activeFetches.TryRemove(cacheId, out _);
                     }
                 }, ct));
             }

@@ -24,8 +24,6 @@ namespace Kiriha.Services.Api;
 public enum SyncTaskType
 {
     UpdateProgress,
-    UpdateStatus,
-    UpdateScore,
     FullUpdate,
     Remove
 }
@@ -133,7 +131,7 @@ public class SyncManager : IHostedService
                 {
                     var tasks = g.OrderBy(x => x.Id).ToList();
                     var lastRemoveIndex = tasks.FindLastIndex(x => x.Type == nameof(SyncTaskType.Remove));
-                    if (lastRemoveIndex > 0)
+                    if (lastRemoveIndex >= 0)
                     {
                         tasks = tasks.Skip(lastRemoveIndex).ToList();
                     }

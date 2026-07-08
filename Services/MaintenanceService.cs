@@ -40,6 +40,7 @@ public class MaintenanceService : IDisposable
     private readonly IUiDispatcher _uiDispatcher;
 
     private int _isRunning; // 0/1, manipulated via Interlocked
+    private readonly CancellationTokenSource _disposeCts = new();
 
     // Intervals
     private static readonly TimeSpan RssInterval = TimeSpan.FromMinutes(15);
@@ -91,26 +92,36 @@ public class MaintenanceService : IDisposable
 
     private async Task RunMaintenanceLoopAsync(CancellationToken ct)
     {
-        // Initial delay to let the app finish startup UI work
-        await Task.Delay(TimeSpan.FromSeconds(5), ct);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, _disposeCts.Token);
+        var combinedCt = linkedCts.Token;
 
-        while (!ct.IsCancellationRequested)
+        try
         {
-            try
-            {
-                await PerformTasksAsync(ct);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "MaintenanceService: Error in loop");
-            }
+            // Initial delay to let the app finish startup UI work
+            await Task.Delay(TimeSpan.FromSeconds(5), combinedCt);
 
-            // Sleep for a bit before next check cycle (1 minute is enough for granularity)
-            await Task.Delay(TimeSpan.FromMinutes(1), ct);
+            while (!combinedCt.IsCancellationRequested)
+            {
+                try
+                {
+                    await PerformTasksAsync(combinedCt);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "MaintenanceService: Error in loop");
+                }
+
+                // Sleep for a bit before next check cycle (1 minute is enough for granularity)
+                await Task.Delay(TimeSpan.FromMinutes(1), combinedCt);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Graceful exit on cancellation
         }
     }
 
@@ -191,5 +202,18 @@ public class MaintenanceService : IDisposable
     public void Dispose()
     {
         Interlocked.Exchange(ref _isRunning, 0);
+
+        try
+        {
+            if (!_disposeCts.IsCancellationRequested)
+            {
+                _disposeCts.Cancel();
+            }
+            _disposeCts.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Already disposed
+        }
     }
 }

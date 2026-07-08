@@ -229,14 +229,21 @@ public class ImageCacheService : IDisposable
                     }
 
                     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                    var bytes = await _client.GetByteArrayAsync(url, cts.Token);
-                    
-                    await File.WriteAllBytesAsync(tmpPath, bytes, cts.Token);
-                    
-                    if (File.Exists(tmpPath))
+                    try
                     {
+                        var bytes = await _client.GetByteArrayAsync(url, cts.Token);
+                        await File.WriteAllBytesAsync(tmpPath, bytes, cts.Token);
+                        
                         File.Move(tmpPath, localPath, true);
                         return localPath;
+                    }
+                    catch
+                    {
+                        if (File.Exists(tmpPath))
+                        {
+                            try { File.Delete(tmpPath); } catch { }
+                        }
+                        throw;
                     }
                 }
                 finally
@@ -246,11 +253,6 @@ public class ImageCacheService : IDisposable
             }
             catch (Exception ex)
             {
-                // Cleanup partial temp files
-                if (File.Exists(tmpPath))
-                {
-                    try { File.Delete(tmpPath); } catch { }
-                }
 
                 if (i == retryCount)
                 {

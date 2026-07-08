@@ -583,7 +583,9 @@ public class MpvPlayer : IDisposable
             Marshal.StructureToPtr(parameters[i], IntPtr.Add(ptr, i * size), false);
         return ptr;
     }
-
+    // This lock is static because it's used within a native callback (OnRenderUpdate) 
+    // that lacks an instance context. If multiple MpvPlayer instances are created, 
+    // they will compete for this shared lock.
     private static readonly object _renderUpdateLock = new();
 
     private static void OnRenderUpdate(IntPtr context)

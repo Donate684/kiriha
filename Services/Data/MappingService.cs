@@ -273,10 +273,11 @@ public partial class MappingService
             return null;
         }
 
+        string normQ = Normalize(searchQuery);
+        var queryWords = normQ.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
         var bestMalMatch = searchResults.Take(5)
             .Select(r => {
-                string normQ = Normalize(searchQuery);
-                var queryWords = normQ.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 float score = 0;
                 
                 var titles = new List<string> { r.Title };

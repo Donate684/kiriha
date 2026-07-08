@@ -42,7 +42,7 @@ public class SettingsService : IDisposable
 
     private readonly string _settingsPath;
     private readonly Debouncer _debouncer;
-    private readonly object _saveLock = new();
+    private readonly SemaphoreSlim _saveLock = new(1, 1);
     private readonly object _stateLock = new();
     private long _uiVersion;
     private long _systemVersion;
@@ -112,9 +112,8 @@ public class SettingsService : IDisposable
 
         lock (_stateLock)
         {
-            var before = CaptureSectionSnapshots(Current);
             update(Current);
-            MarkChangedSections(before, CaptureSectionSnapshots(Current));
+            MarkAllSectionsChanged();
         }
 
         if (save) Save();
@@ -145,29 +144,67 @@ public class SettingsService : IDisposable
 
     public void SaveImmediate()
     {
-        lock (_saveLock)
+        bool lockTaken = false;
+        try
         {
-            InternalSaveSync();
+            lockTaken = _saveLock.Wait(TimeSpan.FromSeconds(2));
+            if (lockTaken)
+            {
+                InternalSaveSync();
+            }
+            else
+            {
+                Log.Warning("SettingsService: SaveImmediate timed out waiting for save lock, skipping save to avoid deadlock.");
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignore if disposed
+        }
+        finally
+        {
+            if (lockTaken)
+            {
+                try { _saveLock.Release(); } catch (ObjectDisposedException) { }
+            }
         }
     }
 
-    public Task SaveAsync()
+    public async Task SaveAsync()
     {
-        return Task.Run(() =>
+        bool lockTaken = false;
+        try
         {
-            lock (_saveLock)
-            {
-                if (CanSkipSave())
-                    return;
+            await _saveLock.WaitAsync().ConfigureAwait(false);
+            lockTaken = true;
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
 
+        try
+        {
+            if (CanSkipSave())
+                return;
+
+            await Task.Run(() =>
+            {
                 EnsureDirectory();
                 var save = PrepareJsonForSave();
                 var json = EncryptForSave(save.Settings);
                 AtomicWrite(_settingsPath, json);
                 MarkVersionsSaved(save.Versions);
                 Log.Debug("Settings saved (async) to {Path}", _settingsPath);
+            }).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (lockTaken)
+            {
+                try { _saveLock.Release(); } catch (ObjectDisposedException) { }
             }
-        });
+        }
     }
 
     private void InternalSaveSync()
@@ -338,24 +375,6 @@ public class SettingsService : IDisposable
         }
     }
 
-    private static SettingsSectionSnapshots CaptureSectionSnapshots(AppSettings settings) => new(
-        SerializeSection(settings.UI),
-        SerializeSection(settings.System),
-        SerializeSection(settings.Player),
-        SerializeSection(settings.Torrents),
-        SerializeSection(settings.Api),
-        SerializeSection(settings.CustomLinks));
-
-    private void MarkChangedSections(SettingsSectionSnapshots before, SettingsSectionSnapshots after)
-    {
-        if (!string.Equals(before.Ui, after.Ui, StringComparison.Ordinal)) _uiVersion++;
-        if (!string.Equals(before.System, after.System, StringComparison.Ordinal)) _systemVersion++;
-        if (!string.Equals(before.Player, after.Player, StringComparison.Ordinal)) _playerVersion++;
-        if (!string.Equals(before.Torrents, after.Torrents, StringComparison.Ordinal)) _torrentsVersion++;
-        if (!string.Equals(before.Api, after.Api, StringComparison.Ordinal)) _apiVersion++;
-        if (!string.Equals(before.CustomLinks, after.CustomLinks, StringComparison.Ordinal)) _customLinksVersion++;
-    }
-
     private void MarkChangedSections(SettingsSection sections)
     {
         if (sections.HasFlag(SettingsSection.UI)) _uiVersion++;
@@ -397,8 +416,6 @@ public class SettingsService : IDisposable
 
     private readonly record struct PendingSettingsSave(AppSettings Settings, SettingsVersions Versions);
 
-    private static string SerializeSection<T>(T value) =>
-        JsonSerializer.Serialize(value);
 
     private readonly record struct SettingsVersions(
         long Ui,
@@ -408,13 +425,6 @@ public class SettingsService : IDisposable
         long Api,
         long CustomLinks);
 
-    private readonly record struct SettingsSectionSnapshots(
-        string Ui,
-        string System,
-        string Player,
-        string Torrents,
-        string Api,
-        string CustomLinks);
 
     private void EncryptTokens(object? tokens)
     {
@@ -531,6 +541,7 @@ public class SettingsService : IDisposable
         }
 
         _debouncer.Dispose();
+        _saveLock.Dispose();
     }
 
     public bool NeedsFirstStartup()
