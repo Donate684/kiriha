@@ -2,6 +2,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 
 namespace Kiriha.Views;
 

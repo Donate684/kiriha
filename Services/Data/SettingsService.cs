@@ -1,3 +1,7 @@
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -10,6 +14,11 @@ using System.Threading.Tasks;
 using Kiriha.Models;
 using Kiriha.Models.Api;
 using Kiriha.Utils;
+using Kiriha.Utils.Parsing;
+using Kiriha.Utils.Collections;
+using Kiriha.Utils.Async;
+using Kiriha.Utils.Graphs;
+using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.Services.Data;
@@ -47,7 +56,7 @@ public class SettingsService : IDisposable
     public SettingsService(string? settingsPath = null)
     {
         var sw = Stopwatch.StartNew();
-        _settingsPath = settingsPath ?? Kiriha.Core.PathHelper.GetSettingsPath();
+        _settingsPath = settingsPath ?? Kiriha.Core.Platform.PathHelper.GetSettingsPath();
         _debouncer = new Debouncer(TimeSpan.FromMilliseconds(500), async (_) => await SaveAsync());
         Load();
         Log.Information("StartupTiming: settings service initialized elapsedMs={ElapsedMs}", sw.ElapsedMilliseconds);

@@ -1,4 +1,8 @@
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Services;
 

@@ -1,3 +1,9 @@
+using Kiriha.Utils;
+using Kiriha.Utils.Parsing;
+using Kiriha.Utils.Collections;
+using Kiriha.Utils.Async;
+using Kiriha.Utils.Graphs;
+using Kiriha.Utils.UI;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -7,6 +13,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
@@ -315,7 +325,7 @@ public class ShikiMetadataService : IDisposable
         
         if (_settingsService.Current.UI.UseRussianDescriptions && !string.IsNullOrEmpty(meta.Description))
         {
-            var cleaned = Kiriha.Utils.AnimeStringHelper.CleanShikiDescription(meta.Description);
+            var cleaned = Kiriha.Utils.Parsing.AnimeStringHelper.CleanShikiDescription(meta.Description);
             if (item.RussianSynopsis != cleaned) { item.RussianSynopsis = cleaned; changed = true; }
         }
 

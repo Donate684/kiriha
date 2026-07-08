@@ -1,8 +1,8 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:vm="clr-namespace:Kiriha.ViewModels"
+                    xmlns:vm="using:Kiriha.ViewModels"
                     xmlns:mpv="clr-namespace:Kiriha.Core.Mpv"
                     xmlns:material="using:Material.Icons.Avalonia"
-                    xmlns:conv="using:Kiriha.Converters">
+                    xmlns:conv="using:Kiriha.Views.Converters">
 <conv:IntEqualsConverter x:Key="IntEqualsConverter"/>
 </ResourceDictionary>

@@ -1,5 +1,9 @@
 using System.Collections.Generic;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Models.Api;
 
 namespace Kiriha.Models;

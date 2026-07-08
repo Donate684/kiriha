@@ -3,6 +3,10 @@ using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Serilog;
 using Velopack;
 
@@ -16,7 +20,7 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        Kiriha.Core.PathHelper.EnsureDirectoriesExist();
+        Kiriha.Core.Platform.PathHelper.EnsureDirectoriesExist();
 
         bool isPlayer = Array.Exists(args, arg => arg.Equals("--player", StringComparison.OrdinalIgnoreCase));
 
@@ -30,10 +34,10 @@ sealed class Program
         {
             if (isPlayer)
             {
-                playerMutex = new System.Threading.Mutex(true, Kiriha.Core.PlayerProcessBridge.MutexName, out var playerCreatedNew);
+                playerMutex = new System.Threading.Mutex(true, Kiriha.Core.Player.PlayerProcessBridge.MutexName, out var playerCreatedNew);
                 if (!playerCreatedNew)
                 {
-                    Kiriha.Core.PlayerProcessBridge.TryForward(args);
+                    Kiriha.Core.Player.PlayerProcessBridge.TryForward(args);
                     return;
                 }
             }
@@ -54,7 +58,7 @@ sealed class Program
                 return;
             }
 
-            string logTemplate = Path.Combine(Kiriha.Core.PathHelper.GetLogsPath(), "kiriha-.txt");
+            string logTemplate = Path.Combine(Kiriha.Core.Platform.PathHelper.GetLogsPath(), "kiriha-.txt");
 
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Information()
@@ -82,7 +86,7 @@ sealed class Program
                 Log.Fatal(ex, "Critical Error (UnhandledException)! Terminating={Terminating}", eventArgs.IsTerminating);
 
                 if (eventArgs.IsTerminating)
-                    Kiriha.Core.CrashReporter.WriteCrash(ex, "AppDomain.UnhandledException");
+                    Kiriha.Core.Infrastructure.CrashReporter.WriteCrash(ex, "AppDomain.UnhandledException");
             };
 
             TaskScheduler.UnobservedTaskException += (sender, eventArgs) =>
@@ -98,7 +102,7 @@ sealed class Program
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Critical Error during application startup or execution!");
-                Kiriha.Core.CrashReporter.WriteCrash(ex, "Program.Main");
+                Kiriha.Core.Infrastructure.CrashReporter.WriteCrash(ex, "Program.Main");
                 throw;
             }
         }

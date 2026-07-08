@@ -1,3 +1,9 @@
+using Kiriha.Utils;
+using Kiriha.Utils.Parsing;
+using Kiriha.Utils.Collections;
+using Kiriha.Utils.Async;
+using Kiriha.Utils.Graphs;
+using Kiriha.Utils.UI;
 using System;
 using System.Linq;
 using System.Threading;
@@ -52,7 +58,7 @@ public class ScrobbleService : IScrobbleService, IDisposable
     public void StartScrobble(ParsedMedia media, AnimeItem match)
     {
         // Try to parse episode number from ParsedMedia. OriginalTitle often contains cleaner number via Anitomy
-        var elements = Kiriha.Utils.AnimeParseCache.Parse(media.OriginalTitle);
+        var elements = Kiriha.Utils.Parsing.AnimeParseCache.Parse(media.OriginalTitle);
         var epStr = elements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementEpisodeNumber)?.Value ?? media.Episode;
 
         if (!int.TryParse(epStr, out int ep) || ep <= match.Progress)

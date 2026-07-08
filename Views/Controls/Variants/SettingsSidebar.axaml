@@ -73,12 +73,21 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:vmAnalytics="using:Kiriha.ViewModels.Analytics"
+             xmlns:vmAnimeDetails="using:Kiriha.ViewModels.AnimeDetails"
+             xmlns:vmAnimeList="using:Kiriha.ViewModels.AnimeList"
+             xmlns:vmHistory="using:Kiriha.ViewModels.History"
+             xmlns:vmPlayer="using:Kiriha.ViewModels.Player"
+             xmlns:vmSeasonal="using:Kiriha.ViewModels.Seasonal"
+             xmlns:vmSettings="using:Kiriha.ViewModels.Settings"
+             xmlns:vmTorrents="using:Kiriha.ViewModels.Torrents"
+             xmlns:vmSearch="using:Kiriha.ViewModels.Search"
              xmlns:models="using:Kiriha.Models"
              xmlns:material="using:Material.Icons.Avalonia"
-             xmlns:conv="using:Kiriha.Converters"
-             xmlns:u="using:Kiriha.Utils"
+             xmlns:conv="using:Kiriha.Views.Converters"
+             xmlns:u="using:Kiriha.Utils.UI"
              x:Class="Kiriha.Views.Controls.Variants.SettingsSidebar"
-             x:DataType="vm:SettingsViewModel"
+             x:DataType="vmSettings:SettingsViewModel"
              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 
     <UserControl.Resources>
@@ -847,7 +856,7 @@
                                                 Padding="8" CornerRadius="6"
                                                 Background="{DynamicResource SubtleFillColorTertiary}" BorderThickness="0"
                                                 ToolTip.Tip="{DynamicResource l.common.actions.remove}"
-                                                Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).RemoveCustomLinkCommand}"
+                                                Command="{Binding $parent[ItemsControl].((vmSettings:SettingsViewModel)DataContext).RemoveCustomLinkCommand}"
                                                 CommandParameter="{Binding}">
                                             <material:MaterialIcon Kind="TrashCanOutline" Width="14" Height="14" Foreground="#ff5555"/>
                                         </Button>

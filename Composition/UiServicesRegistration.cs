@@ -1,6 +1,17 @@
+using Kiriha.Views.Player;
+using Kiriha.Views.AnimeList;
 using Kiriha.Core.Dialogs;
 using Kiriha.Core.Navigation;
 using Kiriha.ViewModels;
+using Kiriha.ViewModels.Analytics;
+using Kiriha.ViewModels.AnimeDetails;
+using Kiriha.ViewModels.AnimeList;
+using Kiriha.ViewModels.History;
+using Kiriha.ViewModels.Player;
+using Kiriha.ViewModels.Seasonal;
+using Kiriha.ViewModels.Settings;
+using Kiriha.ViewModels.Torrents;
+using Kiriha.ViewModels.Search;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kiriha.Composition;

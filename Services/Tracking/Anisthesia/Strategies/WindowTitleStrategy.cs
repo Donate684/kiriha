@@ -1,9 +1,19 @@
+using Kiriha.Utils;
+using Kiriha.Utils.Parsing;
+using Kiriha.Utils.Collections;
+using Kiriha.Utils.Async;
+using Kiriha.Utils.Graphs;
+using Kiriha.Utils.UI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Models;
 
 namespace Kiriha.Services.Tracking.Anisthesia.Strategies;
@@ -35,7 +45,7 @@ public class WindowTitleStrategy
                         string extracted = match.Groups[i].Value;
                         
                         // Further parse with Anitomy to get episode
-                        var elements = Kiriha.Utils.AnimeParseCache.Parse(extracted);
+                        var elements = Kiriha.Utils.Parsing.AnimeParseCache.Parse(extracted);
                         var titleElement = elements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
                         var subTitleElement = elements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementEpisodeTitle);
                         var otherElement = elements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementOther);

@@ -1,3 +1,7 @@
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using System;
 using System.Collections.Generic;
 using System.IO;

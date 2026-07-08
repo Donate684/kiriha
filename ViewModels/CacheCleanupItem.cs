@@ -1,5 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Services.Data;
 
 namespace Kiriha.ViewModels;

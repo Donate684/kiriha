@@ -1,17 +1,26 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:vmAnalytics="using:Kiriha.ViewModels.Analytics"
+             xmlns:vmAnimeDetails="using:Kiriha.ViewModels.AnimeDetails"
+             xmlns:vmAnimeList="using:Kiriha.ViewModels.AnimeList"
+             xmlns:vmHistory="using:Kiriha.ViewModels.History"
+             xmlns:vmPlayer="using:Kiriha.ViewModels.Player"
+             xmlns:vmSeasonal="using:Kiriha.ViewModels.Seasonal"
+             xmlns:vmSettings="using:Kiriha.ViewModels.Settings"
+             xmlns:vmTorrents="using:Kiriha.ViewModels.Torrents"
+             xmlns:vmSearch="using:Kiriha.ViewModels.Search"
              xmlns:material="using:Material.Icons.Avalonia"
              xmlns:core="using:Kiriha.Core"
-             xmlns:u="using:Kiriha.Utils"
+             xmlns:u="using:Kiriha.Utils.UI"
              x:Class="Kiriha.Views.AnalyticsView"
-             x:DataType="vm:AnalyticsViewModel"
+             x:DataType="vmAnalytics:AnalyticsViewModel"
              x:Name="analyticsRoot">
 
     <UserControl.Resources>
 
         <!-- ═══ MetricTemplate — крупная карточка с иконкой и большой цифрой ═══ -->
-        <DataTemplate x:Key="MetricTemplate" x:DataType="vm:AnalyticsMetric">
+        <DataTemplate x:Key="MetricTemplate" x:DataType="vmAnalytics:AnalyticsMetric">
             <Border Classes="AnalyticsPanel MetricPanel" Margin="0,0,10,0">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="6">
                     <TextBlock Text="{Binding Label}"
@@ -33,7 +42,7 @@
         </DataTemplate>
 
         <!-- ═══ BarTemplate — строка прогресса ═══ -->
-        <DataTemplate x:Key="BarTemplate" x:DataType="vm:AnalyticsBar">
+        <DataTemplate x:Key="BarTemplate" x:DataType="vmAnalytics:AnalyticsBar">
             <Grid RowDefinitions="Auto,Auto" Margin="0,0,0,11">
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Text="{Binding Label}" FontSize="12" MaxLines="1" TextTrimming="CharacterEllipsis"/>
@@ -44,7 +53,7 @@
         </DataTemplate>
 
         <!-- ═══ StatusTileTemplate — плитка статуса с акцент-полосой ═══ -->
-        <DataTemplate x:Key="StatusTileTemplate" x:DataType="vm:AnalyticsBar">
+        <DataTemplate x:Key="StatusTileTemplate" x:DataType="vmAnalytics:AnalyticsBar">
             <Border Background="{DynamicResource SubtleFillColorTertiary}"
                     CornerRadius="10"
                     Padding="0"
@@ -87,7 +96,7 @@
         </DataTemplate>
 
         <!-- ═══ TasteHighlightTemplate ═══ -->
-        <DataTemplate x:Key="TasteHighlightTemplate" x:DataType="vm:AnalyticsBar">
+        <DataTemplate x:Key="TasteHighlightTemplate" x:DataType="vmAnalytics:AnalyticsBar">
             <Border Classes="AnalyticsPanel" Margin="0,0,10,0" MinHeight="112">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <Border Width="30" Height="4" CornerRadius="2"
@@ -114,7 +123,7 @@
         </DataTemplate>
 
         <!-- ═══ TasteRowTemplate — ranked-строка жанра/студии ═══ -->
-        <DataTemplate x:Key="TasteRowTemplate" x:DataType="vm:AnalyticsBar">
+        <DataTemplate x:Key="TasteRowTemplate" x:DataType="vmAnalytics:AnalyticsBar">
             <Border Background="{DynamicResource SubtleFillColorTertiary}"
                     CornerRadius="10"
                     Padding="10,9"
@@ -153,7 +162,7 @@
         </DataTemplate>
 
         <!-- ═══ ReleaseYearTemplate ═══ -->
-        <DataTemplate x:Key="ReleaseYearTemplate" x:DataType="vm:AnalyticsBar">
+        <DataTemplate x:Key="ReleaseYearTemplate" x:DataType="vmAnalytics:AnalyticsBar">
             <Border Background="{DynamicResource SubtleFillColorTertiary}"
                     CornerRadius="8"
                     Margin="2"
@@ -177,9 +186,9 @@
         </DataTemplate>
 
         <!-- ═══ FavoriteRowTemplate — кликабельная ranked-строка ═══ -->
-        <DataTemplate x:Key="FavoriteRowTemplate" x:DataType="vm:AnalyticsFavoriteRow">
+        <DataTemplate x:Key="FavoriteRowTemplate" x:DataType="vmAnalytics:AnalyticsFavoriteRow">
             <Button Classes="FavoriteRowButton"
-                    Command="{Binding #analyticsRoot.((vm:AnalyticsViewModel)DataContext).OpenFavoriteCommand}"
+                    Command="{Binding #analyticsRoot.((vmAnalytics:AnalyticsViewModel)DataContext).OpenFavoriteCommand}"
                     CommandParameter="{Binding}"
                     ToolTip.Tip="Показать тайтлы">
                 <Border Background="{DynamicResource SubtleFillColorTertiary}"
@@ -235,7 +244,7 @@
         </DataTemplate>
 
         <!-- ═══ ProfileTodoTemplate — карточка «что посмотреть» ═══ -->
-        <DataTemplate x:Key="ProfileTodoTemplate" x:DataType="vm:ProfileTodoItem">
+        <DataTemplate x:Key="ProfileTodoTemplate" x:DataType="vmAnalytics:ProfileTodoItem">
             <Border Background="{DynamicResource SubtleFillColorTertiary}"
                     CornerRadius="10"
                     Padding="0"
@@ -564,7 +573,7 @@
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="vm:AnalyticsBar">
+                                            <DataTemplate x:DataType="vmAnalytics:AnalyticsBar">
                                                 <Grid RowDefinitions="Auto,72,Auto" Margin="2,0">
 
                                                     <!-- Кол-во сверху -->
@@ -857,9 +866,9 @@
                                                     </ItemsPanelTemplate>
                                                 </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:AnalyticsDailyHistoryPoint">
+                                                    <DataTemplate x:DataType="vmAnalytics:AnalyticsDailyHistoryPoint">
                                                         <Button Classes="ChartPointButton"
-                                                                Command="{Binding #analyticsRoot.((vm:AnalyticsViewModel)DataContext).OpenDailyHistoryCommand}"
+                                                                Command="{Binding #analyticsRoot.((vmAnalytics:AnalyticsViewModel)DataContext).OpenDailyHistoryCommand}"
                                                                 CommandParameter="{Binding}"
                                                                 HorizontalAlignment="Stretch"
                                                                 ToolTip.Tip="{Binding Tooltip}">
@@ -1009,7 +1018,7 @@
 
                                 <ItemsControl ItemsSource="{Binding MonthlyHistory}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:AnalyticsMonthlyHistoryRow">
+                                        <DataTemplate x:DataType="vmAnalytics:AnalyticsMonthlyHistoryRow">
                                             <Grid ColumnDefinitions="52,*" Margin="0,0,0,2">
                                                 <TextBlock Text="{Binding Year}" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
                                                 <ItemsControl Grid.Column="1" ItemsSource="{Binding Months}">
@@ -1019,9 +1028,9 @@
                                                         </ItemsPanelTemplate>
                                                     </ItemsControl.ItemsPanel>
                                                     <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="vm:AnalyticsMonthlyHistoryCell">
+                                                        <DataTemplate x:DataType="vmAnalytics:AnalyticsMonthlyHistoryCell">
                                                             <Button Classes="ChartPointButton"
-                                                                    Command="{Binding #analyticsRoot.((vm:AnalyticsViewModel)DataContext).OpenMonthlyHistoryCommand}"
+                                                                    Command="{Binding #analyticsRoot.((vmAnalytics:AnalyticsViewModel)DataContext).OpenMonthlyHistoryCommand}"
                                                                     CommandParameter="{Binding}"
                                                                     HorizontalAlignment="Stretch"
                                                                     ToolTip.Tip="{Binding Tooltip}">
@@ -1145,7 +1154,7 @@
                                       u:SmoothScroll.IsEnabled="True">
                             <ItemsControl ItemsSource="{Binding HistoryPopupEntries}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:AnalyticsHistoryEntry">
+                                    <DataTemplate x:DataType="vmAnalytics:AnalyticsHistoryEntry">
                                         <Border Background="{DynamicResource CardBackgroundFillDefault}"
                                                 BorderBrush="{DynamicResource CardStrokeColorDefault}"
                                                 BorderThickness="1"

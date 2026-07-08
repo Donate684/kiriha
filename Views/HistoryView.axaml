@@ -1,13 +1,22 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:vmAnalytics="using:Kiriha.ViewModels.Analytics"
+             xmlns:vmAnimeDetails="using:Kiriha.ViewModels.AnimeDetails"
+             xmlns:vmAnimeList="using:Kiriha.ViewModels.AnimeList"
+             xmlns:vmHistory="using:Kiriha.ViewModels.History"
+             xmlns:vmPlayer="using:Kiriha.ViewModels.Player"
+             xmlns:vmSeasonal="using:Kiriha.ViewModels.Seasonal"
+             xmlns:vmSettings="using:Kiriha.ViewModels.Settings"
+             xmlns:vmTorrents="using:Kiriha.ViewModels.Torrents"
+             xmlns:vmSearch="using:Kiriha.ViewModels.Search"
              xmlns:models="using:Kiriha.Models"
              xmlns:material="using:Material.Icons.Avalonia"
-             xmlns:conv="using:Kiriha.Converters"
+             xmlns:conv="using:Kiriha.Views.Converters"
              xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
-             xmlns:u="using:Kiriha.Utils"
+             xmlns:u="using:Kiriha.Utils.UI"
              x:Class="Kiriha.Views.HistoryView"
-             x:DataType="vm:HistoryViewModel">
+             x:DataType="vmHistory:HistoryViewModel">
 
     <UserControl.Resources>
         <conv:LocConverter x:Key="LocConverter"/>
@@ -148,7 +157,7 @@
             <ScrollViewer IsVisible="{Binding HasResults}" Padding="0,0,0,0" u:SmoothScroll.IsEnabled="True">
                 <ItemsControl ItemsSource="{Binding GroupedHistory}" Margin="20,4,20,24">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:HistoryGroup">
+                        <DataTemplate x:DataType="vmHistory:HistoryGroup">
                             <StackPanel Margin="0,0,0,22">
                                 <!-- Date Header -->
                                 <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
@@ -172,7 +181,7 @@
                                     <!-- Items -->
                                     <ItemsControl Grid.Column="1" ItemsSource="{Binding Items}" Margin="0,0,0,0">
                                         <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="vm:HistoryEntryVm">
+                                            <DataTemplate x:DataType="vmHistory:HistoryEntryVm">
                                                 <Grid ColumnDefinitions="Auto, *" Margin="0,0,0,8">
                                                     <!-- Timeline dot (overlayed on the line) -->
                                                     <Border Grid.Column="0" Width="10" Height="10" CornerRadius="5"

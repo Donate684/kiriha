@@ -1,3 +1,5 @@
+using Kiriha.Views.Player;
+using Kiriha.Views.AnimeList;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -10,6 +12,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
@@ -18,6 +24,11 @@ using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
 using Kiriha.Utils;
+using Kiriha.Utils.Parsing;
+using Kiriha.Utils.Collections;
+using Kiriha.Utils.Async;
+using Kiriha.Utils.Graphs;
+using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.ViewModels;

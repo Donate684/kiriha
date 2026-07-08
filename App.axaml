@@ -1,8 +1,9 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
-             xmlns:conv="using:Kiriha.Converters"
+             xmlns:conv="using:Kiriha.Views.Converters"
              xmlns:core="using:Kiriha.Core"
+             xmlns:coreInfra="using:Kiriha.Core.Infrastructure"
              x:Class="Kiriha.App"
              RequestedThemeVariant="Default">
 
@@ -158,7 +159,7 @@
     </Application.Resources>
 
     <Application.DataTemplates>
-        <core:ViewLocator/>
+        <coreInfra:ViewLocator/>
     </Application.DataTemplates>
   
     <Application.Styles>

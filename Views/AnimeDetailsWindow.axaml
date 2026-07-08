@@ -1,15 +1,24 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:vmAnalytics="using:Kiriha.ViewModels.Analytics"
+             xmlns:vmAnimeDetails="using:Kiriha.ViewModels.AnimeDetails"
+             xmlns:vmAnimeList="using:Kiriha.ViewModels.AnimeList"
+             xmlns:vmHistory="using:Kiriha.ViewModels.History"
+             xmlns:vmPlayer="using:Kiriha.ViewModels.Player"
+             xmlns:vmSeasonal="using:Kiriha.ViewModels.Seasonal"
+             xmlns:vmSettings="using:Kiriha.ViewModels.Settings"
+             xmlns:vmTorrents="using:Kiriha.ViewModels.Torrents"
+             xmlns:vmSearch="using:Kiriha.ViewModels.Search"
         xmlns:models="using:Kiriha.Models"
         xmlns:entities="using:Kiriha.Models.Entities"
         xmlns:controls="using:Kiriha.Views.Controls"
         xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
         xmlns:material="using:Material.Icons.Avalonia"
-        xmlns:conv="using:Kiriha.Converters"
-        xmlns:u="using:Kiriha.Utils"
+        xmlns:conv="using:Kiriha.Views.Converters"
+        xmlns:u="using:Kiriha.Utils.UI"
         x:Class="Kiriha.Views.AnimeDetailsWindow"
-        x:DataType="vm:AnimeDetailsViewModel"
+        x:DataType="vmAnimeDetails:AnimeDetailsViewModel"
         x:Name="Root"
         Title=""
         Width="920" Height="680"
@@ -679,9 +688,9 @@
                             </Grid>
                             <ItemsControl ItemsSource="{Binding Relations}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:RelationItemVm">
+                                    <DataTemplate x:DataType="vmAnimeDetails:RelationItemVm">
                                         <Button Classes="RelationCardButton" HorizontalAlignment="Stretch" Margin="0,0,0,6"
-                                                Command="{Binding #Root.((vm:AnimeDetailsViewModel)DataContext).NavigateToRelationCommand}"
+                                                Command="{Binding #Root.((vmAnimeDetails:AnimeDetailsViewModel)DataContext).NavigateToRelationCommand}"
                                                 CommandParameter="{Binding Relation}">
                                             <Grid ColumnDefinitions="Auto, *, Auto">
                                                 <!-- Image -->
@@ -719,7 +728,7 @@
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:StaffPlusItemVm">
+                                    <DataTemplate x:DataType="vmAnimeDetails:StaffPlusItemVm">
                                         <Border Background="{DynamicResource SubtleFillColorSecondary}" CornerRadius="10" Padding="12" Margin="0,0,10,10" Width="285">
                                             <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *">
                                                 <!-- Image -->
@@ -744,7 +753,7 @@
                                                             </ItemsPanelTemplate>
                                                         </ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>
-                                                            <DataTemplate x:DataType="vm:StaffWorkVm">
+                                                            <DataTemplate x:DataType="vmAnimeDetails:StaffWorkVm">
                                                                 <Border Background="{Binding HighlightColor}" CornerRadius="6" Padding="6,3" Margin="0,0,4,4">
                                                                     <Grid ColumnDefinitions="*, Auto" MaxWidth="170">
                                                                         <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="10.5" TextTrimming="CharacterEllipsis" Opacity="0.8" ToolTip.Tip="{Binding Title}"/>

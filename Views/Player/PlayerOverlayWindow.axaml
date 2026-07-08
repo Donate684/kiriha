@@ -1,0 +1,1646 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kiriha.ViewModels"
+        xmlns:vmPlayer="using:Kiriha.ViewModels.Player"
+        xmlns:mpv="clr-namespace:Kiriha.Core.Mpv"
+        xmlns:material="using:Material.Icons.Avalonia"
+        xmlns:conv="using:Kiriha.Views.Converters"
+        x:Class="Kiriha.Views.Player.PlayerOverlayWindow"
+        x:Name="Root"
+        x:DataType="vmPlayer:PlayerViewModel"
+        Title="Player Overlay"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        WindowDecorations="None"
+        ShowInTaskbar="False"
+        DragDrop.AllowDrop="True">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://Kiriha/Views/Styles/PlayerOverlayWindowResources.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.Styles>
+        <StyleInclude Source="avares://Kiriha/Views/Styles/PlayerOverlayWindowStyles.axaml"/>
+    </Window.Styles>
+
+    <Grid Background="Transparent" Name="MainGrid"
+          PointerMoved="OnGridPointerMoved"
+          PointerExited="OnGridPointerExited"
+          PointerPressed="OnBackgroundPointerPressed"
+          PointerWheelChanged="OnBackgroundPointerWheelChanged"
+          DoubleTapped="OnBackgroundDoubleTapped">
+
+        <Border Classes="osd-panel"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsHitTestVisible="False"
+                IsVisible="{Binding Overlay.IsOsdVisible}">
+            <StackPanel Spacing="3">
+                <TextBlock Text="{Binding Overlay.OsdMessage}"
+                           Foreground="White"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"/>
+                <TextBlock Text="{Binding Overlay.OsdDetail}"
+                           Foreground="#CCFFFFFF"
+                           FontSize="22"
+                           FontWeight="Bold"
+                           TextAlignment="Center"
+                           IsVisible="{Binding Overlay.OsdDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+        </Border>
+
+        <Border Classes="player-state-panel"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsHitTestVisible="False"
+                IsVisible="{Binding IsLoading}">
+            <StackPanel Spacing="10" Width="280">
+                <ProgressBar Height="3" Value="100"/>
+                <TextBlock Text="{Binding PlaybackStatusMessage}"
+                           Classes="overlay-text"
+                           Foreground="White"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"/>
+                <TextBlock Text="{Binding TopTitle}"
+                           Foreground="#AFFFFFFF"
+                           FontSize="12"
+                           TextAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+        </Border>
+
+        <Border Classes="player-state-panel error"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsVisible="{Binding HasPlaybackError}">
+            <StackPanel Spacing="12" Width="340">
+                <material:MaterialIcon Kind="AlertCircleOutline"
+                                       Width="32"
+                                       Height="32"
+                                       Foreground="#FFFFD166"
+                                       HorizontalAlignment="Center"/>
+                <TextBlock Text="Не удалось воспроизвести видео"
+                           Classes="overlay-text"
+                           Foreground="White"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"/>
+                <TextBlock Text="{Binding PlaybackErrorMessage}"
+                           Foreground="#BFFFFFFF"
+                           FontSize="12"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal"
+                            Spacing="8"
+                            HorizontalAlignment="Center">
+                    <Button Classes="icon-btn state-action"
+                            Command="{Binding ReloadMediaCommand}"
+                            ToolTip.Tip="Повторить">
+                        <material:MaterialIcon Kind="Refresh" Width="20" Height="20" Foreground="White"/>
+                    </Button>
+                    <Button Classes="icon-btn state-action"
+                            Command="{Binding OpenNextMediaCommand}"
+                            IsEnabled="{Binding CanOpenNextMedia}"
+                            ToolTip.Tip="Следующий файл">
+                        <material:MaterialIcon Kind="SkipNext" Width="20" Height="20" Foreground="White"/>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ===== TOP GRADIENT + BAR ===== -->
+        <Border Name="TopBar" VerticalAlignment="Top" Height="72"
+                CornerRadius="8,8,0,0" ClipToBounds="True">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
+                    <GradientStop Color="#68000000" Offset="0"/>
+                    <GradientStop Color="#28000000" Offset="0.55"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Border.Transitions>
+
+            <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Top" Height="52"
+                  Background="Transparent" PointerPressed="OnTopBarPointerPressed">
+                <!-- Empty placeholder for spacing or just removed back button -->
+                <Grid Grid.Column="0" Width="16" Background="Transparent" PointerPressed="OnTopBarPointerPressed"/>
+
+                <!-- Title block — drag target -->
+                <StackPanel Grid.Column="1"
+                            VerticalAlignment="Top"
+                            HorizontalAlignment="Left"
+                            Margin="4,14,0,0"
+                            MaxWidth="720"
+                            PointerPressed="OnTopBarPointerPressed">
+                    <TextBlock Classes="overlay-text"
+                               Text="{Binding TopTitle}"
+                               Foreground="White" FontSize="17" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" Opacity="0.98"/>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="overlay-secondary-text"
+                                   Text="{Binding EpisodeTitle}"
+                                   Foreground="#E6FFFFFF" FontSize="14"
+                                   TextTrimming="CharacterEllipsis" IsVisible="{Binding EpisodeTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Classes="overlay-secondary-text"
+                                   Text="|"
+                                   Foreground="#B3FFFFFF" FontSize="14"
+                                   IsVisible="{Binding HasEpisodeAndBottom}"/>
+                        <TextBlock Classes="overlay-secondary-text"
+                                   Text="{Binding BottomTitle}"
+                                   Foreground="#CCFFFFFF" FontSize="14"
+                                   TextTrimming="CharacterEllipsis" IsVisible="{Binding HasBottomTitle}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Window controls -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0"
+                            VerticalAlignment="Top">
+                    <StackPanel.Styles>
+                        <Style Selector="Button.wnd-btn TextBlock">
+                            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets, sans-serif"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Opacity" Value="0.9"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                        </Style>
+                        <Style Selector="Button.wnd-btn.close:pointerover TextBlock">
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Opacity" Value="1"/>
+                        </Style>
+                        <Style Selector="Button.wnd-btn.close:pressed TextBlock">
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Opacity" Value="1"/>
+                        </Style>
+                    </StackPanel.Styles>
+                    <Button Classes="wnd-btn" Click="OnMinimizeClick">
+                        <TextBlock Text="&#xE921;"/>
+                    </Button>
+                    <Button Classes="wnd-btn" Click="OnMaximizeClick">
+                        <TextBlock Name="MaximizeIcon" Text="&#xE922;"/>
+                    </Button>
+                    <Button Name="CloseButton" Classes="wnd-btn close" Click="OnCloseClick">
+                        <TextBlock Text="&#xE8BB;"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== BOTTOM GRADIENT + BAR ===== -->
+        <Border Name="BottomBar" VerticalAlignment="Bottom"
+                CornerRadius="0,0,8,8" ClipToBounds="False"
+                PointerPressed="OnBottomBarPointerPressed">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="50%,100%" EndPoint="50%,0%">
+                    <GradientStop Color="#B0000000" Offset="0"/>
+                    <GradientStop Color="#58000000" Offset="0.55"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Border.Transitions>
+
+            <StackPanel Margin="0,0,0,0">
+                <Border Height="56"
+                        Background="Transparent"
+                        Cursor="SizeAll"
+                        PointerPressed="OnDragStripPointerPressed"/>
+
+                <Canvas Height="0"
+                        HorizontalAlignment="Stretch"
+                        IsHitTestVisible="False"
+                        ZIndex="20">
+                    <Border Width="236"
+                            Height="160"
+                             Canvas.Left="{Binding Overlay.TimelinePreviewLeft}"
+                            Canvas.Top="-164"
+                             IsVisible="{Binding Overlay.IsTimelinePreviewVisible}"
+                            Background="#F0181818"
+                            BorderBrush="#40FFFFFF"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="5">
+                        <Grid RowDefinitions="126,Auto">
+                            <Border Grid.Row="0"
+                                    Width="224"
+                                    Height="126"
+                                    Background="#FF050505"
+                                    CornerRadius="5"
+                                    ClipToBounds="True">
+                                <Image Source="{Binding Overlay.TimelinePreviewImage}"
+                                       Stretch="Uniform"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Row="1"
+                                       Text="{Binding Overlay.TimelinePreviewTime}"
+                                       Foreground="White"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,5,0,0"/>
+                        </Grid>
+                    </Border>
+                </Canvas>
+
+                <!-- ===== TIMELINE ===== -->
+                <!-- TimelineContainer is used by code-behind to position chapter markers -->
+                <Grid Name="TimelineContainer"
+                      Margin="12,2,12,0"
+                      PointerMoved="OnTimelinePointerMoved"
+                      PointerExited="OnTimelinePointerExited">
+                    <Slider Name="TimelineSlider"
+                            Classes="timeline"
+                            Minimum="0" Maximum="{Binding Duration}"
+                            Value="{Binding CurrentTime}"
+                            VerticalAlignment="Center"/>
+                    <!-- Chapter marker canvas — drawn in code-behind, thumb radius = 7px margin -->
+                    <Canvas Name="ChapterCanvas" Margin="7,0,7,0"
+                            VerticalAlignment="Stretch"
+                            SizeChanged="OnChapterCanvasSizeChanged"/>
+                </Grid>
+
+                <!-- ===== CONTROLS ROW ===== -->
+                <Grid Margin="14,0,14,8">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
+
+                    <!-- Play/Pause -->
+                    <Border Grid.Column="0" Classes="control-pill" Padding="2,0">
+                        <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                            <Button Classes="icon-btn"
+                                    Command="{Binding OpenPreviousMediaCommand}"
+                                    IsEnabled="{Binding CanOpenPreviousMedia}"
+                                    ToolTip.Tip="Предыдущий файл">
+                                <material:MaterialIcon Kind="SkipPrevious" Width="20" Height="20" Foreground="White"/>
+                            </Button>
+                            <Button Classes="icon-btn"
+                                    Command="{Binding TogglePlayPauseCommand}"
+                                    IsVisible="{Binding ShowPlayPauseButton}"
+                                    ToolTip.Tip="Пауза / воспроизведение">
+                                <Panel>
+                                    <material:MaterialIcon Kind="Pause" Width="28" Height="28" Foreground="White"
+                                                           IsVisible="{Binding IsPlaying}"/>
+                                    <material:MaterialIcon Kind="Play"  Width="28" Height="28" Foreground="White"
+                                                           IsVisible="{Binding !IsPlaying}"/>
+                                </Panel>
+                            </Button>
+                            <Button Classes="icon-btn"
+                                    Command="{Binding OpenNextMediaCommand}"
+                                    IsEnabled="{Binding CanOpenNextMedia}"
+                                    ToolTip.Tip="Следующий файл">
+                                <material:MaterialIcon Kind="SkipNext" Width="20" Height="20" Foreground="White"/>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Skip controls -->
+                    <Border Grid.Column="1" Classes="control-pill" Margin="2,0,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                        <Button Classes="icon-btn"
+                                Command="{Binding SkipCommand}"
+                                CommandParameter="-10"
+                                IsVisible="{Binding ShowSkipButtons}"
+                                ToolTip.Tip="Назад 10 секунд">
+                            <material:MaterialIcon Kind="Rewind10" Width="21" Height="21" Foreground="White"/>
+                        </Button>
+                        <Button Classes="icon-btn"
+                                Command="{Binding SkipCommand}"
+                                CommandParameter="10"
+                                IsVisible="{Binding ShowSkipButtons}"
+                                ToolTip.Tip="Вперед 10 секунд">
+                            <material:MaterialIcon Kind="FastForward10" Width="21" Height="21" Foreground="White"/>
+                        </Button>
+                    </StackPanel>
+                    </Border>
+
+                    <!-- Volume -->
+                    <Border Grid.Column="2" Classes="control-pill" Margin="4,0,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                        <Button Classes="icon-btn"
+                                Command="{Binding ToggleMuteCommand}"
+                                IsVisible="{Binding ShowMuteButton}"
+                                ToolTip.Tip="Звук (M)">
+                            <Panel>
+                                <material:MaterialIcon Kind="VolumeHigh" Width="20" Height="20" Foreground="White"
+                                                       IsVisible="{Binding !IsMuted}"/>
+                                <material:MaterialIcon Kind="VolumeOff"  Width="20" Height="20" Foreground="White"
+                                                       IsVisible="{Binding IsMuted}"/>
+                            </Panel>
+                        </Button>
+                        <Slider Classes="volume"
+                                Width="80"
+                                Minimum="0" Maximum="100"
+                                Value="{Binding Volume}"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding ShowVolumeSlider}"/>
+                    </StackPanel>
+                    </Border>
+
+                    <!-- Time display -->
+                    <Border Grid.Column="3" Classes="control-pill time-pill" Margin="8,0,0,0" VerticalAlignment="Center" IsVisible="{Binding ShowTimeDisplay}">
+                        <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                            <TextBlock Classes="overlay-text"
+                                       Text="{Binding CurrentTimeString}"
+                                       Foreground="#F0FFFFFF" FontSize="12.5" FontWeight="SemiBold" FontFamily="Consolas,Courier New,monospace"/>
+                            <TextBlock Classes="overlay-secondary-text" Text="/" Foreground="#80FFFFFF" FontSize="12.5" FontWeight="Medium"/>
+                            <TextBlock Classes="overlay-secondary-text"
+                                       Text="{Binding DurationString}"
+                                       Foreground="#B0FFFFFF" FontSize="12.5" FontWeight="SemiBold" FontFamily="Consolas,Courier New,monospace"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- RIGHT: speed + subtitles + audio + settings -->
+                    <Border Grid.Column="4" Classes="control-pill" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal" Spacing="0"
+                                VerticalAlignment="Center">
+
+                        <!-- Playback speed -->
+                        <Button Classes="icon-btn"
+                                IsVisible="{Binding ShowSpeedButton}"
+                                ToolTip.Tip="Скорость">
+                            <Button.Flyout>
+                                <MenuFlyout Placement="Top">
+                                    <MenuItem Header="0.25×" Classes="speed-item"
+                                              Command="{Binding SetSpeedCommand}" CommandParameter="0.25"/>
+                                    <MenuItem Header="0.5×"  Classes="speed-item"
+                                              Command="{Binding SetSpeedCommand}" CommandParameter="0.5"/>
+                                    <MenuItem Header="0.75×" Classes="speed-item"
+                                              Command="{Binding SetSpeedCommand}" CommandParameter="0.75"/>
+                                    <MenuItem Header="1×" Classes="speed-item"
+                                              Command="{Binding SetSpeedCommand}" CommandParameter="1"/>
+                                    <MenuItem Header="1.25×" Classes="speed-item"
+                                              Command="{Binding SetSpeedCommand}" CommandParameter="1.25"/>
+                                    <MenuItem Header="1.5×"  Classes="speed-item"
+                                              Command="{Binding SetSpeedCommand}" CommandParameter="1.5"/>
+                                    <MenuItem Header="1.75×" Classes="speed-item"
+                                              Command="{Binding SetSpeedCommand}" CommandParameter="1.75"/>
+                                    <MenuItem Header="2×"    Classes="speed-item"
+                                              Command="{Binding SetSpeedCommand}" CommandParameter="2"/>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                            <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                <material:MaterialIcon Kind="SpeedometerMedium" Width="18" Height="18" Foreground="White"/>
+                                <TextBlock Text="{Binding PlaybackSpeed, StringFormat='{}{0}×'}"
+                                           Foreground="White" FontSize="12" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Subtitles -->
+                        <Button Name="SubtitleButton"
+                                Classes="icon-btn"
+                                IsVisible="{Binding ShowSubtitleButton}"
+                                ToolTip.Tip="Субтитры (V)">
+                            <Button.Flyout>
+                                <Flyout Placement="Top">
+                                    <Border Width="240"
+                                            MaxHeight="330"
+                                            CornerRadius="14"
+                                            Background="#E6181818"
+                                            BorderBrush="#22FFFFFF"
+                                            BorderThickness="1"
+                                            Padding="6">
+                                        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                                      VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding SubtitleTracks}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Spacing="2"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="mpv:TrackInfo">
+                                                        <Button Classes="track-menu-item"
+                                                                Click="OnTrackMenuItemClick">
+                                                            <Grid ColumnDefinitions="20,*">
+                                                                <material:MaterialIcon Grid.Column="0"
+                                                                                       Kind="Check"
+                                                                                       Width="14"
+                                                                                       Height="14"
+                                                                                       Foreground="White"
+                                                                                       VerticalAlignment="Center"
+                                                                                       IsVisible="{Binding Selected}"/>
+                                                                <TextBlock Grid.Column="1"
+                                                                           Text="{Binding DisplayName}"
+                                                                           VerticalAlignment="Center"/>
+                                                            </Grid>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Flyout>
+                            </Button.Flyout>
+                            <material:MaterialIcon Kind="SubtitlesOutline" Width="21" Height="21" Foreground="White"/>
+                        </Button>
+
+                        <!-- Audio tracks -->
+                        <Button Name="AudioButton"
+                                Classes="icon-btn"
+                                IsVisible="{Binding ShowAudioButton}"
+                                ToolTip.Tip="Аудиодорожка (A)">
+                            <Button.Flyout>
+                                <Flyout Placement="Top">
+                                    <Border Width="240"
+                                            MaxHeight="330"
+                                            CornerRadius="14"
+                                            Background="#E6181818"
+                                            BorderBrush="#22FFFFFF"
+                                            BorderThickness="1"
+                                            Padding="6">
+                                        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                                      VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding AudioTracks}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Spacing="2"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="mpv:TrackInfo">
+                                                        <Button Classes="track-menu-item"
+                                                                Click="OnTrackMenuItemClick">
+                                                            <Grid ColumnDefinitions="20,*">
+                                                                <material:MaterialIcon Grid.Column="0"
+                                                                                       Kind="Check"
+                                                                                       Width="14"
+                                                                                       Height="14"
+                                                                                       Foreground="White"
+                                                                                       VerticalAlignment="Center"
+                                                                                       IsVisible="{Binding Selected}"/>
+                                                                <TextBlock Grid.Column="1"
+                                                                           Text="{Binding DisplayName}"
+                                                                           VerticalAlignment="Center"/>
+                                                            </Grid>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Flyout>
+                            </Button.Flyout>
+                            <material:MaterialIcon Kind="MusicNote" Width="21" Height="21" Foreground="White"/>
+                        </Button>
+
+                        <!-- Subtitle position -->
+                        <Button Name="SubtitlePositionButton"
+                                Classes="icon-btn"
+                                ToolTip.Tip="ЛКМ: субтитры выше. ПКМ: ниже"
+                                IsVisible="{Binding ShowSubtitlePositionButton}">
+                            <material:MaterialIcon Kind="FormatLineSpacing" Width="21" Height="21" Foreground="White"/>
+                        </Button>
+
+                        <!-- Subtitle style override -->
+                        <Button Classes="icon-btn"
+                                ToolTip.Tip="Стиль субтитров (U)"
+                                Command="{Binding ToggleSubtitleStyleOverrideCommand}"
+                                IsVisible="{Binding ShowSubtitleStyleButton}">
+                            <material:MaterialIcon Kind="FormatPaint" Width="21" Height="21" Foreground="White"/>
+                        </Button>
+
+                        <!-- Screenshot -->
+                            <Button Name="ScreenshotButton"
+                                    Classes="icon-btn"
+                                    ToolTip.Tip="Скриншот"
+                                    IsVisible="{Binding ShowScreenshotButton}">
+                                <material:MaterialIcon Kind="CameraOutline" Width="21" Height="21" Foreground="White"/>
+                            </Button>
+
+                        <!-- Player settings -->
+                        <Button Name="SettingsButton"
+                                Classes="icon-btn"
+                                Click="OnSettingsButtonClick"
+                                ToolTip.Tip="Настройки">
+                            <Button.Flyout>
+                                <Flyout Placement="Top">
+                                    <Border Width="620"
+                                            MaxHeight="470"
+                                            CornerRadius="14"
+                                            Background="#E6181818"
+                                            BorderBrush="#22FFFFFF"
+                                            BorderThickness="1">
+                                        <Grid ColumnDefinitions="180,*">
+                                            <Border Grid.Column="0"
+                                                    Background="#18000000"
+                                                    BorderBrush="#22FFFFFF"
+                                                    BorderThickness="0,0,1,0"
+                                                    Padding="0,10">
+                                                <DockPanel LastChildFill="True">
+                                                    <StackPanel DockPanel.Dock="Top" Margin="16,6,16,10">
+                                                        <TextBlock Text="Плеер"
+                                                                   Foreground="White"
+                                                                   FontSize="15"
+                                                                   FontWeight="SemiBold"/>
+                                                        <TextBlock Text="Настройки"
+                                                                   Foreground="#80FFFFFF"
+                                                                   FontSize="11"/>
+                                                    </StackPanel>
+
+                                                    <ListBox Name="PlayerSettingsNav"
+                                                             Classes="player-settings-nav"
+                                                             SelectedIndex="0">
+                                                        <ListBoxItem>
+                                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                                <material:MaterialIcon Kind="PlayCircleOutline" Width="17" Height="17" Foreground="White"/>
+                                                                <TextBlock Text="Воспроизведение" Foreground="White" FontSize="12"/>
+                                                            </StackPanel>
+                                                        </ListBoxItem>
+                                                        <ListBoxItem>
+                                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                                <material:MaterialIcon Kind="VolumeHigh" Width="17" Height="17" Foreground="White"/>
+                                                                <TextBlock Text="Звук" Foreground="White" FontSize="12"/>
+                                                            </StackPanel>
+                                                        </ListBoxItem>
+                                                        <ListBoxItem>
+                                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                                <material:MaterialIcon Kind="ViewDashboardOutline" Width="17" Height="17" Foreground="White"/>
+                                                                <TextBlock Text="Интерфейс" Foreground="White" FontSize="12"/>
+                                                            </StackPanel>
+                                                        </ListBoxItem>
+                                                        <ListBoxItem>
+                                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                                <material:MaterialIcon Kind="SubtitlesOutline" Width="17" Height="17" Foreground="White"/>
+                                                                <TextBlock Text="Дорожки" Foreground="White" FontSize="12"/>
+                                                            </StackPanel>
+                                                        </ListBoxItem>
+                                                        <ListBoxItem>
+                                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                                <material:MaterialIcon Kind="Tune" Width="17" Height="17" Foreground="White"/>
+                                                                <TextBlock Text="Расширенные" Foreground="White" FontSize="12"/>
+                                                            </StackPanel>
+                                                        </ListBoxItem>
+                                                    </ListBox>
+                                                </DockPanel>
+                                            </Border>
+
+                                            <ScrollViewer Grid.Column="1"
+                                                          Padding="20,18"
+                                                          HorizontalScrollBarVisibility="Disabled"
+                                                          VerticalScrollBarVisibility="Auto">
+                                                <Panel>
+                                                    <StackPanel Spacing="10"
+                                                                IsVisible="{Binding ElementName=PlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=0}">
+                                                        <TextBlock Classes="player-settings-title" Text="Воспроизведение"/>
+
+                                                        <Grid ColumnDefinitions="*,Auto" MinHeight="52">
+                                                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                                                <TextBlock Classes="player-settings-row-title" Text="Автовоспроизведение"/>
+                                                                <TextBlock Classes="player-settings-row-sub" Text="Начинать проигрывание сразу после открытия файла"/>
+                                                            </StackPanel>
+                                                            <ToggleSwitch Grid.Column="1"
+                                                                          VerticalAlignment="Center"
+                                                                          IsChecked="{Binding PlayerAutoPlay}"
+                                                                          OnContent="Вкл"
+                                                                          OffContent="Выкл"/>
+                                                        </Grid>
+                                                        <Border Classes="player-settings-divider"/>
+
+                                                        <Grid ColumnDefinitions="*,Auto" MinHeight="52">
+                                                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                                                <TextBlock Classes="player-settings-row-title" Text="Одно окно плеера"/>
+                                                                <TextBlock Classes="player-settings-row-sub" Text="Открывать новое видео в текущем окне"/>
+                                                            </StackPanel>
+                                                            <ToggleSwitch Grid.Column="1"
+                                                                          VerticalAlignment="Center"
+                                                                          IsChecked="{Binding SinglePlayerWindow}"
+                                                                          OnContent="Вкл"
+                                                                          OffContent="Выкл"/>
+                                                        </Grid>
+                                                        <Border Classes="player-settings-divider"/>
+
+                                                        <StackPanel Spacing="6" Margin="0,4,0,0">
+                                                            <Grid ColumnDefinitions="*,Auto">
+                                                                <StackPanel Grid.Column="0" Spacing="2">
+                                                                    <TextBlock Classes="player-settings-row-title" Text="Скорость по умолчанию"/>
+                                                                    <TextBlock Classes="player-settings-row-sub" Text="Применяется к новым открытым видео"/>
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Column="1"
+                                                                           Text="{Binding PlaybackSpeed, StringFormat='{}{0:0.##}×'}"
+                                                                           Foreground="#99FFFFFF"
+                                                                           FontSize="12"
+                                                                           VerticalAlignment="Top"/>
+                                                            </Grid>
+                                                            <Slider Minimum="0.25" Maximum="2"
+                                                                    TickFrequency="0.25"
+                                                                    IsSnapToTickEnabled="True"
+                                                                    Value="{Binding PlaybackSpeed}"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+
+                                                    <StackPanel Spacing="10"
+                                                                IsVisible="{Binding ElementName=PlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=1}">
+                                                        <TextBlock Classes="player-settings-title" Text="Звук"/>
+
+                                                        <Grid ColumnDefinitions="*,Auto" MinHeight="52">
+                                                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                                                <TextBlock Classes="player-settings-row-title" Text="Запоминать громкость"/>
+                                                                <TextBlock Classes="player-settings-row-sub" Text="Сохранять последнее значение громкости для следующих запусков"/>
+                                                            </StackPanel>
+                                                            <ToggleSwitch Grid.Column="1"
+                                                                          VerticalAlignment="Center"
+                                                                          IsChecked="{Binding RememberPlayerVolume}"
+                                                                          OnContent="Вкл"
+                                                                          OffContent="Выкл"/>
+                                                        </Grid>
+                                                        <Border Classes="player-settings-divider"/>
+
+                                                        <StackPanel Spacing="6" Margin="0,4,0,0">
+                                                            <Grid ColumnDefinitions="*,Auto">
+                                                                <StackPanel Grid.Column="0" Spacing="2">
+                                                                    <TextBlock Classes="player-settings-row-title" Text="Громкость по умолчанию"/>
+                                                                    <TextBlock Classes="player-settings-row-sub" Text="Используется, когда включено запоминание громкости"/>
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Column="1"
+                                                                           Text="{Binding Volume, StringFormat='{}{0:0}%'}"
+                                                                           Foreground="#99FFFFFF"
+                                                                           FontSize="12"
+                                                                           VerticalAlignment="Top"/>
+                                                            </Grid>
+                                                            <Slider Minimum="0" Maximum="100"
+                                                                    Value="{Binding Volume}"
+                                                                    IsEnabled="{Binding RememberPlayerVolume}"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+
+                                                    <StackPanel Spacing="10"
+                                                                IsVisible="{Binding ElementName=PlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=2}">
+                                                        <TextBlock Classes="player-settings-title" Text="Интерфейс"/>
+
+                                                        <Grid ColumnDefinitions="*,Auto" MinHeight="52">
+                                                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                                                <TextBlock Classes="player-settings-row-title" Text="Скрывать панель управления"/>
+                                                                <TextBlock Classes="player-settings-row-sub" Text="Прятать верхнюю и нижнюю панели, когда мышь не двигается"/>
+                                                            </StackPanel>
+                                                            <ToggleSwitch Grid.Column="1"
+                                                                          VerticalAlignment="Center"
+                                                                          IsChecked="{Binding AutoHideControls}"
+                                                                          OnContent="Вкл"
+                                                                          OffContent="Выкл"/>
+                                                        </Grid>
+                                                        <Border Classes="player-settings-divider"/>
+
+                                                        <Grid ColumnDefinitions="*,Auto" MinHeight="52">
+                                                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                                                <TextBlock Classes="player-settings-row-title" Text="Маркеры глав"/>
+                                                                <TextBlock Classes="player-settings-row-sub" Text="Показывать отметки глав на таймлайне"/>
+                                                            </StackPanel>
+                                                            <ToggleSwitch Grid.Column="1"
+                                                                          VerticalAlignment="Center"
+                                                                          IsChecked="{Binding ShowChapterMarkers}"
+                                                                          OnContent="Вкл"
+                                                                          OffContent="Выкл"/>
+                                                        </Grid>
+                                                    </StackPanel>
+
+                                                    <StackPanel Spacing="10"
+                                                                IsVisible="{Binding ElementName=PlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=3}">
+                                                        <TextBlock Classes="player-settings-title" Text="Дорожки"/>
+                                                        <TextBlock Classes="player-settings-row-sub"
+                                                                   Text="Здесь позже можно добавить предпочтения аудио и субтитров: язык, автоподбор, поведение при отсутствии дорожки."
+                                                                   Margin="0,0,0,4"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Spacing="10"
+                                                                IsVisible="{Binding ElementName=PlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=4}">
+                                                        <TextBlock Classes="player-settings-title" Text="Расширенные"/>
+                                                        <TextBlock Classes="player-settings-row-sub"
+                                                                   Text="{Binding MpvRuntimeInfo}"
+                                                                   FontFamily="Consolas,Courier New,monospace"
+                                                                   Margin="0,0,0,4"/>
+                                                        <Grid ColumnDefinitions="*,130" MinHeight="36">
+                                                            <TextBlock Classes="player-settings-row-title" Text="hwdec" VerticalAlignment="Center"/>
+                                                            <TextBox Grid.Column="1" Text="{Binding MpvHwdec}" PlaceholderText="auto"/>
+                                                        </Grid>
+                                                        <Grid ColumnDefinitions="*,130" MinHeight="36">
+                                                            <TextBlock Classes="player-settings-row-title" Text="vo" VerticalAlignment="Center"/>
+                                                            <TextBox Grid.Column="1" Text="{Binding MpvVideoOutput}" PlaceholderText="gpu-next"/>
+                                                        </Grid>
+                                                        <Grid ColumnDefinitions="*,130" MinHeight="36">
+                                                            <TextBlock Classes="player-settings-row-title" Text="gpu-api" VerticalAlignment="Center"/>
+                                                            <TextBox Grid.Column="1" Text="{Binding MpvGpuApi}" PlaceholderText="auto"/>
+                                                        </Grid>
+                                                        <Grid ColumnDefinitions="*,130" MinHeight="36">
+                                                            <TextBlock Classes="player-settings-row-title" Text="gpu-context" VerticalAlignment="Center"/>
+                                                            <TextBox Grid.Column="1" Text="{Binding MpvGpuContext}" PlaceholderText="auto"/>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </Panel>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </Border>
+                                </Flyout>
+                            </Button.Flyout>
+                            <material:MaterialIcon Kind="Cog" Width="22" Height="22" Foreground="White"/>
+                        </Button>
+
+                    </StackPanel>
+                    </Border>
+                    </Grid>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Border Name="TopDragStrip"
+                Height="12"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Stretch"
+                Margin="0,0,160,0"
+                Background="Transparent"
+                Cursor="SizeAll"
+                PointerPressed="OnDragStripPointerPressed"/>
+
+        <Border Name="LeftDragStrip"
+                Width="12"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                Margin="0,52,0,14"
+                Background="Transparent"
+                Cursor="SizeAll"
+                PointerPressed="OnDragStripPointerPressed"/>
+
+        <Border Name="RightDragStrip"
+                Width="12"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Margin="0,52,0,14"
+                Background="Transparent"
+                Cursor="SizeAll"
+                PointerPressed="OnDragStripPointerPressed"/>
+
+        <Border Name="BottomDragStrip"
+                Height="14"
+                VerticalAlignment="Bottom"
+                Background="Transparent"
+                Cursor="SizeAll"
+                PointerPressed="OnDragStripPointerPressed"/>
+
+        <Border Name="SettingsOverlayBackdrop"
+                IsVisible="False"
+                Background="#33000000"
+                PointerPressed="OnSettingsBackdropPointerPressed">
+            <Border Name="SettingsOverlayPanel"
+                    Width="760"
+                    MaxWidth="760"
+                    MaxHeight="520"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    CornerRadius="8"
+                    Background="#F01A1A1A"
+                    BorderBrush="#55FFFFFF"
+                    BorderThickness="1"
+                    ClipToBounds="True"
+                    PointerPressed="OnSettingsPanelPointerPressed">
+                <Grid ColumnDefinitions="196,*">
+                    <Border Grid.Column="0"
+                            Background="#18000000"
+                            BorderBrush="#22FFFFFF"
+                            BorderThickness="0,0,1,0"
+                            Padding="0,12">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="18,8,12,14">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Плеер"
+                                               Foreground="White"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Text="Настройки"
+                                               Foreground="#80FFFFFF"
+                                               FontSize="11"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <ListBox Name="CenteredPlayerSettingsNav"
+                                     Classes="player-settings-nav"
+                                     SelectedIndex="0">
+                                <ListBoxItem>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <material:MaterialIcon Kind="PlayCircleOutline" Width="17" Height="17" Foreground="White"/>
+                                        <TextBlock Text="Воспроизведение" Foreground="White" FontSize="12"/>
+                                    </StackPanel>
+                                </ListBoxItem>
+                                <ListBoxItem>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <material:MaterialIcon Kind="VolumeHigh" Width="17" Height="17" Foreground="White"/>
+                                        <TextBlock Text="Звук" Foreground="White" FontSize="12"/>
+                                    </StackPanel>
+                                </ListBoxItem>
+                                <ListBoxItem>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <material:MaterialIcon Kind="ViewDashboardOutline" Width="17" Height="17" Foreground="White"/>
+                                        <TextBlock Text="Интерфейс" Foreground="White" FontSize="12"/>
+                                    </StackPanel>
+                                </ListBoxItem>
+                                <ListBoxItem>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <material:MaterialIcon Kind="SubtitlesOutline" Width="17" Height="17" Foreground="White"/>
+                                        <TextBlock Text="Дорожки" Foreground="White" FontSize="12"/>
+                                    </StackPanel>
+                                </ListBoxItem>
+                                <ListBoxItem>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <material:MaterialIcon Kind="Tune" Width="17" Height="17" Foreground="White"/>
+                                        <TextBlock Text="Расширенные" Foreground="White" FontSize="12"/>
+                                    </StackPanel>
+                                </ListBoxItem>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+
+                    <ScrollViewer Grid.Column="1"
+                                  Padding="24,22"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <Panel>
+                            <StackPanel Spacing="10"
+                                        IsVisible="{Binding ElementName=CenteredPlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=0}">
+                                <TextBlock Classes="player-settings-title" Text="Воспроизведение"/>
+
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="56">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Автовоспроизведение"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Начинать проигрывание сразу после открытия файла"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding PlayerAutoPlay}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Border Classes="player-settings-divider"/>
+
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="56">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Одно окно плеера"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Открывать новое видео в текущем окне"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding SinglePlayerWindow}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Border Classes="player-settings-divider"/>
+
+                                <StackPanel Spacing="6" Margin="0,4,0,0">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock Classes="player-settings-row-title" Text="Скорость по умолчанию"/>
+                                            <TextBlock Classes="player-settings-row-sub" Text="Применяется к новым открытым видео"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding PlaybackSpeed, StringFormat='{}{0:0.##}×'}"
+                                                   Foreground="#99FFFFFF"
+                                                   FontSize="12"
+                                                   VerticalAlignment="Top"/>
+                                    </Grid>
+                                    <Slider Minimum="0.25" Maximum="2"
+                                            TickFrequency="0.25"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding PlaybackSpeed}"/>
+                                </StackPanel>
+
+                                <Border Height="110" IsHitTestVisible="False"/>
+                            </StackPanel>
+
+                            <StackPanel Spacing="10"
+                                        IsVisible="{Binding ElementName=CenteredPlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=1}">
+                                <TextBlock Classes="player-settings-title" Text="Звук"/>
+
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="56">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Запоминать громкость"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Сохранять последнее значение громкости для следующих запусков"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding RememberPlayerVolume}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Border Classes="player-settings-divider"/>
+
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="56">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Нормализация громкости"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Выравнивать громкость через loudnorm: I=-16, TP=-1.5, LRA=11"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding NormalizeAudio}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Border Classes="player-settings-divider"/>
+
+                                <StackPanel Spacing="6" Margin="0,4,0,0">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock Classes="player-settings-row-title" Text="Громкость по умолчанию"/>
+                                            <TextBlock Classes="player-settings-row-sub" Text="Используется, когда включено запоминание громкости"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Volume, StringFormat='{}{0:0}%'}"
+                                                   Foreground="#99FFFFFF"
+                                                   FontSize="12"
+                                                   VerticalAlignment="Top"/>
+                                    </Grid>
+                                    <Slider Minimum="0" Maximum="100"
+                                            Value="{Binding Volume}"
+                                            IsEnabled="{Binding RememberPlayerVolume}"/>
+                                </StackPanel>
+
+                                <Border Height="110" IsHitTestVisible="False"/>
+                            </StackPanel>
+
+                            <StackPanel Spacing="10"
+                                        IsVisible="{Binding ElementName=CenteredPlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=2}">
+                                <TextBlock Classes="player-settings-title" Text="Интерфейс"/>
+
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="56">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Скрывать панель управления"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Прятать верхнюю и нижнюю панели, когда мышь не двигается"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding AutoHideControls}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Border Classes="player-settings-divider"/>
+
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="56">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Маркеры глав"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Показывать отметки глав на таймлайне"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding ShowChapterMarkers}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Border Classes="player-settings-divider"/>
+
+                                <TextBlock Classes="player-settings-row-title"
+                                           Text="Действия мыши"
+                                           Margin="0,6,0,0"/>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="ЛКМ"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Левая кнопка мыши по видео"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding MouseActionOptions}"
+                                              SelectedItem="{Binding LeftClickAction}"
+                                              VerticalAlignment="Center">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vmPlayer:PlayerMouseActionOption">
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="ПКМ"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Правая кнопка мыши по видео"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding MouseActionOptions}"
+                                              SelectedItem="{Binding RightClickAction}"
+                                              VerticalAlignment="Center">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vmPlayer:PlayerMouseActionOption">
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="СКМ"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Средняя кнопка мыши по видео"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding MouseActionOptions}"
+                                              SelectedItem="{Binding MiddleClickAction}"
+                                              VerticalAlignment="Center">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vmPlayer:PlayerMouseActionOption">
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Border Classes="player-settings-divider"/>
+
+                                <TextBlock Classes="player-settings-row-title"
+                                           Text="Колёсико мыши"
+                                           Margin="0,6,0,0"/>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Прокрутка вверх"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Действие при прокрутке колёсика вверх"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding WheelActionOptions}"
+                                              SelectedItem="{Binding WheelUpAction}"
+                                              VerticalAlignment="Center">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vmPlayer:PlayerWheelActionOption">
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Прокрутка вниз"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Действие при прокрутке колёсика вниз"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding WheelActionOptions}"
+                                              SelectedItem="{Binding WheelDownAction}"
+                                              VerticalAlignment="Center">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vmPlayer:PlayerWheelActionOption">
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Шаг громкости"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="На сколько делений менять громкость"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding WheelStepOptions}"
+                                              SelectedItem="{Binding WheelVolumeStep}"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Border Classes="player-settings-divider"/>
+
+                                <TextBlock Classes="player-settings-row-title"
+                                           Text="Горячие клавиши"
+                                           Margin="0,6,0,0"/>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Пауза / воспроизведение"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: Space"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding TogglePlayPauseHotkey}"
+                                             PlaceholderText="Space"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Полноэкранный режим"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: F"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding ToggleFullscreenHotkey}"
+                                             PlaceholderText="F"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Выйти из полноэкранного режима"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: Escape"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding ExitFullscreenHotkey}"
+                                             PlaceholderText="Escape"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Mute"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: M"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding ToggleMuteHotkey}"
+                                             PlaceholderText="M"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Следующая аудиодорожка"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: A"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding CycleAudioHotkey}"
+                                             PlaceholderText="A"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Следующие субтитры"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: V"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding CycleSubtitleHotkey}"
+                                             PlaceholderText="V"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Предыдущий файл"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: P"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding PreviousMediaHotkey}"
+                                             PlaceholderText="P"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Следующий файл"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: N"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding NextMediaHotkey}"
+                                             PlaceholderText="N"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Скорость ниже"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: OemOpenBrackets ([)"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SpeedDownHotkey}"
+                                             PlaceholderText="OemOpenBrackets"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Скорость выше"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: OemCloseBrackets (])"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SpeedUpHotkey}"
+                                             PlaceholderText="OemCloseBrackets"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Громкость +1"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: Up"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding VolumeUpHotkey}"
+                                             PlaceholderText="Up"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Громкость -1"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: Down"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding VolumeDownHotkey}"
+                                             PlaceholderText="Down"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Назад 1 сек"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: Left"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SeekBackwardHotkey}"
+                                             PlaceholderText="Left"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Вперёд 1 сек"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: Right"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SeekForwardHotkey}"
+                                             PlaceholderText="Right"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Стиль субтитров"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: U"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SubtitleStyleHotkey}"
+                                             PlaceholderText="U"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Border Classes="player-settings-divider"/>
+
+                                <TextBlock Classes="player-settings-row-title"
+                                           Text="Кнопки панели"
+                                           Margin="0,6,0,0"/>
+
+                                <UniformGrid Columns="2" Margin="0,0,0,0">
+                                    <CheckBox Content="Play / Pause" IsChecked="{Binding ShowPlayPauseButton}"/>
+                                    <CheckBox Content="Перемотка 10 сек." IsChecked="{Binding ShowSkipButtons}"/>
+                                    <CheckBox Content="Mute" IsChecked="{Binding ShowMuteButton}"/>
+                                    <CheckBox Content="Слайдер громкости" IsChecked="{Binding ShowVolumeSlider}"/>
+                                    <CheckBox Content="Время" IsChecked="{Binding ShowTimeDisplay}"/>
+                                    <CheckBox Content="Скорость" IsChecked="{Binding ShowSpeedButton}"/>
+                                    <CheckBox Content="Субтитры" IsChecked="{Binding ShowSubtitleButton}"/>
+                                    <CheckBox Content="Позиция субтитров" IsChecked="{Binding ShowSubtitlePositionButton}"/>
+                                    <CheckBox Content="Аудио" IsChecked="{Binding ShowAudioButton}"/>
+                                    <CheckBox Content="Стиль субтитров" IsChecked="{Binding ShowSubtitleStyleButton}"/>
+                                    <CheckBox Content="Скриншот" IsChecked="{Binding ShowScreenshotButton}"/>
+                                </UniformGrid>
+
+                                <Border Height="110" IsHitTestVisible="False"/>
+                            </StackPanel>
+
+                            <StackPanel Spacing="10"
+                                        IsVisible="{Binding ElementName=CenteredPlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=3}">
+                                <TextBlock Classes="player-settings-title" Text="Дорожки"/>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Предпочтительный звук"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="mpv alang, через запятую"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding PreferredAudioLanguages}"
+                                             PlaceholderText="Japanese,jpn,ja"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Предпочтительные субтитры"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="mpv slang, через запятую"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding PreferredSubtitleLanguages}"
+                                             PlaceholderText="Russian,rus,ru"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Height="110" IsHitTestVisible="False"/>
+                            </StackPanel>
+
+                            <StackPanel Spacing="10"
+                                        IsVisible="{Binding ElementName=CenteredPlayerSettingsNav, Path=SelectedIndex, Converter={StaticResource IntEqualsConverter}, ConverterParameter=4}">
+                                <TextBlock Classes="player-settings-title" Text="Расширенные"/>
+                                <TextBlock Classes="player-settings-row-sub"
+                                           Text="{Binding MpvRuntimeInfo}"
+                                           FontFamily="Consolas,Courier New,monospace"/>
+                                <TextBlock Classes="player-settings-row-title"
+                                           Text="Скриншоты"
+                                           Margin="0,6,0,0"/>
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Папка"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="{Binding ScreenshotDirectory}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1"
+                                            Classes="icon-btn"
+                                            Padding="8"
+                                            Click="OnChooseScreenshotDirectoryClick">
+                                        <material:MaterialIcon Kind="FolderOpenOutline" Width="18" Height="18" Foreground="White"/>
+                                    </Button>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Формат"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию PNG"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding ScreenshotFormatOptions}"
+                                              SelectedItem="{Binding ScreenshotFormat}"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Размер"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Исходный кадр или размер окна"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding ScreenshotResolutionOptions}"
+                                              SelectedItem="{Binding ScreenshotResolution}"
+                                              VerticalAlignment="Center">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vmPlayer:ScreenshotResolutionOption">
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="PNG compression"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="0-9, по умолчанию 4"/>
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1"
+                                                   Minimum="0"
+                                                   Maximum="9"
+                                                   Increment="1"
+                                                   Value="{Binding ScreenshotPngCompression}"
+                                                   VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Качество JPG/WebP"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="0-100"/>
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1"
+                                                   Minimum="0"
+                                                   Maximum="100"
+                                                   Increment="1"
+                                                   Value="{Binding ScreenshotQuality}"
+                                                   VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="High bit depth"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию выключено"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding ScreenshotHighBitDepth}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Хоткей с субтитрами"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Например: S, Ctrl+S"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding ScreenshotWithSubtitlesHotkey}"
+                                             PlaceholderText="S"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Хоткей без субтитров"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Например: Shift+S"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding ScreenshotWithoutSubtitlesHotkey}"
+                                             PlaceholderText="Shift+S"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Classes="player-settings-divider"/>
+                                <TextBlock Classes="player-settings-row-title"
+                                           Text="Стиль субтитров"
+                                           Margin="0,6,0,0"/>
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Форсировать стиль"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: U"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding SubtitleStyleOverrideEnabled}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Шрифт"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: Candara Bold"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding SubtitleFont}" PlaceholderText="Candara Bold" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Размер"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: 60"/>
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1"
+                                                   Minimum="1"
+                                                   Maximum="300"
+                                                   Increment="1"
+                                                   Value="{Binding SubtitleFontSize}"
+                                                   VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Цвет текста"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: #FFFFFF"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding SubtitleColor}" PlaceholderText="#FFFFFF" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Цвет обводки"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: #000000"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding SubtitleBorderColor}" PlaceholderText="#000000" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Цвет тени"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: #000000"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding SubtitleShadowColor}" PlaceholderText="#000000" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Обводка"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: 3.8"/>
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1"
+                                                   Minimum="0"
+                                                   Maximum="20"
+                                                   Increment="0.1"
+                                                   Value="{Binding SubtitleBorderSize}"
+                                                   VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Смещение тени"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: 1.5"/>
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1"
+                                                   Minimum="0"
+                                                   Maximum="20"
+                                                   Increment="0.1"
+                                                   Value="{Binding SubtitleShadowOffset}"
+                                                   VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Нижний отступ"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: 35"/>
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1"
+                                                   Minimum="0"
+                                                   Maximum="500"
+                                                   Increment="1"
+                                                   Value="{Binding SubtitleMarginY}"
+                                                   VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Масштабировать от окна"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="sub-scale-by-window=yes"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding SubtitleScaleByWindow}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Border Classes="player-settings-divider"/>
+                                <TextBlock Classes="player-settings-row-title"
+                                           Text="Масштабирование и обработка"
+                                           Margin="0,6,0,0"/>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="scale"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: ewa_lanczossharp"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding MpvScale}" PlaceholderText="ewa_lanczossharp" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="cscale"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: ewa_lanczossharp"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding MpvChromaScale}" PlaceholderText="ewa_lanczossharp" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="dither-depth"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: auto"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding MpvDitherDepth}" PlaceholderText="auto" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="correct-downscaling"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: yes"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding MpvCorrectDownscaling}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="deband"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Сглаживание бэндинга"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding MpvDeband}"
+                                                  OnContent="Вкл"
+                                                  OffContent="Выкл"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="deband-iterations"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: 3"/>
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1"
+                                                   Minimum="0"
+                                                   Maximum="16"
+                                                   Increment="1"
+                                                   Value="{Binding MpvDebandIterations}"
+                                                   VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="deband-threshold"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="По умолчанию: 30"/>
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1"
+                                                   Minimum="0"
+                                                   Maximum="4096"
+                                                   Increment="1"
+                                                   Value="{Binding MpvDebandThreshold}"
+                                                   VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Classes="player-settings-divider"/>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="hwdec"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Hardware video decoding"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding MpvHwdec}" PlaceholderText="auto" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="vo"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Video output driver"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding MpvVideoOutput}" PlaceholderText="gpu-next" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="gpu-api"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="Graphics API"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding MpvGpuApi}" PlaceholderText="auto" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="gpu-context"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="GPU context"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding MpvGpuContext}" PlaceholderText="auto" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Height="110" IsHitTestVisible="False"/>
+                            </StackPanel>
+                        </Panel>
+                    </ScrollViewer>
+                    <Button Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Classes="icon-btn"
+                            Padding="8"
+                            Margin="0,14,18,0"
+                            Click="OnSettingsCloseClick">
+                        <material:MaterialIcon Kind="Close" Width="18" Height="18" Foreground="White"/>
+                    </Button>
+                </Grid>
+            </Border>
+        </Border>
+    </Grid>
+</Window>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
@@ -9,6 +9,10 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
@@ -109,7 +113,7 @@ public class MalAuthService
             return tokens;
         }
 
-        Log.Error("Ошибка обмена кода на токен: {Response}", json);
+        Log.Error("?????? ?????? ???? ?? ?????: {Response}", json);
         return null;
     }
 

@@ -1,3 +1,9 @@
+using Kiriha.Utils;
+using Kiriha.Utils.Parsing;
+using Kiriha.Utils.Collections;
+using Kiriha.Utils.Async;
+using Kiriha.Utils.Graphs;
+using Kiriha.Utils.UI;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -52,7 +58,7 @@ public partial class MappingService
         string normOriginal = Normalize(title);
         if (_manualMapping.TryGetMapping(normOriginal, out _)) return true;
         
-        var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
+        var parsed = Kiriha.Utils.Parsing.AnimeParseCache.Parse(title);
         var titleElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
         string cleanTitle = titleElement != null ? titleElement.Value : Path.GetFileNameWithoutExtension(title);
         
@@ -67,7 +73,7 @@ public partial class MappingService
         if (string.IsNullOrWhiteSpace(title)) return false;
         if (_manualMapping.IsNegativelyMapped(Normalize(title))) return true;
 
-        var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
+        var parsed = Kiriha.Utils.Parsing.AnimeParseCache.Parse(title);
         var titleElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
         string cleanTitle = titleElement != null ? titleElement.Value : Path.GetFileNameWithoutExtension(title);
         if (_manualMapping.IsNegativelyMapped(Normalize(cleanTitle))) return true;
@@ -187,7 +193,7 @@ public partial class MappingService
 
     private (string CleanTitle, string SearchTitle, int ParsedSeason) ParseAnimeTitle(string title)
     {
-        var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
+        var parsed = Kiriha.Utils.Parsing.AnimeParseCache.Parse(title);
         var titleElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
         var seasonElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeSeason);
         var typeElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeType);
@@ -317,5 +323,5 @@ public partial class MappingService
         return resolvedId;
     }
 
-    private string Normalize(string s) => Kiriha.Utils.AnimeStringHelper.Normalize(s);
+    private string Normalize(string s) => Kiriha.Utils.Parsing.AnimeStringHelper.Normalize(s);
 }

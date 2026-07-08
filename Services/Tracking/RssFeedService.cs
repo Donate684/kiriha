@@ -1,3 +1,9 @@
+using Kiriha.Utils;
+using Kiriha.Utils.Parsing;
+using Kiriha.Utils.Collections;
+using Kiriha.Utils.Async;
+using Kiriha.Utils.Graphs;
+using Kiriha.Utils.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +13,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
 using Kiriha.Services.Data;
@@ -78,7 +88,7 @@ public partial class RssFeedService
         string? title = item.Element("title")?.Value;
         if (string.IsNullOrEmpty(title)) return null;
 
-        var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
+        var parsed = Kiriha.Utils.Parsing.AnimeParseCache.Parse(title);
         var animeTitle = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle)?.Value;
         var episodeStr = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementEpisodeNumber)?.Value;
         var resolution = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementVideoResolution)?.Value;
@@ -142,7 +152,7 @@ public partial class RssFeedService
         if (RangeRegex().IsMatch(title))
             return null;
 
-        var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
+        var parsed = Kiriha.Utils.Parsing.AnimeParseCache.Parse(title);
 
         // Volume token = batch (e.g. "Vol. 1" of a BD release set).
         if (parsed.Any(x => x.Category == AnitomySharp.Element.ElementCategory.ElementVolumeNumber))
@@ -198,7 +208,7 @@ public partial class RssFeedService
                 int? epNum = ExtractSingleEpisodeNumber(title);
                 if (epNum == null) continue; // batch / range / multi-ep — skip
 
-                var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
+                var parsed = Kiriha.Utils.Parsing.AnimeParseCache.Parse(title);
                 var animeTitle = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle)?.Value;
                 if (string.IsNullOrEmpty(animeTitle)) continue;
 
@@ -313,7 +323,7 @@ public partial class RssFeedService
                 if (existing != null && existing.IsMatched) continue;
 
                 // Parse title with Anitomy
-                var parsed = Kiriha.Utils.AnimeParseCache.Parse(title);
+                var parsed = Kiriha.Utils.Parsing.AnimeParseCache.Parse(title);
                 var animeTitle = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle)?.Value;
                 var episodeStr = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementEpisodeNumber)?.Value;
                 var resolution = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementVideoResolution)?.Value;

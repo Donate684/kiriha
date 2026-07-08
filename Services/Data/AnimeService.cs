@@ -1,3 +1,15 @@
+using Kiriha.Views.Player;
+using Kiriha.Views.AnimeList;
+using Kiriha.ViewModels;
+using Kiriha.ViewModels.Analytics;
+using Kiriha.ViewModels.AnimeDetails;
+using Kiriha.ViewModels.AnimeList;
+using Kiriha.ViewModels.History;
+using Kiriha.ViewModels.Player;
+using Kiriha.ViewModels.Seasonal;
+using Kiriha.ViewModels.Settings;
+using Kiriha.ViewModels.Torrents;
+using Kiriha.ViewModels.Search;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -7,6 +19,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
@@ -14,6 +30,11 @@ using Kiriha.Services.Api;
 using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;
 using Kiriha.Utils;
+using Kiriha.Utils.Parsing;
+using Kiriha.Utils.Collections;
+using Kiriha.Utils.Async;
+using Kiriha.Utils.Graphs;
+using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.Services.Data;
@@ -48,7 +69,7 @@ public class AnimeService
     // local cache on startup) can be done with a single Reset notification
     // instead of one event per Add. AnimeListViewModel and any other consumer
     // sees this as a regular ObservableCollection<AnimeItem>.
-    public Kiriha.Utils.BulkObservableCollection<AnimeItem> Collection { get; } = new();
+    public Kiriha.Utils.Collections.BulkObservableCollection<AnimeItem> Collection { get; } = new();
     
     public bool IsInitializing => Volatile.Read(ref _initStarted) == 1 && !_initTcs.Task.IsCompleted;
     public bool IsSyncing => Volatile.Read(ref _syncing) == 1;

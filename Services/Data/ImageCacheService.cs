@@ -11,6 +11,10 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media.Imaging;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Platform;
+using Kiriha.Core.Player;
+using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
@@ -21,7 +25,7 @@ namespace Kiriha.Services.Data;
 
 public class ImageCacheService : IDisposable
 {
-    private readonly string CacheRoot = Kiriha.Core.PathHelper.GetImageCachePath();
+    private readonly string CacheRoot = Kiriha.Core.Platform.PathHelper.GetImageCachePath();
 
     private readonly HttpClient _client;
     private readonly IBackgroundTaskSupervisor _backgroundTasks;

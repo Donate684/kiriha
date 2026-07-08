@@ -1,13 +1,22 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Kiriha.ViewModels"
+             xmlns:vmAnalytics="using:Kiriha.ViewModels.Analytics"
+             xmlns:vmAnimeDetails="using:Kiriha.ViewModels.AnimeDetails"
+             xmlns:vmAnimeList="using:Kiriha.ViewModels.AnimeList"
+             xmlns:vmHistory="using:Kiriha.ViewModels.History"
+             xmlns:vmPlayer="using:Kiriha.ViewModels.Player"
+             xmlns:vmSeasonal="using:Kiriha.ViewModels.Seasonal"
+             xmlns:vmSettings="using:Kiriha.ViewModels.Settings"
+             xmlns:vmTorrents="using:Kiriha.ViewModels.Torrents"
+             xmlns:vmSearch="using:Kiriha.ViewModels.Search"
              xmlns:models="using:Kiriha.Models"
              xmlns:material="using:Material.Icons.Avalonia"
-             xmlns:conv="using:Kiriha.Converters"
+             xmlns:conv="using:Kiriha.Views.Converters"
              xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
-             xmlns:u="using:Kiriha.Utils"
+             xmlns:u="using:Kiriha.Utils.UI"
              x:Class="Kiriha.Views.TorrentsView"
-             x:DataType="vm:TorrentsViewModel">
+             x:DataType="vmTorrents:TorrentsViewModel">
 
     <UserControl.Resources>
         <conv:LocConverter x:Key="LocConverter"/>
@@ -455,12 +464,12 @@
                     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" u:SmoothScroll.IsEnabled="True">
                         <ItemsControl ItemsSource="{Binding HideMenuItems}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="vm:HideableAnimeItem">
+                                <DataTemplate DataType="vmTorrents:HideableAnimeItem">
                                     <Grid Margin="0,0,10,2"
                                           Classes.row-hidden="{Binding IsHidden}">
                                         <Grid.IsVisible>
                                             <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                <Binding Path="$parent[ItemsControl].((vm:TorrentsViewModel)DataContext).IsHideMode"/>
+                                                <Binding Path="$parent[ItemsControl].((vmTorrents:TorrentsViewModel)DataContext).IsHideMode"/>
                                                 <Binding Path="!IsHidden"/>
                                             </MultiBinding>
                                         </Grid.IsVisible>
@@ -472,7 +481,7 @@
 
                                         <!-- Card (selectable) -->
                                         <Button Classes="WatchItem"
-                                                Command="{Binding $parent[ItemsControl].((vm:TorrentsViewModel)DataContext).SelectAnimeCommand}"
+                                                Command="{Binding $parent[ItemsControl].((vmTorrents:TorrentsViewModel)DataContext).SelectAnimeCommand}"
                                                 CommandParameter="{Binding Anime}">
                                             <Grid ColumnDefinitions="48, *" ColumnSpacing="10">
                                                 <Panel Grid.Column="0" Width="48" Height="68" VerticalAlignment="Top">
@@ -526,8 +535,8 @@
                                                 HorizontalAlignment="Right" VerticalAlignment="Top"
                                                 Margin="0,6,6,0"
                                                 Background="{DynamicResource SubtleFillColorSecondary}"
-                                                IsVisible="{Binding $parent[ItemsControl].((vm:TorrentsViewModel)DataContext).IsHideMode}"
-                                                Command="{Binding $parent[ItemsControl].((vm:TorrentsViewModel)DataContext).ToggleHideAnimeCommand}"
+                                                IsVisible="{Binding $parent[ItemsControl].((vmTorrents:TorrentsViewModel)DataContext).IsHideMode}"
+                                                Command="{Binding $parent[ItemsControl].((vmTorrents:TorrentsViewModel)DataContext).ToggleHideAnimeCommand}"
                                                 CommandParameter="{Binding}">
                                             <Panel>
                                                 <material:MaterialIcon Kind="Close" Width="14" Height="14"
@@ -601,7 +610,7 @@
                 <ScrollViewer IsVisible="{Binding GroupedTorrents.Count}" u:SmoothScroll.IsEnabled="True">
                     <ItemsControl ItemsSource="{Binding GroupedTorrents}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:TorrentGroup">
+                            <DataTemplate DataType="vmTorrents:TorrentGroup">
                                 <Border Margin="0,0,14,14" Padding="12"
                                         Background="{DynamicResource CardBackgroundFillSecondary}"
                                         BorderBrush="{DynamicResource CardStrokeColorDefault}"
@@ -671,14 +680,14 @@
                                                                             Spacing="2" VerticalAlignment="Center">
                                                                     <Button Classes="IconAction"
                                                                             ToolTip.Tip="{DynamicResource l.torrents.results.actions.download_file}"
-                                                                            Command="{Binding $parent[UserControl].((vm:TorrentsViewModel)DataContext).DownloadTorrentFileCommand}"
+                                                                            Command="{Binding $parent[UserControl].((vmTorrents:TorrentsViewModel)DataContext).DownloadTorrentFileCommand}"
                                                                             CommandParameter="{Binding}"
                                                                             IsVisible="{Binding DownloadLink, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                                                         <material:MaterialIcon Kind="Download" Width="16" Height="16"/>
                                                                     </Button>
                                                                     <Button Classes="IconAction"
                                                                             ToolTip.Tip="{DynamicResource l.torrents.results.actions.download_magnet}"
-                                                                            Command="{Binding $parent[UserControl].((vm:TorrentsViewModel)DataContext).DownloadMagnetCommand}"
+                                                                            Command="{Binding $parent[UserControl].((vmTorrents:TorrentsViewModel)DataContext).DownloadMagnetCommand}"
                                                                             CommandParameter="{Binding}"
                                                                             IsVisible="{Binding MagnetLink, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                                                         <material:MaterialIcon Kind="Magnet" Width="16" Height="16"/>
