@@ -67,7 +67,7 @@ public class SyncManager : IHostedService
     private Task? _loopTask;
     private const int MaxRetries = 5;
     private const int DelayBetweenRequestsMs = 1500;
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> _latestTaskIds = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, (int Id, SyncTaskType Type)> _latestTaskIds = new();
 
     public SyncManager(
         IEnumerable<ITrackerService> trackers,
@@ -96,7 +96,7 @@ public class SyncManager : IHostedService
         return Task.CompletedTask;
     }
 
-    private bool _isStopped = false;
+    private volatile bool _isStopped = false;
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -125,10 +125,22 @@ public class SyncManager : IHostedService
             ct.ThrowIfCancellationRequested();
             var pendingTasks = await _syncTaskRepo.GetPendingAsync();
             
-            // Deduplicate: only take the LATEST task of each type per AnimeId to avoid redundant work
+            // Deduplicate: take the LATEST task of each type per AnimeId to avoid redundant work.
+            // If a 'Remove' task exists, it supersedes all prior tasks for that AnimeId.
             var deduplicated = pendingTasks
-                .GroupBy(t => new { t.AnimeId, t.Type })
-                .Select(g => g.OrderByDescending(x => x.Id).First())
+                .GroupBy(t => t.AnimeId)
+                .SelectMany(g =>
+                {
+                    var tasks = g.OrderBy(x => x.Id).ToList();
+                    var lastRemoveIndex = tasks.FindLastIndex(x => x.Type == nameof(SyncTaskType.Remove));
+                    if (lastRemoveIndex > 0)
+                    {
+                        tasks = tasks.Skip(lastRemoveIndex).ToList();
+                    }
+                    return tasks
+                        .GroupBy(x => x.Type)
+                        .Select(typeGroup => typeGroup.Last());
+                })
                 .OrderBy(x => x.Id)
                 .ToList();
 
@@ -162,7 +174,7 @@ public class SyncManager : IHostedService
                     {
                         task.FullItem = JsonSerializer.Deserialize<AnimeItem>(entity.Payload);
                     }
-                    _latestTaskIds.AddOrUpdate(task.AnimeId, task.Id, (k, existing) => Math.Max(existing, task.Id));
+                    _latestTaskIds.AddOrUpdate(task.AnimeId, (task.Id, task.Type), (k, existing) => task.Id > existing.Id ? (task.Id, task.Type) : existing);
                     _queue.Writer.TryWrite(task);
                     restoredCount++;
                 }
@@ -223,9 +235,16 @@ public class SyncManager : IHostedService
         var entity = MapToEntity(task);
         task.Id = await _syncTaskRepo.AddAsync(entity);
         
-        _latestTaskIds[animeId] = task.Id;
-        await _queue.Writer.WriteAsync(task);
-        Log.Information("Sync task enqueued (DB ID: {Id}): UpdateProgress for {AnimeId} to {Progress}", task.Id, animeId, progress);
+        _latestTaskIds[animeId] = (task.Id, task.Type);
+        try
+        {
+            await _queue.Writer.WriteAsync(task);
+            Log.Information("Sync task enqueued (DB ID: {Id}): UpdateProgress for {AnimeId} to {Progress}", task.Id, animeId, progress);
+        }
+        catch (ChannelClosedException)
+        {
+            Log.Information("SyncManager is shutting down, task (DB ID: {Id}) will be processed on next startup.", task.Id);
+        }
     }
 
     public async Task EnqueueRemoveAsync(int animeId)
@@ -238,9 +257,16 @@ public class SyncManager : IHostedService
         var entity = MapToEntity(task);
         task.Id = await _syncTaskRepo.AddAsync(entity);
 
-        _latestTaskIds[animeId] = task.Id;
-        await _queue.Writer.WriteAsync(task);
-        Log.Information("Sync task enqueued (DB ID: {Id}): Remove for {AnimeId}", task.Id, animeId);
+        _latestTaskIds[animeId] = (task.Id, task.Type);
+        try
+        {
+            await _queue.Writer.WriteAsync(task);
+            Log.Information("Sync task enqueued (DB ID: {Id}): Remove for {AnimeId}", task.Id, animeId);
+        }
+        catch (ChannelClosedException)
+        {
+            Log.Information("SyncManager is shutting down, task (DB ID: {Id}) will be processed on next startup.", task.Id);
+        }
     }
 
     public async Task EnqueueFullUpdateAsync(AnimeItem item)
@@ -254,23 +280,19 @@ public class SyncManager : IHostedService
         var entity = MapToEntity(task);
         task.Id = await _syncTaskRepo.AddAsync(entity);
 
-        _latestTaskIds[item.Id] = task.Id;
-        await _queue.Writer.WriteAsync(task);
-        Log.Information("Sync task enqueued (DB ID: {Id}): FullUpdate for {AnimeId}", task.Id, item.Id);
+        _latestTaskIds[item.Id] = (task.Id, task.Type);
+        try
+        {
+            await _queue.Writer.WriteAsync(task);
+            Log.Information("Sync task enqueued (DB ID: {Id}): FullUpdate for {AnimeId}", task.Id, item.Id);
+        }
+        catch (ChannelClosedException)
+        {
+            Log.Information("SyncManager is shutting down, task (DB ID: {Id}) will be processed on next startup.", task.Id);
+        }
     }
 
-    public async Task CancelTasksForAnimeAsync(int animeId)
-    {
-        // Mark sentinel so any in-flight queue items skip themselves.
-        _latestTaskIds[animeId] = int.MaxValue;
-        // Also remove the rows from the persistent sync_tasks table - otherwise the next
-        // app launch repopulates the queue with the now-cancelled tasks (the in-memory
-        // sentinel is reset on startup) and we'd happily push deleted-anime updates to trackers.
-        try { await _syncTaskRepo.RemoveForAnimeAsync(animeId); }
-        catch (Exception ex) { Log.Warning(ex, "SyncManager: failed to purge sync tasks for {AnimeId}", animeId); }
-        
-        Log.Information("SyncManager: Cancelled all pending tasks for Anime {AnimeId}", animeId);
-    }
+
 
     private async Task ProcessQueueAsync(CancellationToken ct)
     {
@@ -280,9 +302,12 @@ public class SyncManager : IHostedService
             {
                 while (_queue.Reader.TryRead(out var task))
                 {
+                    bool executed = true;
                     try
                     {
-                        bool success = await ExecuteTaskAsync(task, ct);
+                        var (success, didExecute) = await ExecuteTaskAsync(task, ct);
+                        executed = didExecute;
+                        
                         if (success)
                         {
                             await _syncTaskRepo.RemoveAsync(task.Id);
@@ -300,9 +325,9 @@ public class SyncManager : IHostedService
                                 await _syncTaskRepo.UpdateAsync(MapToEntity(task));
                                 
                                 // Fire and forget a delayed re-enqueue to not block the main queue
-                                _ = _backgroundTasks.Run("SyncManager.DelayedRetry", async ct =>
+                                _ = _backgroundTasks.Run("SyncManager.DelayedRetry", async retryCt =>
                                 {
-                                    await Task.Delay(TimeSpan.FromMinutes(delayMin), ct);
+                                    await Task.Delay(TimeSpan.FromMinutes(delayMin), retryCt);
                                     _queue.Writer.TryWrite(task);
                                 }, _cts.Token);
                             }
@@ -318,7 +343,11 @@ public class SyncManager : IHostedService
                     {
                         Log.Error(ex, "Error processing sync task {Id}", task.Id);
                     }
-                    await Task.Delay(DelayBetweenRequestsMs, ct);
+                    
+                    if (executed)
+                    {
+                        await Task.Delay(DelayBetweenRequestsMs, ct);
+                    }
                 }
             }
         }
@@ -326,10 +355,16 @@ public class SyncManager : IHostedService
         catch (Exception ex) { Log.Error(ex, "SyncManager error"); }
     }
 
-    private async Task<bool> ExecuteTaskAsync(SyncTask task, CancellationToken ct)
+    private async Task<(bool Success, bool Executed)> ExecuteTaskAsync(SyncTask task, CancellationToken ct)
     {
-        if (_latestTaskIds.TryGetValue(task.AnimeId, out int latestId) && latestId > task.Id)
+        if (_latestTaskIds.TryGetValue(task.AnimeId, out var latest) && latest.Id > task.Id)
         {
+            if (latest.Type == SyncTaskType.Remove)
+            {
+                Log.Information("SyncManager: Skipping outdated task {TaskId} ({TaskType}) for Anime {AnimeId} because newer task {LatestId} is Remove.", task.Id, task.Type, task.AnimeId, latest.Id);
+                return (true, false);
+            }
+
             // Optimization: If a newer FULL update is pending, we can skip this task.
             // BUT: If this is a FullUpdate and the latest is just a Progress update, we SHOULD NOT skip,
             // because the FullUpdate might contain data (notes/dates) that Progress update doesn't have.
@@ -339,8 +374,8 @@ public class SyncManager : IHostedService
             // user-facing intent and skipping it would silently keep the entry on the tracker.
             if (task.Type != SyncTaskType.FullUpdate && task.Type != SyncTaskType.Remove)
             {
-                Log.Information("SyncManager: Skipping outdated task {TaskId} for Anime {AnimeId} because newer task {LatestId} is pending.", task.Id, task.AnimeId, latestId);
-                return true; 
+                Log.Information("SyncManager: Skipping outdated task {TaskId} for Anime {AnimeId} because newer task {LatestId} is pending.", task.Id, task.AnimeId, latest.Id);
+                return (true, false); 
             }
         }
 
@@ -359,9 +394,10 @@ public class SyncManager : IHostedService
                 var names = string.Join(", ", allTrackers.Select(t => t.Name));
                 Log.Warning("SyncManager: No active (logged in) trackers for sync sync task. Registered trackers: {Trackers}", names);
             }
-            return true; // Nothing to do; count as success to avoid retrying.
+            return (true, false); // Nothing to do; count as success to avoid retrying.
         }
 
+        bool executedAny = false;
         foreach (var tracker in activeTrackers)
         {
             if (task.SuccessfulTrackers.Contains(tracker.Name))
@@ -370,6 +406,7 @@ public class SyncManager : IHostedService
                 continue;
             }
 
+            executedAny = true;
             try
             {
                 SyncOutcome outcome = SyncOutcome.Success;
@@ -417,7 +454,7 @@ public class SyncManager : IHostedService
             }
         }
 
-        return overallSuccess;
+        return (overallSuccess, executedAny);
     }
 
 }

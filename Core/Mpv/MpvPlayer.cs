@@ -299,9 +299,6 @@ public class MpvPlayer : IDisposable
 
     public PlaybackState GetPlaybackState()
     {
-        if (_propertyCache.Duration <= 0)
-            _ = GetDuration();
-
         return _propertyCache.PlaybackState;
     }
 
@@ -467,10 +464,13 @@ public class MpvPlayer : IDisposable
             LibMpvNative.mpv_render_context_free(renderContext);
         }
 
-        if (_renderUpdateHandle.IsAllocated)
-            _renderUpdateHandle.Free();
+        lock (_renderUpdateLock)
+        {
+            if (_renderUpdateHandle.IsAllocated)
+                _renderUpdateHandle.Free();
 
-        _renderUpdateCallback = null;
+            _renderUpdateCallback = null;
+        }
     }
 
     private void Enqueue(Action<IntPtr> action, string? coalescingKey = null)
@@ -584,14 +584,29 @@ public class MpvPlayer : IDisposable
         return ptr;
     }
 
+    private static readonly object _renderUpdateLock = new();
+
     private static void OnRenderUpdate(IntPtr context)
     {
         if (context == IntPtr.Zero)
             return;
 
-        var handle = GCHandle.FromIntPtr(context);
-        if (handle.Target is MpvPlayer player)
-            player.RenderUpdateRequested?.Invoke();
+        MpvPlayer? player = null;
+        lock (_renderUpdateLock)
+        {
+            try
+            {
+                var handle = GCHandle.FromIntPtr(context);
+                if (handle.IsAllocated)
+                    player = handle.Target as MpvPlayer;
+            }
+            catch (InvalidOperationException)
+            {
+                // Handle was freed concurrently
+            }
+        }
+
+        player?.RenderUpdateRequested?.Invoke();
     }
 
     private static List<TrackInfo> ParseTracks(MpvNode root)

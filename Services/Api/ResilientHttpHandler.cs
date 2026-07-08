@@ -108,7 +108,11 @@ public class ResilientHttpHandler : DelegatingHandler
 
     private static async Task<HttpRequestMessage> CloneRequestAsync(HttpRequestMessage original)
     {
-        var clone = new HttpRequestMessage(original.Method, original.RequestUri);
+        var clone = new HttpRequestMessage(original.Method, original.RequestUri)
+        {
+            Version = original.Version,
+            VersionPolicy = original.VersionPolicy
+        };
         
         if (original.Content != null)
         {

@@ -42,7 +42,7 @@ public class SettingsService : IDisposable
 
     private readonly string _settingsPath;
     private readonly Debouncer _debouncer;
-    private readonly SemaphoreSlim _saveLock = new(1, 1);
+    private readonly object _saveLock = new();
     private readonly object _stateLock = new();
     private long _uiVersion;
     private long _systemVersion;
@@ -145,28 +145,29 @@ public class SettingsService : IDisposable
 
     public void SaveImmediate()
     {
-        _saveLock.Wait();
-        try
+        lock (_saveLock)
         {
             InternalSaveSync();
         }
-        finally
-        {
-            _saveLock.Release();
-        }
     }
 
-    public async Task SaveAsync()
+    public Task SaveAsync()
     {
-        await _saveLock.WaitAsync();
-        try
+        return Task.Run(() =>
         {
-            await InternalSaveAsync();
-        }
-        finally
-        {
-            _saveLock.Release();
-        }
+            lock (_saveLock)
+            {
+                if (CanSkipSave())
+                    return;
+
+                EnsureDirectory();
+                var save = PrepareJsonForSave();
+                var json = EncryptForSave(save.Settings);
+                AtomicWrite(_settingsPath, json);
+                MarkVersionsSaved(save.Versions);
+                Log.Debug("Settings saved (async) to {Path}", _settingsPath);
+            }
+        });
     }
 
     private void InternalSaveSync()
@@ -182,19 +183,6 @@ public class SettingsService : IDisposable
         Log.Information("Settings saved to {Path}", _settingsPath);
     }
 
-    private async Task InternalSaveAsync()
-    {
-        if (CanSkipSave())
-            return;
-
-        EnsureDirectory();
-        var save = PrepareJsonForSave();
-        var json = EncryptForSave(save.Settings);
-        await AtomicWriteAsync(_settingsPath, json);
-        MarkVersionsSaved(save.Versions);
-        Log.Debug("Settings saved (async) to {Path}", _settingsPath);
-    }
-
     /// <summary>
     /// Writes settings to a temp sibling file, then atomically replaces the destination.
     /// Prevents corrupted/half-written settings (and therefore token loss) if the process
@@ -205,14 +193,6 @@ public class SettingsService : IDisposable
         var tmp = path + ".tmp";
         File.WriteAllText(tmp, content);
         // File.Replace requires the destination to exist; fall back to Move on first save.
-        if (File.Exists(path)) File.Replace(tmp, path, CanBackupCurrentSettings(path) ? GetBackupPath(path) : null);
-        else File.Move(tmp, path);
-    }
-
-    private static async Task AtomicWriteAsync(string path, string content)
-    {
-        var tmp = path + ".tmp";
-        await File.WriteAllTextAsync(tmp, content);
         if (File.Exists(path)) File.Replace(tmp, path, CanBackupCurrentSettings(path) ? GetBackupPath(path) : null);
         else File.Move(tmp, path);
     }
@@ -551,7 +531,6 @@ public class SettingsService : IDisposable
         }
 
         _debouncer.Dispose();
-        _saveLock.Dispose();
     }
 
     public bool NeedsFirstStartup()

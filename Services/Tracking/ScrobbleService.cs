@@ -39,7 +39,7 @@ public class ScrobbleService : IScrobbleService, IDisposable
     private readonly object _stateLock = new();
     private CancellationTokenSource? _countdownCts;
     private string _activeHash = string.Empty;
-    private volatile bool _isPlaying;
+    private bool _isPlaying;
 
     public ScrobbleService(
         AnimeService animeService,
@@ -102,7 +102,10 @@ public class ScrobbleService : IScrobbleService, IDisposable
 
     public void UpdatePlayingState(bool isPlaying)
     {
-        _isPlaying = isPlaying;
+        lock (_stateLock)
+        {
+            _isPlaying = isPlaying;
+        }
     }
 
     public void CancelScrobble()
@@ -127,17 +130,24 @@ public class ScrobbleService : IScrobbleService, IDisposable
             {
                 ct.ThrowIfCancellationRequested();
                 
-                int delaySeconds = _settingsService.Current.System.Scrobbler.DelaySeconds;
-                int remaining = delaySeconds - elapsed;
-
-                if (remaining <= 0) break;
-                
-                if (!_isPlaying)
+                bool isPlaying;
+                lock (_stateLock)
                 {
+                    isPlaying = _isPlaying;
+                }
+
+                if (!isPlaying)
+                {
+                    elapsed = 0;
                     CountdownUpdated?.Invoke(this, Kiriha.Core.UIUtils.GetLoc("scrobbler.status.paused"));
                     await Task.Delay(1000, ct);
                     continue;
                 }
+
+                int delaySeconds = _settingsService.Current.System.Scrobbler.DelaySeconds;
+                int remaining = delaySeconds - elapsed;
+
+                if (remaining <= 0) break;
 
                 CountdownUpdated?.Invoke(this, $"{TimeSpan.FromSeconds(remaining):mm\\:ss}");
                 await Task.Delay(1000, ct);

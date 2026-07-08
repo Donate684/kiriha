@@ -149,32 +149,48 @@ public class ImageCacheService : IDisposable
         }
     }
 
-    private readonly ConcurrentDictionary<string, Lazy<Task<string>>> _activeDownloads = new();
+    private readonly ConcurrentDictionary<string, Task<string>> _activeDownloads = new();
 
     public Task<string> GetLocalPathOrDownload(string url)
     {
         if (string.IsNullOrEmpty(url)) return Task.FromResult(string.Empty);
         
-        var lazy = _activeDownloads.GetOrAdd(url, u => new Lazy<Task<string>>(async () => 
+        var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var addedTask = _activeDownloads.GetOrAdd(url, tcs.Task);
+
+        if (ReferenceEquals(addedTask, tcs.Task))
+        {
+            _ = ExecuteDownloadAsync(url, tcs);
+        }
+
+        return addedTask;
+    }
+
+    private async Task ExecuteDownloadAsync(string url, TaskCompletionSource<string> tcs)
+    {
+        try
         {
             var result = string.Empty;
             try
             {
-                result = await DownloadCoreAsync(u);
+                result = await DownloadCoreAsync(url);
             }
             catch (Exception)
             {
                 result = string.Empty;
             }
-            finally
-            {
-                // Always remove from active downloads unconditionally.
-                // It only serves as a concurrent deduplicator.
-                _activeDownloads.TryRemove(u, out _);
-            }
-            return result;
-        }));
-        return lazy.Value;
+            tcs.SetResult(result);
+        }
+        catch (Exception ex)
+        {
+            tcs.TrySetException(ex);
+        }
+        finally
+        {
+            // Always remove from active downloads unconditionally.
+            // It only serves as a concurrent deduplicator.
+            _activeDownloads.TryRemove(url, out _);
+        }
     }
 
     private async Task<string> DownloadCoreAsync(string url)
@@ -205,6 +221,11 @@ public class ImageCacheService : IDisposable
                         var fileInfo = new FileInfo(localPath);
                         if (fileInfo.Length > 0) return localPath;
                         try { fileInfo.Delete(); } catch { }
+                    }
+
+                    if (File.Exists(tmpPath))
+                    {
+                        try { File.Delete(tmpPath); } catch { }
                     }
 
                     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));

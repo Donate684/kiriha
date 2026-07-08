@@ -134,11 +134,11 @@ public sealed class ShutdownCoordinator
 
         try
         {
-            _serviceProvider.GetRequiredService<SettingsService>().SaveImmediate();
+            await _serviceProvider.GetRequiredService<SettingsService>().SaveAsync();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Shutdown flush: SettingsService.SaveImmediate failed");
+            Log.Error(ex, "Shutdown flush: SettingsService.SaveAsync failed");
         }
 
         try

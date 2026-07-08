@@ -78,14 +78,14 @@ public class TrackingService : IDisposable
     public async Task ManualMapAsync(int animeId)
     {
         ParsedMedia? media;
-        lock (_state) { media = _currentMedia; _currentMedia = null; }
+        lock (_state) { media = _currentMedia; }
         if (media == null) return;
 
         Log.Information("TrackingService: Manually mapping '{Title}' to ID {Id}", media.AnimeTitle, animeId);
         _mappingService.AddMapping(media.AnimeTitle, animeId);
 
         // Use a temporary flag or bypass to ensure it works even if scrobbler is disabled
-        await MatchMediaAsync(media);
+        await MatchMediaAsync(media, forceMatch: true);
     }
 
     public void SetInternalMedia(InternalPlayerState state)
@@ -115,7 +115,7 @@ public class TrackingService : IDisposable
 
         if (state.AnimeId.HasValue)
         {
-            SetMatchedInternalMedia(media, state.AnimeId.Value);
+            _ = SetMatchedInternalMedia(media, state.AnimeId.Value);
         }
         else
         {
@@ -123,11 +123,13 @@ public class TrackingService : IDisposable
         }
     }
 
-    private async void SetMatchedInternalMedia(ParsedMedia media, int animeId)
+    private async Task SetMatchedInternalMedia(ParsedMedia media, int animeId)
     {
-        ParsedMedia? prev;
-        lock (_state) prev = _currentMedia;
-        if (prev != null && prev.AnimeTitle == media.AnimeTitle && prev.Episode == media.Episode)
+        try
+        {
+            ParsedMedia? prev;
+            lock (_state) prev = _currentMedia;
+            if (prev != null && prev.AnimeTitle == media.AnimeTitle && prev.Episode == media.Episode)
         {
             bool timeLeap = false;
             if (prev.Position.HasValue && media.Position.HasValue)
@@ -147,40 +149,38 @@ public class TrackingService : IDisposable
             // but for smooth ticking Discord handles it. We just call it if IsPlaying changed, or significant time leap.
             if (changed)
             {
-                AnimeItem? matched;
-                lock (_state) matched = _matchedAnime;
-                if (matched != null)
+                AnimeItem? currentMatched;
+                lock (_state) currentMatched = _matchedAnime;
+                if (currentMatched != null)
                 {
-                    NotifyPlayerMetadata(media, matched);
+                    NotifyPlayerMetadata(media, currentMatched);
 
-                    string? mainTitle = matched.Title ?? matched.EnglishTitle;
-                    string? subTitle = matched.RussianTitle;
+                    string? mainTitle = currentMatched.Title ?? currentMatched.EnglishTitle;
+                    string? subTitle = currentMatched.RussianTitle;
 
                     string discordTitle = (!string.IsNullOrEmpty(subTitle) && !string.IsNullOrEmpty(mainTitle) && subTitle != mainTitle)
                         ? $"{mainTitle} | {subTitle}"
                         : (!string.IsNullOrEmpty(subTitle) ? subTitle : (mainTitle ?? "Anime"));
 
-                    string malUrl = $"https://myanimelist.net/anime/{matched.Id}";
-                    string shikiUrl = $"{ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{matched.Id}";
+                    string malUrl = $"https://myanimelist.net/anime/{currentMatched.Id}";
+                    string shikiUrl = $"{ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{currentMatched.Id}";
 
-                    _discordService.UpdatePresence(discordTitle, media.Episode, matched.TotalEpisodes, malUrl, shikiUrl, media.Position, media.Duration, matched.MainPictureUrl, media.IsPlaying);
+                    _discordService.UpdatePresence(discordTitle, media.Episode, currentMatched.TotalEpisodes, malUrl, shikiUrl, media.Position, media.Duration, currentMatched.MainPictureUrl, media.IsPlaying);
                 }
             }
             return;
         }
 
-        lock (_state)
-        {
-            _currentMedia = media;
-            _matchedAnime = null;
-        }
-        _scrobbleService.CancelScrobble();
-        
-        MediaChanged?.Invoke(this, media);
-        AnimeMatched?.Invoke(this, null);
+            lock (_state)
+            {
+                _currentMedia = media;
+                _matchedAnime = null;
+            }
+            _scrobbleService.CancelScrobble();
+            
+            MediaChanged?.Invoke(this, media);
+            AnimeMatched?.Invoke(this, null);
 
-        try
-        {
             await Task.WhenAny(_animeService.InitializationTask, Task.Delay(5000));
             
             var userList = await _uiDispatcher.InvokeAsync(() => _animeService.Collection.ToList());
@@ -188,17 +188,29 @@ public class TrackingService : IDisposable
 
             ParsedMedia? cur;
             lock (_state) cur = _currentMedia;
-            if (!ReferenceEquals(cur, media)) return;
+            if (!IsSameMedia(cur, media)) return;
 
             if (matched != null)
             {
                 NotifyPlayerMetadata(media, matched);
 
-                lock (_state) _matchedAnime = matched;
-                AnimeMatched?.Invoke(this, matched);
+                bool isValid;
+                lock (_state)
+                {
+                    isValid = IsSameMedia(_currentMedia, media);
+                    if (isValid)
+                    {
+                        _matchedAnime = matched;
+                    }
+                }
 
-                UpdateDiscordPresence(media, matched);
-                _scrobbleService.StartScrobble(media, matched);
+                if (isValid)
+                {
+                    AnimeMatched?.Invoke(this, matched);
+
+                    UpdateDiscordPresence(media, matched);
+                    _scrobbleService.StartScrobble(media, matched);
+                }
             }
             else
             {
@@ -214,25 +226,25 @@ public class TrackingService : IDisposable
     public async Task RemoveManualMappingAsync()
     {
         ParsedMedia? media;
-        lock (_state) { media = _currentMedia; _currentMedia = null; }
+        lock (_state) { media = _currentMedia; }
         if (media == null) return;
 
         Log.Information("TrackingService: Removing manual mapping for '{Title}'", media.AnimeTitle);
         _mappingService.RemoveMapping(media.AnimeTitle);
 
-        await MatchMediaAsync(media);
+        await MatchMediaAsync(media, forceMatch: true);
     }
 
     public async Task AddNegativeMappingAsync()
     {
         ParsedMedia? media;
-        lock (_state) { media = _currentMedia; _currentMedia = null; }
+        lock (_state) { media = _currentMedia; }
         if (media == null) return;
 
         Log.Information("TrackingService: Adding negative mapping for '{Title}'", media.AnimeTitle);
         _mappingService.AddNegativeMapping(media.AnimeTitle);
 
-        await MatchMediaAsync(media);
+        await MatchMediaAsync(media, forceMatch: true);
     }
 
     public bool IsManuallyMapped()
@@ -273,12 +285,12 @@ public class TrackingService : IDisposable
         catch (Exception ex) { Log.Error(ex, "TrackingService: OnMediaDetected failed for {Title}", media?.AnimeTitle); }
     }
 
-    private async Task MatchMediaAsync(ParsedMedia media)
+    private async Task MatchMediaAsync(ParsedMedia media, bool forceMatch = false)
     {
         // Check if it's the same media
         ParsedMedia? prev;
         lock (_state) prev = _currentMedia;
-        if (prev != null && prev.AnimeTitle == media.AnimeTitle && prev.Episode == media.Episode)
+        if (!forceMatch && prev != null && prev.AnimeTitle == media.AnimeTitle && prev.Episode == media.Episode)
         {
             bool changed = prev.IsPlaying != media.IsPlaying || prev.ProcessName != media.ProcessName;
             lock (_state) _currentMedia = media;
@@ -325,19 +337,31 @@ public class TrackingService : IDisposable
             // Race: another media event may have arrived while we were mapping.
             ParsedMedia? cur;
             lock (_state) cur = _currentMedia;
-            if (!ReferenceEquals(cur, media)) return;
+            if (!IsSameMedia(cur, media)) return;
 
             if (!malId.HasValue)
             {
                 malId = await _mappingService.SearchOnMalAsync(media.OriginalTitle);
                 lock (_state) cur = _currentMedia;
-                if (!ReferenceEquals(cur, media)) return;
+                if (!IsSameMedia(cur, media)) return;
             }
 
             if (malId.HasValue)
             {
                 var matched = userList.FirstOrDefault(x => x.Id == malId.Value);
-                lock (_state) _matchedAnime = matched;
+                
+                bool isValid;
+                lock (_state)
+                {
+                    isValid = IsSameMedia(_currentMedia, media);
+                    if (isValid)
+                    {
+                        _matchedAnime = matched;
+                    }
+                }
+
+                if (!isValid) return;
+
                 AnimeMatched?.Invoke(this, matched);
                 
                 if (matched != null)
@@ -371,11 +395,18 @@ public class TrackingService : IDisposable
         {
             ParsedMedia? cur;
             lock (_state) cur = _currentMedia;
-            if (ReferenceEquals(cur, media))
+            if (IsSameMedia(cur, media))
             {
                 StatusUpdated?.Invoke(this, string.Empty);
             }
         }
+    }
+
+    private static bool IsSameMedia(ParsedMedia? a, ParsedMedia? b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a == null || b == null) return false;
+        return a.AnimeTitle == b.AnimeTitle && a.Episode == b.Episode;
     }
 
     public void Dispose()

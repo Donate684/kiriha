@@ -26,6 +26,30 @@ public sealed class MpvThumbnailer : IDisposable
     private bool _disposed;
     private int _activeCalls;
 
+    static MpvThumbnailer()
+    {
+        Task.Run(() =>
+        {
+            try
+            {
+                var baseDir = Path.Combine(Path.GetTempPath(), "Kiriha", "timeline-thumbs");
+                if (Directory.Exists(baseDir))
+                {
+                    foreach (var dir in Directory.GetDirectories(baseDir))
+                    {
+                        try
+                        {
+                            if (DateTime.UtcNow - Directory.GetCreationTimeUtc(dir) > TimeSpan.FromDays(1))
+                                Directory.Delete(dir, recursive: true);
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+        });
+    }
+
     public MpvThumbnailer()
     {
         _thumbnailDirectory = Path.Combine(Path.GetTempPath(), "Kiriha", "timeline-thumbs", Guid.NewGuid().ToString("N"));
@@ -318,21 +342,35 @@ public sealed class MpvThumbnailer : IDisposable
         }
     }
 
+    ~MpvThumbnailer()
+    {
+        Dispose(false);
+    }
+
     public void Dispose()
     {
-        lock (_gate)
-        {
-            if (_disposed)
-                return;
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-            _disposed = true;
-            if (_handle != IntPtr.Zero)
+    private void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            lock (_gate)
             {
-                LibMpvNative.mpv_wakeup(_handle);
-                if (_activeCalls == 0)
+                if (_disposed)
+                    return;
+
+                _disposed = true;
+                if (_handle != IntPtr.Zero)
                 {
-                    LibMpvNative.mpv_terminate_destroy(_handle);
-                    _handle = IntPtr.Zero;
+                    LibMpvNative.mpv_wakeup(_handle);
+                    if (_activeCalls == 0)
+                    {
+                        LibMpvNative.mpv_terminate_destroy(_handle);
+                        _handle = IntPtr.Zero;
+                    }
                 }
             }
         }

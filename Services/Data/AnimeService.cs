@@ -57,12 +57,12 @@ public class AnimeService
     private readonly TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _initStarted; // Interlocked guard for InitializeAsync
     private int _syncing;     // Interlocked guard for SyncWithTrackersAsync
-    private readonly HashSet<int> _recentlyDeletedIds = new();
+    private readonly Dictionary<int, CancellationTokenSource> _recentlyDeletedIds = new();
     public Task InitializationTask => _initTcs.Task;
 
     public bool IsRecentlyDeleted(int animeId)
     {
-        lock (_recentlyDeletedIds) return _recentlyDeletedIds.Contains(animeId);
+        lock (_recentlyDeletedIds) return _recentlyDeletedIds.ContainsKey(animeId);
     }
 
     // Use BulkObservableCollection so initial population (2000+ items from the
@@ -341,7 +341,7 @@ public class AnimeService
             // Check blacklist
             lock (_recentlyDeletedIds)
             {
-                if (_recentlyDeletedIds.Contains(newItem.Id)) continue;
+                if (_recentlyDeletedIds.ContainsKey(newItem.Id)) continue;
             }
 
             if (existingMap.TryGetValue(newItem.Id, out var existing))
@@ -380,7 +380,14 @@ public class AnimeService
     public async Task AddOrUpdateAnimeAsync(AnimeItem item)
     {
         // If we're adding it back, remove from recently deleted blacklist
-        lock (_recentlyDeletedIds) _recentlyDeletedIds.Remove(item.Id);
+        lock (_recentlyDeletedIds)
+        {
+            if (_recentlyDeletedIds.TryGetValue(item.Id, out var cts))
+            {
+                cts.Cancel();
+                _recentlyDeletedIds.Remove(item.Id);
+            }
+        }
 
         // Read Collection and apply CopyTo on the UI thread: ObservableCollection is not thread-safe
         // and AnimeItem property setters raise PropertyChanged that UI bindings must observe on UI.
@@ -404,17 +411,39 @@ public class AnimeService
     public async Task RemoveAnimeAsync(int animeId)
     {
         // Add to temporary blacklist to prevent re-adding during sync race conditions
-        lock (_recentlyDeletedIds) _recentlyDeletedIds.Add(animeId);
+        var newCts = new CancellationTokenSource();
+        lock (_recentlyDeletedIds)
+        {
+            if (_recentlyDeletedIds.TryGetValue(animeId, out var oldCts))
+            {
+                oldCts.Cancel();
+            }
+            _recentlyDeletedIds[animeId] = newCts;
+        }
 
         _ = _backgroundTasks.Run("AnimeService.RecentDeleteExpiry", async ct =>
         {
-            await Task.Delay(TimeSpan.FromSeconds(60), ct);
-            lock (_recentlyDeletedIds) _recentlyDeletedIds.Remove(animeId);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, newCts.Token);
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(60), linkedCts.Token);
+                lock (_recentlyDeletedIds)
+                {
+                    if (_recentlyDeletedIds.TryGetValue(animeId, out var currentCts) && currentCts == newCts)
+                    {
+                        _recentlyDeletedIds.Remove(animeId);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when canceled by another operation
+            }
+            finally
+            {
+                newCts.Dispose();
+            }
         });
-
-        // Cancel any pending sync tasks for this anime BEFORE enqueuing the Remove
-        // (otherwise CancelTasksForAnimeAsync would mark our new task as outdated).
-        await _syncManager.CancelTasksForAnimeAsync(animeId);
 
         await _uiDispatcher.InvokeAsync(() =>
         {
@@ -446,12 +475,12 @@ public class AnimeService
             return false;
         }
 
+        await _userAnimeRepo.UpdateProgressAsync(item, nextProgress, nextStatus);
+        await _syncManager.EnqueueUpdateAsync(item.Id, nextProgress, nextStatus);
+
         item.Progress = nextProgress;
         if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None) 
             item.Status = nextStatus.Value;
-
-        await _userAnimeRepo.UpdateProgressAsync(item, nextProgress, nextStatus);
-        await _syncManager.EnqueueUpdateAsync(item.Id, nextProgress, nextStatus);
         
         return true;
     }
@@ -477,7 +506,7 @@ public class AnimeService
             if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None) 
                 item.Status = nextStatus.Value;
 
-            await _userAnimeRepo.UpdateProgressAsync(item, item.Progress, nextStatus);
+            await _userAnimeRepo.UpdateProgressAsync(item, nextProgress, nextStatus);
             await _syncManager.EnqueueFullUpdateAsync(item);
             
             _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, nextStatus == UserAnimeStatus.Completed ? "Completed" : "Read");
@@ -506,7 +535,7 @@ public class AnimeService
                 int nextProgress = item.ChaptersRead - 1;
                 item.ChaptersRead = nextProgress;
 
-                await _userAnimeRepo.UpdateProgressAsync(item, item.Progress, null);
+                await _userAnimeRepo.UpdateProgressAsync(item, nextProgress, null);
                 await _syncManager.EnqueueFullUpdateAsync(item);
                 
                 _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, "Reverted");
