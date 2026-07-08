@@ -77,7 +77,7 @@ public static class AnimeStringHelper
     // Hot-path memoization. MappingService normalizes the same title (and each
     // of x.Title / x.EnglishTitle / x.RussianTitle) repeatedly during one
     // matching attempt; Anisthesia strategies normalize the same window title
-    // every detection tick. Capped at 2048 entries � way more than the unique
+    // every detection tick. Capped at 2048 entries — way more than the unique
     // title set of any realistic session.
     private static readonly LruStringMemoizer<string> _normalizeCache = new(2048);
 
@@ -93,8 +93,8 @@ public static class AnimeStringHelper
         string result = title.Trim().ToLowerInvariant();
 
         // 2. Specific character replacements
-        result = result.Replace("o", "ou").Replace("u", "uu")
-                       .Replace("@", "a").Replace("�", "x");
+        result = result.Replace("ō", "ou").Replace("ū", "uu")
+                       .Replace("@", "a").Replace("Ч", "x");
 
         // 3. Batch replacements using compiled regexes
         result = ApplyGroupReplacements(result, RomanRegex, RomanNumerals);
@@ -129,7 +129,7 @@ public static class AnimeStringHelper
         if (string.IsNullOrWhiteSpace(input)) return string.Empty;
         
         // Handle Shikimori's placeholder for blocked titles
-        if (input.Contains("????????????? ?? ?????????? ?????????????")) return string.Empty;
+        if (input.Contains("Заблокировано по требованию Роскомнадзора")) return string.Empty;
 
         // 1. First replace [tag=val]Content[/tag] with Content
         string result = ShikiTagsRegex.Replace(input, "$2");
