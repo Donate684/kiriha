@@ -19,6 +19,10 @@
         Icon="/Assets/kiriha.ico"
         Background="{DynamicResource ModalBackgroundFill}">
 
+    <LayoutTransformControl Name="ScaleRoot">
+        <LayoutTransformControl.LayoutTransform>
+            <ScaleTransform ScaleX="1" ScaleY="1"/>
+        </LayoutTransformControl.LayoutTransform>
     <Grid Margin="20" RowDefinitions="Auto,Auto,*,Auto,Auto" ColumnDefinitions="*">
 
         <TextBlock Grid.Row="0"
@@ -75,4 +79,5 @@
                     Classes="accent"/>
         </StackPanel>
     </Grid>
+    </LayoutTransformControl>
 </Window>

@@ -21,5 +21,10 @@
         SizeToContent="WidthAndHeight"
         CanResize="False">
     
+    <LayoutTransformControl Name="ScaleRoot">
+        <LayoutTransformControl.LayoutTransform>
+            <ScaleTransform ScaleX="1" ScaleY="1"/>
+        </LayoutTransformControl.LayoutTransform>
     <views:FirstStartupView />
+    </LayoutTransformControl>
 </Window>

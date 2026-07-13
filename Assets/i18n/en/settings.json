@@ -62,6 +62,9 @@
     "exclusive_notice": "You can connect only one Shikimori variant at a time — either the original or the fork. Disconnect the current one to switch.",
     "fork_domains_tooltip": "The fork is served from multiple domains (shikimori.rip, .net, .fi, …) to circumvent regional blocking. The app figures out the working one automatically — including new domains we don't know about yet."
   },
+  "ui": {
+    "scale": "UI Scale"
+  },
   "airing_info": {
     "title": "Airing Information",
     "subtitle": "Show number of aired episodes and countdown to the next one"

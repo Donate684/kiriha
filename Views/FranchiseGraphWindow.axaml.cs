@@ -14,7 +14,7 @@ using System;
 
 namespace Kiriha.Views;
 
-public partial class FranchiseGraphWindow : Window
+public partial class FranchiseGraphWindow : KirihaWindowBase
 {
     public FranchiseGraphWindow()
     {

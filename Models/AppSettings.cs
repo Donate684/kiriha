@@ -37,6 +37,13 @@ public class AppSettings
         public bool ShowNsfw { get; set; } = false;
         public bool ListShowNsfw { get; set; } = false;
         public bool IsPaneOpen { get; set; } = true;
+        
+        /// <summary>
+        /// App-level UI scale factor (1.0 = 100%).
+        /// Applied via LayoutTransformControl on MainWindow root.
+        /// Range: 0.25–3.0.
+        /// </summary>
+        public double UiScale { get; set; } = 1.0;
 
         /// <summary>
         /// Client-only: ids of seasonal anime the user marked as "not interested".

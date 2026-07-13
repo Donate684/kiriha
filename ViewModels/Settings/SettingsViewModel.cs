@@ -106,6 +106,14 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _enableMica;
 
+    [ObservableProperty]
+    private double _uiScale;
+
+    public List<double> AvailableUiScales { get; } = new()
+    {
+        0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0
+    };
+
     public bool IsMicaSupported => Platform.IsMicaSupported;
 
     // Updates
@@ -298,6 +306,7 @@ public partial class SettingsViewModel : ViewModelBase
         NotifyAppUpdate = _settingsService.Current.System.NotifyAppUpdate;
         NewEpisodeNotificationDelayMinutes = _settingsService.Current.System.NewEpisodeNotificationDelayMinutes;
         EnableMica = _settingsService.Current.UI.EnableMica;
+        UiScale = _settingsService.Current.UI.UiScale;
         KeepPlayerProcessAlive = _settingsService.Current.System.KeepPlayerProcessAlive;
         SinglePlayerWindow = _settingsService.Current.Player.SingleWindow;
         MpvHwdec = NormalizeMpvOption(_settingsService.Current.Player.MpvHwdec, "auto");

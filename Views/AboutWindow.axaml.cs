@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kiriha.Views;
 
-public partial class AboutWindow : Window
+public partial class AboutWindow : KirihaWindowBase
 {
     /// <summary>
     /// Public APIs we consume. Names match the user-facing service identity,

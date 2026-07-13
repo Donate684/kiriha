@@ -200,10 +200,14 @@
         </Style>
     </Window.Styles>
 
+    <LayoutTransformControl Name="ScaleRoot">
+        <LayoutTransformControl.LayoutTransform>
+            <ScaleTransform ScaleX="1" ScaleY="1"/>
+        </LayoutTransformControl.LayoutTransform>
     <Grid RowDefinitions="Auto, *">
         <Border Grid.Row="0" Height="34" VerticalAlignment="Top" Background="Transparent" IsHitTestVisible="True" PointerPressed="OnTitleBarPressed" ZIndex="10"/>
         
-        <controls:TitleBarButtons Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" ZIndex="999"/>
+        <controls:TitleBarButtons Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" ZIndex="999" Foreground="White"/>
         
         <!-- ═══════════════════════════════════════════════════════════════════ -->
         <!-- HERO BANNER                                                        -->
@@ -777,4 +781,5 @@
 
         </Grid>
     </Grid>
+    </LayoutTransformControl>
 </Window>

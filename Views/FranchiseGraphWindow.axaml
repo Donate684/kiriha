@@ -27,6 +27,10 @@
         ExtendClientAreaTitleBarHeightHint="34"
         WindowDecorations="BorderOnly">
 
+    <LayoutTransformControl Name="ScaleRoot">
+        <LayoutTransformControl.LayoutTransform>
+            <ScaleTransform ScaleX="1" ScaleY="1"/>
+        </LayoutTransformControl.LayoutTransform>
     <Grid RowDefinitions="Auto, *">
         <Border Grid.Row="0" Height="34" VerticalAlignment="Top" Background="Transparent" IsHitTestVisible="True" PointerPressed="OnTitleBarPressed" ZIndex="10"/>
         
@@ -120,4 +124,5 @@
             </Grid>
         </ScrollViewer>
     </Grid>
+    </LayoutTransformControl>
 </Window>

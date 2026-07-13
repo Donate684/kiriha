@@ -48,7 +48,7 @@
         <Style Selector="Button.CaptionBtn TextBlock">
             <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets, sans-serif"/>
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="{Binding $parent[UserControl].Foreground}"/>
             <Setter Property="Opacity" Value="0.9"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>

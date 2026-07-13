@@ -64,6 +64,22 @@ public partial class SettingsViewModel
         _animeListViewModel.RefreshLocalization();
     }
 
+    partial void OnUiScaleChanged(double value)
+    {
+        _settingsService.Update(settings => settings.UI.UiScale = value, SettingsSection.UI);
+        
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            foreach (var window in desktop.Windows)
+            {
+                if (window is Views.KirihaWindowBase kb)
+                {
+                    kb.ApplyUiScale(value);
+                }
+            }
+        }
+    }
+
     partial void OnShowAiringInfoChanged(bool value)
     {
         _settingsService.Update(settings => settings.UI.ShowAiringInfo = value, SettingsSection.UI);

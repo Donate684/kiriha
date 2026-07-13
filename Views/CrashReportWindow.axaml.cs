@@ -13,7 +13,7 @@ using Kiriha.ViewModels.Search;
 
 namespace Kiriha.Views;
 
-public partial class CrashReportWindow : Window
+public partial class CrashReportWindow : KirihaWindowBase
 {
     public CrashReportWindow()
     {

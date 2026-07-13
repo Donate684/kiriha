@@ -65,6 +65,10 @@
 
     </Window.Styles>
 
+    <LayoutTransformControl Name="ScaleRoot">
+        <LayoutTransformControl.LayoutTransform>
+            <ScaleTransform ScaleX="1" ScaleY="1"/>
+        </LayoutTransformControl.LayoutTransform>
     <Grid RowDefinitions="34,*" PointerPressed="OnTitleBarPressed">
 
         <!-- Drag-area -->
@@ -214,4 +218,5 @@
         </Panel>
 
     </Grid>
+    </LayoutTransformControl>
 </Window>

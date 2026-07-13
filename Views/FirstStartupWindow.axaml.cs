@@ -2,7 +2,7 @@ using Avalonia.Controls;
 
 namespace Kiriha.Views;
 
-public partial class FirstStartupWindow : Window
+public partial class FirstStartupWindow : KirihaWindowBase
 {
     public FirstStartupWindow()
     {

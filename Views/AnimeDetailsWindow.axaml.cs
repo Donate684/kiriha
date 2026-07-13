@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kiriha.Views;
 
-public partial class AnimeDetailsWindow : Window
+public partial class AnimeDetailsWindow : KirihaWindowBase
 {
     public AnimeDetailsWindow()
     {

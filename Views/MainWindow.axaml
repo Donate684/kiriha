@@ -96,20 +96,24 @@
         <KeyBinding Gesture="F9" Command="{Binding TestPlayerCommand}" />
     </Window.KeyBindings>
 
-    <Grid RowDefinitions="34, *" Background="{x:Null}"
-          PointerPressed="OnTitleBarPressed">
-        <!-- ═══ TitleBar (drag area) ═══
-             ExtendClientAreaToDecorationsHint=True hides the OS chrome, so we
-             have to drive Begin{Move,Resize}Drag ourselves on the top 34px.
-             Handler lives on the root Grid: child controls that consume their
-             own click (Button, ListBoxItem, …) set Handled=true and the drag
-             never fires for them; clicks on empty title-bar area bubble up
-             unhandled and trigger the move. -->
-
-        <!-- Custom Caption Buttons (replaces buggy system chrome) -->
-        <controls:TitleBarButtons Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" ZIndex="999"/>
-
-        <SplitView Grid.Row="0" Grid.RowSpan="2" IsPaneOpen="{Binding IsPaneOpen}"
+    <LayoutTransformControl Name="ScaleRoot">
+        <LayoutTransformControl.LayoutTransform>
+            <ScaleTransform ScaleX="1" ScaleY="1"/>
+        </LayoutTransformControl.LayoutTransform>
+        <Grid RowDefinitions="34, *" Background="{x:Null}"
+              PointerPressed="OnTitleBarPressed">
+            <!-- ═══ TitleBar (drag area) ═══
+                 ExtendClientAreaToDecorationsHint=True hides the OS chrome, so we
+                 have to drive Begin{Move,Resize}Drag ourselves on the top 34px.
+                 Handler lives on the root Grid: child controls that consume their
+                 own click (Button, ListBoxItem, …) set Handled=true and the drag
+                 never fires for them; clicks on empty title-bar area bubble up
+                 unhandled and trigger the move. -->
+    
+            <!-- Custom Caption Buttons (replaces buggy system chrome) -->
+            <controls:TitleBarButtons Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" ZIndex="999"/>
+    
+            <SplitView Grid.Row="0" Grid.RowSpan="2" IsPaneOpen="{Binding IsPaneOpen}"
                    DisplayMode="CompactInline"
                    CompactPaneLength="60"
                    OpenPaneLength="230"
@@ -414,4 +418,5 @@
             </Grid>
         </Border>
     </Grid>
+    </LayoutTransformControl>
 </Window>

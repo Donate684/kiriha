@@ -1,0 +1,30 @@
+using System;
+using Avalonia.Controls;
+using Avalonia.Media;
+using Microsoft.Extensions.DependencyInjection;
+using Kiriha.Services.Data;
+
+namespace Kiriha.Views;
+
+public class KirihaWindowBase : Window
+{
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        
+        var settings = App.Services.GetService<SettingsService>();
+        if (settings != null)
+        {
+            ApplyUiScale(settings.Current.UI.UiScale);
+        }
+    }
+
+    public void ApplyUiScale(double factor)
+    {
+        if (this.FindControl<LayoutTransformControl>("ScaleRoot")?.LayoutTransform is ScaleTransform st)
+        {
+            st.ScaleX = factor;
+            st.ScaleY = factor;
+        }
+    }
+}

@@ -32,7 +32,7 @@ using Serilog;
 
 namespace Kiriha.Views;
 
-public partial class MainWindow : Window
+public partial class MainWindow : KirihaWindowBase
 {
     // Defaults used when the user has never resized the window before.
     // Match the design-time hints in MainWindow.axaml so layout stays sane.
