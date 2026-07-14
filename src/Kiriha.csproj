@@ -13,7 +13,7 @@
     <RootNamespace>Kiriha</RootNamespace>
     <Title>Kiriha</Title>
     <ApplicationIcon>Assets\kiriha.ico</ApplicationIcon>
-    <Version>1.2.17</Version>
+    <Version>1.2.18</Version>
 
     <!-- Single source of truth for the core Avalonia stack. Bump this property to update
          every core Avalonia.* package below in lock-step.
@@ -71,7 +71,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\subprojects\mpv\**" Link="mpv\%(RecursiveDir)%(Filename)%(Extension)">
+    <Content Include="..\subprojects\mpv\**\*" Link="mpv\%(RecursiveDir)%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -80,7 +80,7 @@
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)..\scripts\download-mpv.ps1&quot;" 
           Condition="!Exists('$(ProjectDir)..\subprojects\mpv\libmpv-2.dll')" />
     <ItemGroup>
-      <Content Include="..\subprojects\mpv\**" Link="mpv\%(RecursiveDir)%(Filename)%(Extension)">
+      <Content Include="..\subprojects\mpv\**\*" Link="mpv\%(RecursiveDir)%(Filename)%(Extension)">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
     </ItemGroup>
