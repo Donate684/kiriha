@@ -13,7 +13,7 @@
     <RootNamespace>Kiriha</RootNamespace>
     <Title>Kiriha</Title>
     <ApplicationIcon>Assets\kiriha.ico</ApplicationIcon>
-    <Version>1.2.16</Version>
+    <Version>1.2.17</Version>
 
     <!-- Single source of truth for the core Avalonia stack. Bump this property to update
          every core Avalonia.* package below in lock-step.
