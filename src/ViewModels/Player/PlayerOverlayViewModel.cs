@@ -67,8 +67,15 @@ public sealed partial class PlayerOverlayViewModel : ObservableObject, IDisposab
 
     public void Dispose()
     {
-        _osdTimer.Stop();
-        _osdTimer.Tick -= OnOsdTimerTick;
-        ClearTimelinePreview();
+        try
+        {
+            _osdTimer.Stop();
+            _osdTimer.Tick -= OnOsdTimerTick;
+        }
+        catch { }
+        finally
+        {
+            try { ClearTimelinePreview(); } catch { }
+        }
     }
 }

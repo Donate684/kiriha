@@ -90,20 +90,48 @@ public partial class PlayerWindow : Window
         var dataContext = DataContext;
         DataContext = null;
 
-        if (_overlay != null)
+        try
         {
-            _overlay.DataContext = null;
-            _overlay.Close();
-            _overlay = null;
+            if (_overlay != null)
+            {
+                _overlay.DataContext = null;
+                _overlay.Close();
+                _overlay = null;
+            }
         }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to close overlay window");
+        }
+        finally
+        {
+            _loadingPipeline = null;
 
-        _loadingPipeline = null;
-
-        if (dataContext is IDisposable disposable)
-            disposable.Dispose();
-
-        _player?.Dispose();
-        _player = null;
+            try
+            {
+                if (dataContext is IDisposable disposable)
+                    disposable.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to dispose PlayerViewModel");
+            }
+            finally
+            {
+                try
+                {
+                    _player?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to dispose MpvPlayer");
+                }
+                finally
+                {
+                    _player = null;
+                }
+            }
+        }
 
         base.OnClosed(e);
 

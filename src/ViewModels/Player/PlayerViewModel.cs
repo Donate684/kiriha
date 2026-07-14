@@ -75,6 +75,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         new("Скорость ниже", PlayerWheelAction.SpeedDown)
     };
     public List<int> WheelStepOptions { get; } = new() { 1, 2, 5, 10 };
+    public List<int> SeekStepOptions { get; } = new() { 1, 3, 5, 10, 15, 30 };
     public List<string> ScreenshotFormatOptions { get; } = new() { "png", "jpg", "webp" };
     public List<ScreenshotResolutionOption> ScreenshotResolutionOptions { get; } = new()
     {
@@ -119,6 +120,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private PlayerWheelActionOption? _wheelUpAction;
     [ObservableProperty] private PlayerWheelActionOption? _wheelDownAction;
     [ObservableProperty] private int _wheelVolumeStep = 5;
+    [ObservableProperty] private int _seekStep = 1;
     [ObservableProperty] private bool _showPlayPauseButton = true;
     [ObservableProperty] private bool _showSkipButtons = true;
     [ObservableProperty] private bool _showMuteButton = true;

@@ -10,7 +10,6 @@ internal static class MpvPlayerLifecycle
         IntPtr handle,
         MpvCommandQueue commandQueue,
         MpvEventLoop eventLoop,
-        Action freeRenderContext,
         Action<IntPtr> unobservePlaybackProperties)
     {
         if (handle == IntPtr.Zero)
@@ -18,8 +17,6 @@ internal static class MpvPlayerLifecycle
             eventLoop.Dispose();
             return;
         }
-
-        freeRenderContext();
 
         if (!commandQueue.WaitForStop(TimeSpan.FromSeconds(2)))
             Log.Warning("Timed out waiting for mpv command loop to stop");

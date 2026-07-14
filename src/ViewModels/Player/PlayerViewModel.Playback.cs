@@ -193,19 +193,28 @@ public partial class PlayerViewModel
 
     public void Dispose()
     {
-        _updateTracksCts?.Cancel();
-        _updateTracksCts?.Dispose();
-        _timelinePreview.Dispose();
-        _timer?.Stop();
+        try { _updateTracksCts?.Cancel(); } catch { }
+        try { _updateTracksCts?.Dispose(); } catch { }
+        
+        try { _updateNavigationCts?.Cancel(); } catch { }
+        try { _updateNavigationCts?.Dispose(); } catch { }
+        
+        try { _timelinePreview.Dispose(); } catch { }
+        
+        try { _timer?.Stop(); } catch { }
         _timer = null;
-        Overlay.Dispose();
+        
+        try { Overlay.Dispose(); } catch { }
+        
         _playback.FileLoaded -= OnPlayerFileLoaded;
         _playback.PlaybackEnded -= OnPlayerPlaybackEnded;
         _playback.PlaybackStateChanged -= OnPlayerPlaybackStateChanged;
         _playback.TracksChanged -= OnPlayerTracksChanged;
-        _playback.Detach();
-        _statePublisher.PublishClosed();
-        _statePublisher.Dispose();
+        
+        try { _playback.Detach(); } catch { }
+        
+        try { _statePublisher.PublishClosed(); } catch { }
+        try { _statePublisher.Dispose(); } catch { }
     }
 
     private Kiriha.Models.Api.InternalPlayerState CreatePlayerState()
@@ -274,9 +283,23 @@ public partial class PlayerViewModel
         });
     }
 
+    private int _isPlaybackStateUpdatePending;
+    private PlaybackState? _pendingPlaybackState;
+
     private void OnPlayerPlaybackStateChanged(PlaybackState state)
     {
-        Dispatcher.UIThread.Post(() => ApplyPlaybackState(state));
+        _pendingPlaybackState = state;
+        if (System.Threading.Interlocked.CompareExchange(ref _isPlaybackStateUpdatePending, 1, 0) == 0)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                System.Threading.Interlocked.Exchange(ref _isPlaybackStateUpdatePending, 0);
+                if (_pendingPlaybackState is { } pendingState)
+                {
+                    ApplyPlaybackState(pendingState);
+                }
+            });
+        }
     }
 
     private void ApplyPlaybackState(PlaybackState state)

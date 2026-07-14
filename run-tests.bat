@@ -3,7 +3,7 @@ setlocal
 
 echo.
 echo === Running Kiriha tests ===
-dotnet test .\Tests\Kiriha.Tests\Kiriha.Tests.csproj --configuration Release
+dotnet test .\tests\Kiriha.Tests\Kiriha.Tests.csproj --configuration Release
 if errorlevel 1 (
     echo.
     echo ERROR: tests failed.

@@ -109,6 +109,7 @@ public class AppSettings
         public PlayerWheelAction WheelUpAction { get; set; } = PlayerWheelAction.VolumeUp;
         public PlayerWheelAction WheelDownAction { get; set; } = PlayerWheelAction.VolumeDown;
         public int WheelVolumeStep { get; set; } = 5;
+        public int SeekStep { get; set; } = 1;
         public bool ShowPlayPauseButton { get; set; } = true;
         public bool ShowSkipButtons { get; set; } = true;
         public bool ShowMuteButton { get; set; } = true;

@@ -53,6 +53,7 @@ public partial class PlayerViewModel
             WheelUpAction = FindWheelAction(settings.WheelUpAction);
             WheelDownAction = FindWheelAction(settings.WheelDownAction);
             WheelVolumeStep = FindWheelStep(settings.WheelVolumeStep);
+            SeekStep = FindSeekStep(settings.SeekStep);
             ShowPlayPauseButton = settings.ShowPlayPauseButton;
             ShowSkipButtons = settings.ShowSkipButtons;
             ShowMuteButton = settings.ShowMuteButton;
@@ -137,6 +138,11 @@ public partial class PlayerViewModel
     private int FindWheelStep(int step)
     {
         return WheelStepOptions.Contains(step) ? step : 5;
+    }
+
+    private int FindSeekStep(int step)
+    {
+        return SeekStepOptions.Contains(step) ? step : 1;
     }
 
     private ScreenshotResolutionOption FindScreenshotResolution(string? value)

@@ -86,6 +86,8 @@ public partial class PlayerOverlayWindow
 
         if (DataContext is PlayerViewModel vm)
             vm.SetMpvRuntimeDiagnosticsVisible(false);
+
+        Focus();
     }
 
     private bool IsSettingsOverlayVisible()

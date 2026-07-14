@@ -109,6 +109,19 @@ public partial class PlayerViewModel
         _settingsService.Update(settings => settings.Player.WheelVolumeStep = normalized, SettingsSection.Player);
     }
 
+    partial void OnSeekStepChanged(int value)
+    {
+        var normalized = FindSeekStep(value);
+        if (value != normalized)
+        {
+            SeekStep = normalized;
+            return;
+        }
+
+        if (_isApplyingSettings || _settingsService == null) return;
+        _settingsService.Update(settings => settings.Player.SeekStep = normalized, SettingsSection.Player);
+    }
+
     partial void OnShowPlayPauseButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowPlayPauseButton = value);
     partial void OnShowSkipButtonsChanged(bool value) => SavePlayerPanelButtons(x => x.ShowSkipButtons = value);
     partial void OnShowMuteButtonChanged(bool value) => SavePlayerPanelButtons(x => x.ShowMuteButton = value);

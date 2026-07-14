@@ -86,28 +86,28 @@ public partial class PlayerOverlayWindow
         if (MatchesHotkey(e, vm.VolumeUpHotkey))
         {
             e.Handled = true;
-            vm.AdjustVolume(1);
+            vm.AdjustVolume(vm.WheelVolumeStep);
             return;
         }
 
         if (MatchesHotkey(e, vm.VolumeDownHotkey))
         {
             e.Handled = true;
-            vm.AdjustVolume(-1);
+            vm.AdjustVolume(-vm.WheelVolumeStep);
             return;
         }
 
         if (MatchesHotkey(e, vm.SeekBackwardHotkey))
         {
             e.Handled = true;
-            vm.SeekRelative(-1);
+            vm.SeekRelative(-vm.SeekStep);
             return;
         }
 
         if (MatchesHotkey(e, vm.SeekForwardHotkey))
         {
             e.Handled = true;
-            vm.SeekRelative(1);
+            vm.SeekRelative(vm.SeekStep);
             return;
         }
 

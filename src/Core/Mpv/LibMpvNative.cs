@@ -152,35 +152,6 @@ public static class LibMpvNative
         }
     }
 
-    public static int mpv_command_async_string(IntPtr ctx, ulong reply_userdata, params string[] args)
-    {
-        IntPtr[] ptrs = new IntPtr[args.Length + 1];
-        IntPtr unmanagedPointer = IntPtr.Zero;
-
-        try
-        {
-            for (int i = 0; i < args.Length; i++)
-                ptrs[i] = Marshal.StringToCoTaskMemUTF8(args[i]);
-            ptrs[args.Length] = IntPtr.Zero;
-
-            unmanagedPointer = Marshal.AllocHGlobal(ptrs.Length * IntPtr.Size);
-            Marshal.Copy(ptrs, 0, unmanagedPointer, ptrs.Length);
-
-            return mpv_command_async(ctx, reply_userdata, unmanagedPointer);
-        }
-        finally
-        {
-            if (unmanagedPointer != IntPtr.Zero)
-                Marshal.FreeHGlobal(unmanagedPointer);
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (ptrs[i] != IntPtr.Zero)
-                    Marshal.FreeCoTaskMem(ptrs[i]);
-            }
-        }
-    }
-
     public static string GetErrorString(int error)
     {
         var ptr = mpv_error_string(error);

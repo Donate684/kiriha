@@ -20,6 +20,7 @@ public sealed class MpvThumbnailer : IDisposable
     private readonly object _gate = new();
     private readonly SemaphoreSlim _captureGate = new(1, 1);
     private readonly string _thumbnailDirectory;
+    private readonly FileStream _lockFile;
     private readonly Dictionary<int, CacheEntry> _cache = new();
     private IntPtr _handle;
     private string? _loadedPath;
@@ -39,8 +40,29 @@ public sealed class MpvThumbnailer : IDisposable
                     {
                         try
                         {
-                            if (DateTime.UtcNow - Directory.GetCreationTimeUtc(dir) > TimeSpan.FromDays(1))
+                            var lockFilePath = Path.Combine(dir, ".lock");
+                            bool isLocked = false;
+
+                            if (File.Exists(lockFilePath))
+                            {
+                                try
+                                {
+                                    using var fs = new FileStream(lockFilePath, FileMode.Open, FileAccess.Write, FileShare.None);
+                                }
+                                catch (IOException)
+                                {
+                                    isLocked = true;
+                                }
+                            }
+                            else if (DateTime.UtcNow - Directory.GetCreationTimeUtc(dir) < TimeSpan.FromSeconds(10))
+                            {
+                                isLocked = true;
+                            }
+
+                            if (!isLocked)
+                            {
                                 Directory.Delete(dir, recursive: true);
+                            }
                         }
                         catch { }
                     }
@@ -54,6 +76,7 @@ public sealed class MpvThumbnailer : IDisposable
     {
         _thumbnailDirectory = Path.Combine(Path.GetTempPath(), "Kiriha", "timeline-thumbs", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_thumbnailDirectory);
+        _lockFile = new FileStream(Path.Combine(_thumbnailDirectory, ".lock"), FileMode.Create, FileAccess.Write, FileShare.Read);
 
         _handle = LibMpvNative.mpv_create();
         if (_handle == IntPtr.Zero)
@@ -251,10 +274,10 @@ public sealed class MpvThumbnailer : IDisposable
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
         bool loaded = false;
-        while (sw.ElapsedMilliseconds < 5000)
+        while (sw.ElapsedMilliseconds < 3000)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var eventPtr = LibMpvNative.mpv_wait_event(handle, 0.05);
+            var eventPtr = LibMpvNative.mpv_wait_event(handle, 0.01);
             if (eventPtr != IntPtr.Zero)
             {
                 var mpvEvent = Marshal.PtrToStructure<MpvEvent>(eventPtr);
@@ -267,7 +290,7 @@ public sealed class MpvThumbnailer : IDisposable
                 if (mpvEvent.EventId == LibMpvNative.MPV_EVENT_END_FILE)
                 {
                     var endFile = Marshal.PtrToStructure<MpvEventEndFile>(mpvEvent.Data);
-                    if (endFile.Reason == 2) // MPV_END_FILE_REASON_ERROR
+                    if (endFile.Reason == MpvPlaybackEndedEventArgs.ReasonError)
                     {
                         Log.Warning("Thumbnailer failed to load: {VideoPath}", videoPath);
                         break;
@@ -373,6 +396,12 @@ public sealed class MpvThumbnailer : IDisposable
                     }
                 }
             }
+
+            try
+            {
+                _lockFile?.Dispose();
+            }
+            catch { }
         }
 
         try

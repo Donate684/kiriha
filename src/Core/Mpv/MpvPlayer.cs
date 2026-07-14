@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Serilog;
 
 namespace Kiriha.Core.Mpv;
@@ -20,6 +22,7 @@ public class MpvPlayer : IDisposable
     private const string SpeedCommandKey = "speed";
 
     private readonly object _gate = new();
+    private readonly ReaderWriterLockSlim _renderGate = new();
     private readonly MpvPropertyCache _propertyCache = new(FormatRuntimeVideoInfo(null, null, null, null, null));
     private readonly MpvCommandQueue _commandQueue;
     private readonly MpvEventLoop _eventLoop;
@@ -122,58 +125,66 @@ public class MpvPlayer : IDisposable
 
     public void RenderOpenGl(int framebuffer, int width, int height)
     {
-        IntPtr renderContext;
-        lock (_gate)
-        {
-            renderContext = _renderContext;
-        }
-
-        if (renderContext == IntPtr.Zero || width <= 0 || height <= 0)
-            return;
-
-        var updateFlags = LibMpvNative.mpv_render_context_update(renderContext);
-        if ((updateFlags & LibMpvNative.MPV_RENDER_UPDATE_FRAME) == 0)
-            return;
-
-        var fboPtr = IntPtr.Zero;
-        var flipPtr = IntPtr.Zero;
-        var parametersPtr = IntPtr.Zero;
-
+        _renderGate.EnterReadLock();
         try
         {
-            const int glRgba8 = 0x8058;
-            var fbo = new MpvOpenGlFbo(framebuffer, width, height, glRgba8);
-            fboPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MpvOpenGlFbo>());
-            Marshal.StructureToPtr(fbo, fboPtr, false);
-
-            flipPtr = Marshal.AllocHGlobal(sizeof(int));
-            Marshal.WriteInt32(flipPtr, 1);
-
-            var parameters = new[]
+            IntPtr renderContext;
+            lock (_gate)
             {
-                new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_OPENGL_FBO, fboPtr),
-                new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_FLIP_Y, flipPtr),
-                new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_INVALID, IntPtr.Zero)
-            };
+                renderContext = _renderContext;
+            }
 
-            parametersPtr = AllocateRenderParams(parameters);
-            Check(LibMpvNative.mpv_render_context_render(renderContext, parametersPtr), "render OpenGL frame");
-            LibMpvNative.mpv_render_context_report_swap(renderContext);
+            if (renderContext == IntPtr.Zero || width <= 0 || height <= 0)
+                return;
+
+            var updateFlags = LibMpvNative.mpv_render_context_update(renderContext);
+            if ((updateFlags & LibMpvNative.MPV_RENDER_UPDATE_FRAME) == 0)
+                return;
+
+            var fboPtr = IntPtr.Zero;
+            var flipPtr = IntPtr.Zero;
+            var parametersPtr = IntPtr.Zero;
+
+            try
+            {
+                const int glRgba8 = 0x8058;
+                var fbo = new MpvOpenGlFbo(framebuffer, width, height, glRgba8);
+                fboPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MpvOpenGlFbo>());
+                Marshal.StructureToPtr(fbo, fboPtr, false);
+
+                flipPtr = Marshal.AllocHGlobal(sizeof(int));
+                Marshal.WriteInt32(flipPtr, 1);
+
+                var parameters = new[]
+                {
+                    new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_OPENGL_FBO, fboPtr),
+                    new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_FLIP_Y, flipPtr),
+                    new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_INVALID, IntPtr.Zero)
+                };
+
+                parametersPtr = AllocateRenderParams(parameters);
+                Check(LibMpvNative.mpv_render_context_render(renderContext, parametersPtr), "render OpenGL frame");
+                LibMpvNative.mpv_render_context_report_swap(renderContext);
+            }
+            finally
+            {
+                if (parametersPtr != IntPtr.Zero)
+                    Marshal.FreeHGlobal(parametersPtr);
+                if (flipPtr != IntPtr.Zero)
+                    Marshal.FreeHGlobal(flipPtr);
+                if (fboPtr != IntPtr.Zero)
+                    Marshal.FreeHGlobal(fboPtr);
+            }
         }
         finally
         {
-            if (parametersPtr != IntPtr.Zero)
-                Marshal.FreeHGlobal(parametersPtr);
-            if (flipPtr != IntPtr.Zero)
-                Marshal.FreeHGlobal(flipPtr);
-            if (fboPtr != IntPtr.Zero)
-                Marshal.FreeHGlobal(fboPtr);
+            _renderGate.ExitReadLock();
         }
     }
 
     public void Load(string url)
     {
-        Enqueue(handle => Check(LibMpvNative.mpv_command_async_string(handle, 0, "loadfile", url), "load file"));
+        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "loadfile", url), "load file"));
     }
 
     public void Play()
@@ -264,7 +275,7 @@ public class MpvPlayer : IDisposable
     {
         Enqueue(handle =>
         {
-            Check(LibMpvNative.mpv_set_option_string(handle, "sub-ass-override", enabled ? "force" : "yes"), "set subtitle override");
+            Check(LibMpvNative.mpv_set_property_string(handle, "sub-ass-override", enabled ? "force" : "yes"), "set subtitle override");
 
             if (!enabled)
                 return;
@@ -287,7 +298,7 @@ public class MpvPlayer : IDisposable
     {
         Enqueue(handle =>
         {
-            Check(LibMpvNative.mpv_set_option_string(handle, name, value), $"set {name}");
+            Check(LibMpvNative.mpv_set_property_string(handle, name, value), $"set {name}");
             InvalidateRuntimeVideoInfo();
         });
     }
@@ -441,35 +452,49 @@ public class MpvPlayer : IDisposable
             _mpvHandle = IntPtr.Zero;
         }
 
-        MpvPlayerLifecycle.Dispose(
-            handle,
-            _commandQueue,
-            _eventLoop,
-            FreeRenderContext,
-            UnobservePlaybackProperties);
+        FreeRenderContext();
+
+        Task.Run(() =>
+        {
+            MpvPlayerLifecycle.Dispose(
+                handle,
+                _commandQueue,
+                _eventLoop,
+                UnobservePlaybackProperties);
+                
+            _renderGate.Dispose();
+        });
     }
 
     public void FreeRenderContext()
     {
-        IntPtr renderContext;
-        lock (_gate)
+        _renderGate.EnterWriteLock();
+        try
         {
-            renderContext = _renderContext;
-            _renderContext = IntPtr.Zero;
+            IntPtr renderContext;
+            lock (_gate)
+            {
+                renderContext = _renderContext;
+                _renderContext = IntPtr.Zero;
+            }
+
+            if (renderContext != IntPtr.Zero)
+            {
+                LibMpvNative.mpv_render_context_set_update_callback(renderContext, null!, IntPtr.Zero);
+                LibMpvNative.mpv_render_context_free(renderContext);
+            }
+
+            lock (_renderUpdateLock)
+            {
+                if (_renderUpdateHandle.IsAllocated)
+                    _renderUpdateHandle.Free();
+
+                _renderUpdateCallback = null;
+            }
         }
-
-        if (renderContext != IntPtr.Zero)
+        finally
         {
-            LibMpvNative.mpv_render_context_set_update_callback(renderContext, null!, IntPtr.Zero);
-            LibMpvNative.mpv_render_context_free(renderContext);
-        }
-
-        lock (_renderUpdateLock)
-        {
-            if (_renderUpdateHandle.IsAllocated)
-                _renderUpdateHandle.Free();
-
-            _renderUpdateCallback = null;
+            _renderGate.ExitWriteLock();
         }
     }
 
@@ -480,11 +505,14 @@ public class MpvPlayer : IDisposable
 
     private T Read<T>(Func<IntPtr, T> read, T defaultValue)
     {
+        IntPtr handle;
         lock (_gate)
         {
-            if (_mpvHandle == IntPtr.Zero) return defaultValue;
-            return read(_mpvHandle);
+            if (_disposed || _mpvHandle == IntPtr.Zero) return defaultValue;
+            handle = _mpvHandle;
         }
+
+        return read(handle);
     }
 
     private T ReadNodeProperty<T>(string name, Func<MpvNode, T> parse, T defaultValue)
@@ -826,7 +854,7 @@ public class MpvPlayer : IDisposable
 
     private static void SetMpvOption(IntPtr handle, string name, string value, string action)
     {
-        Check(LibMpvNative.mpv_set_option_string(handle, name, value), action);
+        Check(LibMpvNative.mpv_set_property_string(handle, name, value), action);
     }
 
     private static string FormatDouble(double value)

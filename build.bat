@@ -3,7 +3,7 @@ setlocal
 
 echo.
 echo === [1/3] Downloading/Updating libmpv ===
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0download-mpv.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\download-mpv.ps1"
 if errorlevel 1 (
     echo ERROR: libmpv download/update failed.
     pause
@@ -21,7 +21,7 @@ if errorlevel 1 (
 
 echo.
 echo === [3/3] Running tests ===
-dotnet test .\Tests\Kiriha.Tests\Kiriha.Tests.csproj --configuration Debug
+dotnet test .\tests\Kiriha.Tests\Kiriha.Tests.csproj --configuration Debug
 if errorlevel 1 (
     echo ERROR: tests failed.
     pause

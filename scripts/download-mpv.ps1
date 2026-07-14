@@ -4,7 +4,7 @@ $projectDir = $PSScriptRoot
 if ([string]::IsNullOrEmpty($projectDir)) {
     $projectDir = Get-Location
 }
-$mpvDir = Join-Path $projectDir "mpv"
+$mpvDir = Join-Path $projectDir "..\subprojects\mpv"
 $versionFile = Join-Path $mpvDir "version.txt"
 
 # 1. Fetch RSS feed from SourceForge

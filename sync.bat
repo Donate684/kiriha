@@ -1,5 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
+
 echo.
 echo === Git Quick Sync ===
 echo.
@@ -8,12 +9,12 @@ REM Show status of modified files
 git status --short
 echo.
 
-REM Extract version from Kiriha.csproj
+REM Extract version from src\Kiriha.csproj
 set "CURRENT_VERSION="
-for /f "usebackq tokens=3 delims=<>" %%a in (`findstr "<Version>" Kiriha.csproj`) do set "CURRENT_VERSION=%%a"
+for /f "usebackq tokens=3 delims=<>" %%a in (`findstr "<Version>" src\Kiriha.csproj`) do set "CURRENT_VERSION=%%a"
 
 if "%CURRENT_VERSION%"=="" (
-    echo ERROR: Version tag not found in Kiriha.csproj!
+    echo ERROR: Version tag not found in src\Kiriha.csproj!
     pause
     exit /b 1
 )
@@ -57,7 +58,7 @@ if defined NEW_VERSION (
     if not "!NEW_VERSION!"=="%CURRENT_VERSION%" (
         echo Bumped version to v!NEW_VERSION!
         REM Replace version in csproj
-        powershell -NoProfile -Command "$t = [System.IO.File]::ReadAllText('Kiriha.csproj'); $t = $t -replace '<Version>.*?</Version>', '<Version>!NEW_VERSION!</Version>'; [System.IO.File]::WriteAllText('Kiriha.csproj', $t)"
+        powershell -NoProfile -Command "$t = [System.IO.File]::ReadAllText('src\Kiriha.csproj'); $t = $t -replace '<Version>.*?</Version>', '<Version>!NEW_VERSION!</Version>'; [System.IO.File]::WriteAllText('src\Kiriha.csproj', $t)"
         
         set "CURRENT_VERSION=!NEW_VERSION!"
         set "MSG=Update v!NEW_VERSION!"

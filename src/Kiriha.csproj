@@ -71,16 +71,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="mpv\**">
+    <Content Include="..\subprojects\mpv\**" Link="mpv\%(RecursiveDir)%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <Target Name="DownloadMpv" BeforeTargets="BeforeBuild;AssignTargetPaths">
-    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)download-mpv.ps1&quot;" 
-          Condition="!Exists('$(ProjectDir)mpv\libmpv-2.dll')" />
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)..\scripts\download-mpv.ps1&quot;" 
+          Condition="!Exists('$(ProjectDir)..\subprojects\mpv\libmpv-2.dll')" />
     <ItemGroup>
-      <Content Include="mpv\**">
+      <Content Include="..\subprojects\mpv\**" Link="mpv\%(RecursiveDir)%(Filename)%(Extension)">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
     </ItemGroup>

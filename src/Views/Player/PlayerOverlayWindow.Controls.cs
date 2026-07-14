@@ -36,7 +36,8 @@ public partial class PlayerOverlayWindow
     private void ShowControls()
     {
         var now = DateTime.UtcNow;
-        if (!_controlsVisible)
+        bool wasHidden = !_controlsVisible;
+        if (wasHidden)
         {
             _controlsVisible = true;
             if (_topBar != null) 
@@ -52,7 +53,7 @@ public partial class PlayerOverlayWindow
             Cursor = s_arrowCursor;
         }
 
-        if (now - _lastControlsKeepAliveUtc < ControlsKeepAliveInterval)
+        if (!wasHidden && now - _lastControlsKeepAliveUtc < ControlsKeepAliveInterval)
             return;
 
         _lastControlsKeepAliveUtc = now;

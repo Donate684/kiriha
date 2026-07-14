@@ -1102,6 +1102,17 @@
                                               VerticalAlignment="Center"/>
                                 </Grid>
 
+                                <Grid ColumnDefinitions="*,220" MinHeight="44">
+                                    <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="player-settings-row-title" Text="Шаг перемотки"/>
+                                        <TextBlock Classes="player-settings-row-sub" Text="На сколько секунд перематывать видео"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding SeekStepOptions}"
+                                              SelectedItem="{Binding SeekStep}"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+
                                 <Border Classes="player-settings-divider"/>
 
                                 <TextBlock Classes="player-settings-row-title"

@@ -50,6 +50,8 @@ public partial class PlayerOverlayWindow
     // Background click / drag
     // ──────────────────────────────────────────────────────────
 
+    private DispatcherTimer? _leftClickTimer;
+
     private void OnBackgroundPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (IsSettingsOverlayVisible())
@@ -75,11 +77,34 @@ public partial class PlayerOverlayWindow
             return;
 
         e.Handled = true;
-        ExecuteMouseAction(vm, action);
+
+        if (properties.IsLeftButtonPressed)
+        {
+            _leftClickTimer?.Stop();
+
+            _leftClickTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+            _leftClickTimer.Tick += (s, args) =>
+            {
+                _leftClickTimer?.Stop();
+                _leftClickTimer = null;
+                ExecuteMouseAction(vm, action);
+            };
+            _leftClickTimer.Start();
+        }
+        else
+        {
+            ExecuteMouseAction(vm, action);
+        }
     }
 
     private void OnBackgroundDoubleTapped(object? sender, TappedEventArgs e)
     {
+        if (_leftClickTimer != null)
+        {
+            _leftClickTimer.Stop();
+            _leftClickTimer = null;
+        }
+
         if (IsSettingsOverlayVisible())
         {
             e.Handled = true;
@@ -90,10 +115,8 @@ public partial class PlayerOverlayWindow
         if (DataContext is not PlayerViewModel vm)
             return;
 
-        var action = vm.LeftClickAction?.Value ?? PlayerMouseAction.TogglePlayPause;
-        if (action == PlayerMouseAction.None)
-            return;
-
+        var action = PlayerMouseAction.ToggleFullscreen;
+        
         e.Handled = true;
         ExecuteMouseAction(vm, action);
     }
@@ -118,7 +141,7 @@ public partial class PlayerOverlayWindow
     private void OnTopBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         e.Handled = true;
-        _ownerWindow.BeginMoveDrag(e);
+        BeginOwnerMoveDrag(e);
     }
 
     private void OnBottomBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -130,7 +153,7 @@ public partial class PlayerOverlayWindow
             return;
 
         e.Handled = true;
-        _ownerWindow.BeginMoveDrag(e);
+        BeginOwnerMoveDrag(e);
     }
 
     private void OnDragStripPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -139,7 +162,21 @@ public partial class PlayerOverlayWindow
             return;
 
         e.Handled = true;
-        _ownerWindow.BeginMoveDrag(e);
+        BeginOwnerMoveDrag(e);
+    }
+
+    private void BeginOwnerMoveDrag(PointerPressedEventArgs e)
+    {
+        Opacity = 0;
+        try
+        {
+            _ownerWindow.BeginMoveDrag(e);
+        }
+        finally
+        {
+            UpdateOverlayPosition();
+            Opacity = 1;
+        }
     }
 
     private void ExecuteMouseAction(PlayerViewModel vm, PlayerMouseAction action)

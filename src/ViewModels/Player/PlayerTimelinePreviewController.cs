@@ -59,17 +59,39 @@ public sealed class PlayerTimelinePreviewController : IDisposable
             if (token.IsCancellationRequested || requestId != _requestId || string.IsNullOrWhiteSpace(path))
                 return;
 
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            Bitmap? bitmap = null;
+            try
             {
-                if (requestId != _requestId || !File.Exists(path))
+                if (!File.Exists(path))
                     return;
 
-                if (string.Equals(_previewImagePath, path, StringComparison.Ordinal))
-                    return;
+                bitmap = new Bitmap(path);
 
-                _overlay.SetTimelinePreviewImage(new Bitmap(path));
-                _previewImagePath = path;
-            });
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    try
+                    {
+                        if (requestId != _requestId)
+                            return;
+
+                        if (string.Equals(_previewImagePath, path, StringComparison.Ordinal))
+                            return;
+
+                        _overlay.SetTimelinePreviewImage(bitmap);
+                        _previewImagePath = path;
+                        bitmap = null;
+                    }
+                    finally
+                    {
+                        bitmap?.Dispose();
+                    }
+                });
+            }
+            catch
+            {
+                bitmap?.Dispose();
+                throw;
+            }
         }
         catch (OperationCanceledException)
         {
