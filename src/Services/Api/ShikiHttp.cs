@@ -56,6 +56,19 @@ internal static class ShikiHttp
         // pay the redirect/404 round-trip again after the first discovery.
         request.RequestUri = resolver.Rewrite(request.RequestUri!);
 
+        if (request.Content != null && request.Content is not ByteArrayContent)
+        {
+            var bytes = await request.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+            var newContent = new ByteArrayContent(bytes);
+            foreach (var header in request.Content.Headers)
+            {
+                newContent.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+            var oldContent = request.Content;
+            request.Content = newContent;
+            oldContent.Dispose();
+        }
+
         var aliasTried = false;
         for (var hop = 0; hop <= maxHops; hop++)
         {
@@ -86,7 +99,9 @@ internal static class ShikiHttp
                     request.RequestUri.Host, target.Host);
 
                 response.Dispose();
+                var oldRequest = request;
                 request = await CloneRequestAsync(request, target, ct).ConfigureAwait(false);
+                oldRequest.Dispose();
                 continue;
             }
 
@@ -102,16 +117,23 @@ internal static class ShikiHttp
             {
                 aliasTried = true;
                 var originalHost = request.RequestUri.Host;
-                response.Dispose();
 
                 HttpResponseMessage? lastResponse = null;
+                var didProbe = false;
+
                 foreach (var alias in resolver.ProbeOrder(originalHost))
                 {
+                    if (!didProbe)
+                    {
+                        response.Dispose();
+                        didProbe = true;
+                    }
+
                     var target = new UriBuilder(request.RequestUri) { Host = alias }.Uri;
                     Log.Information("Shiki 404 on {Host}, probing alias {Alias}",
                         originalHost, alias);
 
-                    var probeRequest = await CloneRequestAsync(request, target, ct).ConfigureAwait(false);
+                    using var probeRequest = await CloneRequestAsync(request, target, ct).ConfigureAwait(false);
                     var probeResponse = await client.SendAsync(probeRequest, ct).ConfigureAwait(false);
 
                     if ((int)probeResponse.StatusCode != 404)

@@ -680,5 +680,17 @@
             </StackPanel>
 
         </Panel>
+
+        <!-- Loading Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="4" 
+                Background="#88000000" 
+                IsVisible="{Binding IsLoading}" 
+                ZIndex="100">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="15">
+                <ProgressBar IsIndeterminate="True" Width="200" Height="4" CornerRadius="2" Foreground="{DynamicResource SystemAccentColor}"/>
+                <TextBlock Text="Загрузка списка с MyAnimeList..." Opacity="0.9" FontSize="16" FontWeight="Medium" HorizontalAlignment="Center" Foreground="White"/>
+            </StackPanel>
+        </Border>
+
     </Grid>
 </UserControl>

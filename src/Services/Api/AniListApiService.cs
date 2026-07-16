@@ -24,7 +24,7 @@ public sealed record AniListAiringInfo(
     DateTime? NextEpisodeAt,
     int? TotalEpisodes);
 
-public class AniListApiService
+public class AniListApiService : IDisposable
 {
     private const string Endpoint = "https://graphql.anilist.co";
     private static readonly TimeSpan DefaultTtl = TimeSpan.FromHours(6);
@@ -37,7 +37,7 @@ public class AniListApiService
     {
         TokenLimit = 1,
         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-        QueueLimit = int.MaxValue,
+        QueueLimit = 100,
         ReplenishmentPeriod = TimeSpan.FromMilliseconds(2200),
         TokensPerPeriod = 1,
         AutoReplenishment = true,
@@ -61,7 +61,6 @@ public class AniListApiService
         }
 
         using var lease = await _rateLimiter.AcquireAsync(1, ct);
-        if (!lease.IsAcquired) return null;
 
         var payload = new AniListGraphQlRequest(
             Query: """
@@ -198,4 +197,9 @@ public class AniListApiService
     private sealed record AniListGraphQlRequest(string Query, AniListVariables Variables);
     private sealed record AniListVariables(int MalId);
     private sealed record AniListAiringCacheEntry(AniListAiringInfo? Value);
+
+    public void Dispose()
+    {
+        _rateLimiter.Dispose();
+    }
 }

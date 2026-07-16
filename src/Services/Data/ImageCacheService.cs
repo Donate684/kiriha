@@ -62,7 +62,7 @@ public class ImageCacheService : IDisposable
         }
     }
 
-    public async Task<Bitmap?> LoadBitmapAsync(string url, int decodeWidth = 300)
+    public async Task<Bitmap?> LoadBitmapAsync(string url, int decodeWidth = 300, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(url)) return null;
 
@@ -91,12 +91,12 @@ public class ImageCacheService : IDisposable
                 else
                 {
                     try { fileInfo.Delete(); } catch { }
-                    localPath = await GetLocalPathOrDownload(url);
+                    localPath = await GetLocalPathOrDownload(url, ct);
                 }
             }
             else
             {
-                localPath = await GetLocalPathOrDownload(url);
+                localPath = await GetLocalPathOrDownload(url, ct);
             }
         }
 
@@ -110,7 +110,7 @@ public class ImageCacheService : IDisposable
         if (_memCache.TryRentBitmap(localPath, decodeWidth, out var rented) && rented != null)
             return rented;
 
-        await _decodeSemaphore.WaitAsync();
+        await _decodeSemaphore.WaitAsync(ct);
         try
         {
             return await Task.Run(() =>
@@ -151,7 +151,7 @@ public class ImageCacheService : IDisposable
 
     private readonly ConcurrentDictionary<string, Task<string>> _activeDownloads = new();
 
-    public Task<string> GetLocalPathOrDownload(string url)
+    public Task<string> GetLocalPathOrDownload(string url, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(url)) return Task.FromResult(string.Empty);
         
@@ -160,20 +160,20 @@ public class ImageCacheService : IDisposable
 
         if (ReferenceEquals(addedTask, tcs.Task))
         {
-            _ = ExecuteDownloadAsync(url, tcs);
+            _ = ExecuteDownloadAsync(url, tcs, ct);
         }
 
         return addedTask;
     }
 
-    private async Task ExecuteDownloadAsync(string url, TaskCompletionSource<string> tcs)
+    private async Task ExecuteDownloadAsync(string url, TaskCompletionSource<string> tcs, CancellationToken ct = default)
     {
         try
         {
             var result = string.Empty;
             try
             {
-                result = await DownloadCoreAsync(url);
+                result = await DownloadCoreAsync(url, ct);
             }
             catch (Exception)
             {
@@ -193,7 +193,7 @@ public class ImageCacheService : IDisposable
         }
     }
 
-    private async Task<string> DownloadCoreAsync(string url)
+    private async Task<string> DownloadCoreAsync(string url, CancellationToken ct = default)
     {
         string fileName = GetHashString(url) + Path.GetExtension(url.Split('?')[0]);
         if (string.IsNullOrEmpty(Path.GetExtension(fileName))) fileName += ".jpg";
@@ -213,7 +213,7 @@ public class ImageCacheService : IDisposable
         {
             try
             {
-                await _downloadSemaphore.WaitAsync();
+                await _downloadSemaphore.WaitAsync(ct);
                 try
                 {
                     if (File.Exists(localPath))
@@ -228,7 +228,8 @@ public class ImageCacheService : IDisposable
                         try { File.Delete(tmpPath); } catch { }
                     }
 
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    cts.CancelAfter(TimeSpan.FromSeconds(30));
                     try
                     {
                         var bytes = await _client.GetByteArrayAsync(url, cts.Token);
@@ -259,7 +260,7 @@ public class ImageCacheService : IDisposable
                     Log.Error(ex, "Failed to download image after {Retry} retries: {Url}", retryCount, url);
                     return string.Empty;
                 }
-                await Task.Delay(1000 * (i + 1)); // Exponential-ish backoff
+                await Task.Delay(1000 * (i + 1), ct); // Exponential-ish backoff
             }
         }
         
@@ -322,12 +323,13 @@ public class ImageCacheService : IDisposable
         try
         {
             var directoryInfo = new DirectoryInfo(CacheRoot);
-            long totalSize = directoryInfo.EnumerateFiles().Sum(f => f.Length);
+            var files = directoryInfo.EnumerateFiles().ToList();
+            long totalSize = files.Sum(f => f.Length);
 
             if (totalSize > MaxDiskCacheSizeBytes)
             {
                 long targetSize = (long)(MaxDiskCacheSizeBytes * 0.7);
-                var filesToDelete = directoryInfo.EnumerateFiles().OrderBy(f => f.LastWriteTime).ToList();
+                var filesToDelete = files.OrderBy(f => f.LastWriteTime).ToList();
 
                 foreach (var file in filesToDelete)
                 {
@@ -397,7 +399,7 @@ public class ImageCacheService : IDisposable
         ct.ThrowIfCancellationRequested();
         try
         {
-            var localPath = await GetLocalPathOrDownload(item.MainPictureUrl!);
+            var localPath = await GetLocalPathOrDownload(item.MainPictureUrl!, ct);
             if (string.IsNullOrEmpty(localPath) || ct.IsCancellationRequested)
                 return;
 

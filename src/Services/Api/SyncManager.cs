@@ -55,12 +55,14 @@ public class SyncTask
 /// </summary>
 public class SyncManager : IHostedService
 {
-    private readonly IEnumerable<ITrackerService> _trackers;
+    private readonly IReadOnlyList<ITrackerService> _trackers;
     private readonly ISyncTaskRepository _syncTaskRepo;
     private readonly Data.DatabaseInitializer _dbInit;
     private readonly HistoryService _historyService;
     private readonly IBackgroundTaskSupervisor _backgroundTasks;
-    private readonly Channel<SyncTask> _queue;
+    private readonly System.Collections.Concurrent.ConcurrentQueue<SyncTask> _highPriorityQueue = new();
+    private readonly System.Collections.Concurrent.ConcurrentQueue<SyncTask> _lowPriorityQueue = new();
+    private readonly SemaphoreSlim _queueSignal = new(0);
     private readonly CancellationTokenSource _cts = new();
     private Task? _loopTask;
     private const int MaxRetries = 5;
@@ -74,22 +76,16 @@ public class SyncManager : IHostedService
         HistoryService historyService,
         IBackgroundTaskSupervisor backgroundTasks)
     {
-        _trackers = trackers;
+        _trackers = trackers.ToList();
         _syncTaskRepo = syncTaskRepo;
         _dbInit = dbInit;
         _historyService = historyService;
         _backgroundTasks = backgroundTasks;
-        _queue = Channel.CreateBounded<SyncTask>(new BoundedChannelOptions(1000)
-        {
-            FullMode = BoundedChannelFullMode.DropOldest
-        });
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
         if (_loopTask != null) return Task.CompletedTask;
-        // Detached from the caller's context - IHostedService.StartAsync is meant to
-        // return quickly. ProcessQueueAsync handles its own cancellation via _cts.
         _loopTask = _backgroundTasks.Run("SyncManager.QueueLoop", InitializeAndProcessQueueAsync, _cts.Token);
         return Task.CompletedTask;
     }
@@ -101,9 +97,6 @@ public class SyncManager : IHostedService
         if (_isStopped) return;
         _isStopped = true;
         
-        // Refuse new enqueues so the loop can drain whatever is already buffered.
-        _queue.Writer.TryComplete();
-        // Cancel in-flight HTTP / Task.Delay so the drain doesn't block on a long retry.
         _cts.Cancel();
         if (_loopTask != null)
         {
@@ -112,6 +105,7 @@ public class SyncManager : IHostedService
             catch (Exception ex) { Log.Warning(ex, "SyncManager: loop task ended with an exception"); }
         }
         _cts.Dispose();
+        _queueSignal.Dispose();
     }
 
     private async Task InitializeAndProcessQueueAsync(CancellationToken ct)
@@ -173,7 +167,8 @@ public class SyncManager : IHostedService
                         task.FullItem = JsonSerializer.Deserialize<AnimeItem>(entity.Payload);
                     }
                     _latestTaskIds.AddOrUpdate(task.AnimeId, (task.Id, task.Type), (k, existing) => task.Id > existing.Id ? (task.Id, task.Type) : existing);
-                    _queue.Writer.TryWrite(task);
+                    _lowPriorityQueue.Enqueue(task);
+                    _queueSignal.Release();
                     restoredCount++;
                 }
                 catch (Exception ex)
@@ -236,12 +231,13 @@ public class SyncManager : IHostedService
         _latestTaskIds[animeId] = (task.Id, task.Type);
         try
         {
-            await _queue.Writer.WriteAsync(task);
+            _highPriorityQueue.Enqueue(task);
+            _queueSignal.Release();
             Log.Information("Sync task enqueued (DB ID: {Id}): UpdateProgress for {AnimeId} to {Progress}", task.Id, animeId, progress);
         }
-        catch (ChannelClosedException)
+        catch (Exception ex)
         {
-            Log.Information("SyncManager is shutting down, task (DB ID: {Id}) will be processed on next startup.", task.Id);
+            Log.Error(ex, "Failed to enqueue task (DB ID: {Id})", task.Id);
         }
     }
 
@@ -258,12 +254,13 @@ public class SyncManager : IHostedService
         _latestTaskIds[animeId] = (task.Id, task.Type);
         try
         {
-            await _queue.Writer.WriteAsync(task);
+            _highPriorityQueue.Enqueue(task);
+            _queueSignal.Release();
             Log.Information("Sync task enqueued (DB ID: {Id}): Remove for {AnimeId}", task.Id, animeId);
         }
-        catch (ChannelClosedException)
+        catch (Exception ex)
         {
-            Log.Information("SyncManager is shutting down, task (DB ID: {Id}) will be processed on next startup.", task.Id);
+            Log.Error(ex, "Failed to enqueue task (DB ID: {Id})", task.Id);
         }
     }
 
@@ -281,12 +278,13 @@ public class SyncManager : IHostedService
         _latestTaskIds[item.Id] = (task.Id, task.Type);
         try
         {
-            await _queue.Writer.WriteAsync(task);
+            _highPriorityQueue.Enqueue(task);
+            _queueSignal.Release();
             Log.Information("Sync task enqueued (DB ID: {Id}): FullUpdate for {AnimeId}", task.Id, item.Id);
         }
-        catch (ChannelClosedException)
+        catch (Exception ex)
         {
-            Log.Information("SyncManager is shutting down, task (DB ID: {Id}) will be processed on next startup.", task.Id);
+            Log.Error(ex, "Failed to enqueue task (DB ID: {Id})", task.Id);
         }
     }
 
@@ -296,9 +294,10 @@ public class SyncManager : IHostedService
     {
         try
         {
-            while (await _queue.Reader.WaitToReadAsync(ct))
+            while (!ct.IsCancellationRequested)
             {
-                while (_queue.Reader.TryRead(out var task))
+                await _queueSignal.WaitAsync(ct);
+                if (_highPriorityQueue.TryDequeue(out var task) || _lowPriorityQueue.TryDequeue(out task))
                 {
                     bool executed = true;
                     try
@@ -326,7 +325,8 @@ public class SyncManager : IHostedService
                                 _ = _backgroundTasks.Run("SyncManager.DelayedRetry", async retryCt =>
                                 {
                                     await Task.Delay(TimeSpan.FromMinutes(delayMin), retryCt);
-                                    _queue.Writer.TryWrite(task);
+                                    _lowPriorityQueue.Enqueue(task);
+                                    _queueSignal.Release();
                                 }, _cts.Token);
                             }
                             else
@@ -378,18 +378,17 @@ public class SyncManager : IHostedService
         }
 
         bool overallSuccess = true;
-        var allTrackers = _trackers.ToList();
-        var activeTrackers = allTrackers.Where(t => t.IsEnabled).ToList();
+        var activeTrackers = _trackers.Where(t => t.IsEnabled).ToList();
 
-        if (!activeTrackers.Any())
+        if (activeTrackers.Count == 0)
         {
-            if (!allTrackers.Any())
+            if (_trackers.Count == 0)
             {
                 Log.Warning("SyncManager: No trackers registered in the system!");
             }
             else
             {
-                var names = string.Join(", ", allTrackers.Select(t => t.Name));
+                var names = string.Join(", ", _trackers.Select(t => t.Name));
                 Log.Warning("SyncManager: No active (logged in) trackers for sync sync task. Registered trackers: {Trackers}", names);
             }
             return (true, false); // Nothing to do; count as success to avoid retrying.

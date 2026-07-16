@@ -290,7 +290,7 @@ public class ShikiApiService : ITrackerService
     private async Task<SyncOutcome> PostAsync(string url, object payload, CancellationToken ct)
     {
         var json = JsonSerializer.Serialize(payload);
-        var request = new HttpRequestMessage(HttpMethod.Post, ShikiBaseUrl + url.TrimStart('/'))
+        using var request = new HttpRequestMessage(HttpMethod.Post, ShikiBaseUrl + url.TrimStart('/'))
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };

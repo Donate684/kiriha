@@ -107,7 +107,7 @@ public sealed class HttpConditionalCache
         Func<CancellationToken, Task>? throttle = null,
         CancellationToken ct = default)
     {
-        var request = await requestFactory(ct);
+        using var request = await requestFactory(ct);
         var fullUrl = request.RequestUri?.ToString() ?? string.Empty;
         var urlHash = HashUrl(fullUrl);
 
@@ -176,7 +176,7 @@ public sealed class HttpConditionalCache
             {
                 try { await _cache.UpsertAsync(urlHash, etag, lmHeader, body); }
                 catch (Exception ex) { Log.Debug(ex, "{Tag}: failed to persist HTTP cache for {Url}", _logTag, fullUrl); }
-            }, CancellationToken.None);
+            }, ct);
 
             return new HttpCacheResult(body, response.StatusCode, FromCache: false);
         }

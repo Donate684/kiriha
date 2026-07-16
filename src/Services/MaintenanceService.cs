@@ -258,39 +258,10 @@ public class MaintenanceService : IDisposable
                             if (!_settingsService.Current.System.EnableBackgroundMetadataFetch)
                                 break;
 
-                            // Extremely lazy wait if window is active
-                            bool shouldBreak = false;
-                            while (true)
-                            {
-                                combinedCt.ThrowIfCancellationRequested();
+                            // Wait until window is minimized before fetching
+                            await WaitUntilMinimizedAsync(combinedCt);
 
-                                if (!_settingsService.Current.System.EnableBackgroundMetadataFetch)
-                                {
-                                    shouldBreak = true;
-                                    break;
-                                }
-
-                                bool isMinimized = false;
-                                await _uiDispatcher.InvokeAsync(() =>
-                                {
-                                    if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
-                                    {
-                                        var mainWindow = desktop.MainWindow;
-                                        isMinimized = mainWindow == null || !mainWindow.IsVisible || mainWindow.WindowState == Avalonia.Controls.WindowState.Minimized;
-                                    }
-                                    else
-                                    {
-                                        isMinimized = true; // Fallback for headless or non-desktop
-                                    }
-                                });
-
-                                if (isMinimized)
-                                    break;
-
-                                await Task.Delay(TimeSpan.FromSeconds(10), combinedCt); // Wait until minimized
-                            }
-
-                            if (shouldBreak)
+                            if (!_settingsService.Current.System.EnableBackgroundMetadataFetch)
                                 break;
 
                             try
@@ -333,6 +304,71 @@ public class MaintenanceService : IDisposable
         {
             // Graceful exit
         }
+    }
+    private async Task WaitUntilMinimizedAsync(CancellationToken ct)
+    {
+        if (ct.IsCancellationRequested)
+            throw new OperationCanceledException(ct);
+
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await _uiDispatcher.InvokeAsync(() =>
+        {
+            if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow == null || !mainWindow.IsVisible || mainWindow.WindowState == Avalonia.Controls.WindowState.Minimized)
+                {
+                    tcs.TrySetResult(true);
+                    return;
+                }
+
+                EventHandler<Avalonia.AvaloniaPropertyChangedEventArgs>? propertyHandler = null;
+                EventHandler? closedHandler = null;
+
+                void Cleanup()
+                {
+                    if (propertyHandler != null) mainWindow.PropertyChanged -= propertyHandler;
+                    if (closedHandler != null) mainWindow.Closed -= closedHandler;
+                }
+
+                propertyHandler = (_, args) =>
+                {
+                    if (args.Property == Avalonia.Visual.IsVisibleProperty || args.Property == Avalonia.Controls.Window.WindowStateProperty)
+                    {
+                        if (!mainWindow.IsVisible || mainWindow.WindowState == Avalonia.Controls.WindowState.Minimized)
+                        {
+                            Cleanup();
+                            tcs.TrySetResult(true);
+                        }
+                    }
+                };
+
+                closedHandler = (_, __) =>
+                {
+                    Cleanup();
+                    tcs.TrySetResult(true);
+                };
+
+                mainWindow.PropertyChanged += propertyHandler;
+                mainWindow.Closed += closedHandler;
+
+                tcs.Task.ContinueWith(_ => _uiDispatcher.Post(Cleanup), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+
+                if (!mainWindow.IsVisible || mainWindow.WindowState == Avalonia.Controls.WindowState.Minimized)
+                {
+                    Cleanup();
+                    tcs.TrySetResult(true);
+                }
+            }
+            else
+            {
+                tcs.TrySetResult(true);
+            }
+        });
+
+        await using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+        await tcs.Task;
     }
 
     public void Dispose()

@@ -37,7 +37,7 @@ public enum EpisodeFreshness
     ForceRefresh,
 }
 
-public class JikanApiService
+public class JikanApiService : IDisposable
 {
     private static readonly TimeSpan DefaultTtl = TimeSpan.FromHours(12);
 
@@ -52,7 +52,7 @@ public class JikanApiService
     {
         TokenLimit = 1,
         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-        QueueLimit = int.MaxValue,
+        QueueLimit = 100,
         ReplenishmentPeriod = TimeSpan.FromMilliseconds(1100),
         TokensPerPeriod = 1,
         AutoReplenishment = true,
@@ -105,6 +105,7 @@ public class JikanApiService
     private async Task ThrottleAsync(CancellationToken ct)
     {
         using var lease = await _rateLimiter.AcquireAsync(1, ct);
+        if (!lease.IsAcquired) throw new HttpRequestException("Rate limit queue exceeded.");
     }
 
     public Task<List<EpisodeRelease>> GetEpisodeListAsync(int malId, CancellationToken ct = default)
@@ -412,5 +413,10 @@ public class JikanApiService
         catch (Exception ex) { Log.Debug(ex, "Jikan: failed to persist staff list for ID {Id}", malId); }
 
         return result;
+    }
+
+    public void Dispose()
+    {
+        _rateLimiter.Dispose();
     }
 }

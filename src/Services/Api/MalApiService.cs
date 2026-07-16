@@ -48,7 +48,7 @@ public class MalApiService : ITrackerService, IDisposable
     {
         TokenLimit = 1,
         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-        QueueLimit = int.MaxValue,
+        QueueLimit = 100,
         ReplenishmentPeriod = TimeSpan.FromMilliseconds(300),
         TokensPerPeriod = 1,
         AutoReplenishment = true,
@@ -82,7 +82,7 @@ public class MalApiService : ITrackerService, IDisposable
         {
             while (!string.IsNullOrEmpty(nextUrl))
             {
-                var response = await GetAsync(nextUrl, ct);
+                using var response = await GetAsync(nextUrl, ct);
                 if (!response.IsSuccessStatusCode)
                 {
                     // CRITICAL: Don't return a partial list. For users with >1000 anime MAL paginates,
@@ -242,7 +242,7 @@ public class MalApiService : ITrackerService, IDisposable
         {
             while (!string.IsNullOrEmpty(nextUrl))
             {
-                var response = await GetAsync(nextUrl, ct);
+                using var response = await GetAsync(nextUrl, ct);
                 if (!response.IsSuccessStatusCode)
                 {
                     Log.Warning("MAL manga list fetch: page {Page} returned {Status}; aborting sync to avoid partial-list overwrite.", pageIndex, response.StatusCode);
@@ -417,6 +417,7 @@ public class MalApiService : ITrackerService, IDisposable
         // is honoured by RateLimiter natively. The lease is disposed immediately
         // because we only use it as a wait primitive (no token return semantics).
         using var lease = await _rateLimiter.AcquireAsync(1, ct);
+        if (!lease.IsAcquired) throw new HttpRequestException("Rate limit queue exceeded.");
     }
 
     /// <summary>
@@ -479,6 +480,22 @@ public class MalApiService : ITrackerService, IDisposable
         return await _httpClient.SendAsync(request, ct);
     }
 
+    private DateTime _nextInteractiveTime = DateTime.MinValue;
+    private readonly object _interactiveLock = new();
+
+    private async Task InteractiveThrottleAsync(CancellationToken ct)
+    {
+        TimeSpan delay = TimeSpan.Zero;
+        lock (_interactiveLock)
+        {
+            var now = DateTime.UtcNow;
+            if (_nextInteractiveTime < now) _nextInteractiveTime = now;
+            delay = _nextInteractiveTime - now;
+            _nextInteractiveTime = _nextInteractiveTime.AddMilliseconds(200);
+        }
+        if (delay > TimeSpan.Zero) await Task.Delay(delay, ct);
+    }
+
     /// <summary>
     /// GET wrapper that performs an HTTP-conditional request via
     /// <see cref="HttpConditionalCache"/>. Used for endpoints whose body is
@@ -504,7 +521,7 @@ public class MalApiService : ITrackerService, IDisposable
 
                 return request;
             },
-            throttle: ThrottleAsync,
+            throttle: InteractiveThrottleAsync,
             ct: ct);
     }
 

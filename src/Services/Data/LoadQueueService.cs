@@ -59,10 +59,10 @@ public class LoadQueueService : IDisposable
                 string.IsNullOrEmpty(item.RussianTitle);
 
             if (needsImage)
-                TryEnqueue(item, _imageQueue.Writer, _queuedForImage);
+                _ = EnqueueAsync(item, _imageQueue.Writer, _queuedForImage);
 
             if (needsShiki)
-                TryEnqueue(item, _shikiQueue.Writer, _queuedForShiki);
+                _ = EnqueueAsync(item, _shikiQueue.Writer, _queuedForShiki);
         }
     }
 
@@ -88,18 +88,24 @@ public class LoadQueueService : IDisposable
         });
     }
 
-    private bool TryEnqueue(AnimeItem item, ChannelWriter<AnimeItem> writer, HashSet<int> queuedIds)
+    private async ValueTask EnqueueAsync(AnimeItem item, ChannelWriter<AnimeItem> writer, HashSet<int> queuedIds)
     {
         lock (_dedupeLock)
         {
             if (!queuedIds.Add(item.Id))
-                return false;
+                return;
+        }
 
-            if (writer.TryWrite(item))
-                return true;
-
-            queuedIds.Remove(item.Id);
-            return false;
+        try
+        {
+            await writer.WriteAsync(item);
+        }
+        catch (ChannelClosedException)
+        {
+            lock (_dedupeLock)
+            {
+                queuedIds.Remove(item.Id);
+            }
         }
     }
 

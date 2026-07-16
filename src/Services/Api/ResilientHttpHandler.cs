@@ -26,9 +26,17 @@ public class ResilientHttpHandler : DelegatingHandler
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (request.Content != null)
+        if (request.Content != null && request.Content is not ByteArrayContent)
         {
-            await request.Content.LoadIntoBufferAsync();
+            var bytes = await request.Content.ReadAsByteArrayAsync(cancellationToken);
+            var newContent = new ByteArrayContent(bytes);
+            foreach (var header in request.Content.Headers)
+            {
+                newContent.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+            var oldContent = request.Content;
+            request.Content = newContent;
+            oldContent.Dispose();
         }
 
         // Keep a reference to the "original" template request to clone from
@@ -37,10 +45,10 @@ public class ResilientHttpHandler : DelegatingHandler
         for (int attempt = 0; attempt <= MaxRetries; attempt++)
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(15)); // 15 seconds timeout per attempt
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(60)); // 60 seconds timeout per attempt
 
             // Clone for this specific attempt (always clone to be safe with retry logic)
-            var currentRequest = await CloneRequestAsync(templateRequest);
+            using var currentRequest = await CloneRequestAsync(templateRequest, timeoutCts.Token);
 
             try
             {
@@ -106,7 +114,7 @@ public class ResilientHttpHandler : DelegatingHandler
         return null;
     }
 
-    private static async Task<HttpRequestMessage> CloneRequestAsync(HttpRequestMessage original)
+    private static async Task<HttpRequestMessage> CloneRequestAsync(HttpRequestMessage original, CancellationToken cancellationToken = default)
     {
         var clone = new HttpRequestMessage(original.Method, original.RequestUri)
         {
@@ -116,7 +124,7 @@ public class ResilientHttpHandler : DelegatingHandler
         
         if (original.Content != null)
         {
-            var contentBytes = await original.Content.ReadAsByteArrayAsync();
+            var contentBytes = await original.Content.ReadAsByteArrayAsync(cancellationToken);
             clone.Content = new ByteArrayContent(contentBytes);
             foreach (var header in original.Content.Headers)
                 clone.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
