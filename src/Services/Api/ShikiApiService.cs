@@ -27,6 +27,7 @@ public class ShikiApiService : ITrackerService
     private readonly ShikiAuthService _authService;
     private readonly ShikiHostResolver _hostResolver;
     private readonly SemaphoreSlim _tokenLock = new(1, 1);
+    private readonly HttpConditionalCache _httpCache;
     private readonly System.Collections.Concurrent.ConcurrentDictionary<int, (ShikiPersonResponse? Value, DateTime SystemDateTime)> _personCache = new();
 
     public string Name => "Shikimori";
@@ -44,12 +45,17 @@ public class ShikiApiService : ITrackerService
 
     private string ShikiBaseUrl => ShikiEndpoints.BaseUrl(_settingsService.Current.Api.ShikiMirror);
 
-    public ShikiApiService(HttpClient httpClient, SettingsService settingsService, ShikiAuthService authService, ShikiHostResolver hostResolver)
+    public ShikiApiService(HttpClient httpClient, SettingsService settingsService, ShikiAuthService authService, ShikiHostResolver hostResolver, Kiriha.Services.Data.Repositories.IHttpCacheRepository httpCacheRepo)
     {
         _httpClient = httpClient;
         _settingsService = settingsService;
         _authService = authService;
         _hostResolver = hostResolver;
+        _httpCache = new HttpConditionalCache(
+            _httpClient,
+            httpCacheRepo,
+            "ShikiApi",
+            (client, request, innerCt) => SendRequestAsync(request, innerCt));
     }
 
     public Task<List<AnimeItem>?> GetUserAnimeListAsync(CancellationToken ct = default)
@@ -222,13 +228,15 @@ public class ShikiApiService : ITrackerService
 
     public async Task<ShikiFranchiseResponse?> GetFranchiseAsync(int animeId, CancellationToken ct = default)
     {
-        var response = await GetAsync($"animes/{animeId}/franchise", ct);
-        if (!response.IsSuccessStatusCode) return null;
+        var bytes = await _httpCache.SendAsync(
+            requestFactory: _ => Task.FromResult(new HttpRequestMessage(HttpMethod.Get, ShikiBaseUrl + $"animes/{animeId}/franchise")),
+            ct: ct);
 
-        using var stream = await response.Content.ReadAsStreamAsync(ct);
+        if (bytes == null) return null;
+
         try
         {
-            return await JsonSerializer.DeserializeAsync<ShikiFranchiseResponse>(stream, cancellationToken: ct);
+            return JsonSerializer.Deserialize<ShikiFranchiseResponse>(bytes);
         }
         catch (Exception ex)
         {
@@ -244,13 +252,15 @@ public class ShikiApiService : ITrackerService
             return hit.Value;
         }
 
-        var response = await GetAsync($"people/{personId}", ct);
-        if (!response.IsSuccessStatusCode) return null;
+        var bytes = await _httpCache.SendAsync(
+            requestFactory: _ => Task.FromResult(new HttpRequestMessage(HttpMethod.Get, ShikiBaseUrl + $"people/{personId}")),
+            ct: ct);
 
-        using var stream = await response.Content.ReadAsStreamAsync(ct);
+        if (bytes == null) return null;
+
         try
         {
-            var result = await JsonSerializer.DeserializeAsync<ShikiPersonResponse>(stream, cancellationToken: ct);
+            var result = JsonSerializer.Deserialize<ShikiPersonResponse>(bytes);
             _personCache[personId] = (result, DateTime.UtcNow);
             return result;
         }

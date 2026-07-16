@@ -221,11 +221,10 @@ public class MalApiService : ITrackerService, IDisposable
     {
         try
         {
-            var response = await GetAsync($"anime/{animeId}?fields={AnimeFields}&nsfw=true", ct);
-            if (!response.IsSuccessStatusCode) return null;
+            var bytes = await GetWithCacheAsync($"anime/{animeId}?fields={AnimeFields}&nsfw=true", ct);
+            if (bytes == null) return null;
             
-            using var stream = await response.Content.ReadAsStreamAsync(ct);
-            using var json = await JsonDocument.ParseAsync(stream, default, ct);
+            using var json = JsonDocument.Parse(bytes);
             return MalMapper.MapJsonToAnimeItem(json.RootElement);
         }
         catch (OperationCanceledException) { throw; }
@@ -310,11 +309,10 @@ public class MalApiService : ITrackerService, IDisposable
     {
         try
         {
-            var response = await GetAsync($"manga/{mangaId}?fields={MangaFields}&nsfw=true", ct);
-            if (!response.IsSuccessStatusCode) return null;
+            var bytes = await GetWithCacheAsync($"manga/{mangaId}?fields={MangaFields}&nsfw=true", ct);
+            if (bytes == null) return null;
             
-            using var stream = await response.Content.ReadAsStreamAsync(ct);
-            using var json = await JsonDocument.ParseAsync(stream, default, ct);
+            using var json = JsonDocument.Parse(bytes);
             return MalMapper.MapJsonToAnimeItem(json.RootElement);
         }
         catch (OperationCanceledException) { throw; }

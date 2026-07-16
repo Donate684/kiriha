@@ -83,7 +83,8 @@ internal static class TrackingServicesRegistration
                 sp.GetRequiredService<IHttpClientFactory>().CreateClient("ShikiClient"),
                 sp.GetRequiredService<SettingsService>(),
                 sp.GetRequiredService<ShikiAuthService>(),
-                sp.GetRequiredService<ShikiHostResolver>()));
+                sp.GetRequiredService<ShikiHostResolver>(),
+                sp.GetRequiredService<IHttpCacheRepository>()));
 
         services.AddSingleton<ITrackerService>(sp => sp.GetRequiredService<ShikiApiService>());
 

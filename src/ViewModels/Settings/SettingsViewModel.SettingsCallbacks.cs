@@ -96,6 +96,11 @@ public partial class SettingsViewModel
         _settingsService.Update(settings => settings.System.MinimizeToTray = value, SettingsSection.System);
     }
 
+    partial void OnEnableBackgroundMetadataFetchChanged(bool value)
+    {
+        _settingsService.Update(settings => settings.System.EnableBackgroundMetadataFetch = value, SettingsSection.System);
+    }
+
     partial void OnKeepPlayerProcessAliveChanged(bool value)
     {
         _settingsService.Update(settings => settings.System.KeepPlayerProcessAlive = value, SettingsSection.System);

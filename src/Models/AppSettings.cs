@@ -91,6 +91,7 @@ public class AppSettings
         public List<string> CompletedSetupSteps { get; set; } = new();
         public ScrobblerConfig Scrobbler { get; set; } = new();
         public bool EnableDiscordRPC { get; set; } = true;
+        public bool EnableBackgroundMetadataFetch { get; set; } = true;
     }
 
     public class PlayerConfig

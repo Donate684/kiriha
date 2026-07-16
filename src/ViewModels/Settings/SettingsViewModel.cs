@@ -160,6 +160,9 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _enableDiscordRPC;
 
     [ObservableProperty]
+    private bool _enableBackgroundMetadataFetch;
+
+    [ObservableProperty]
     private bool _autoCheckUpdates;
 
     [ObservableProperty]
@@ -300,6 +303,7 @@ public partial class SettingsViewModel : ViewModelBase
         ScrobbleDelaySeconds = _settingsService.Current.System.Scrobbler.DelaySeconds;
         ScrobbleNotifyOnSkip = _settingsService.Current.System.Scrobbler.NotifyOnSkippedEpisode;
         EnableDiscordRPC = _settingsService.Current.System.EnableDiscordRPC;
+        EnableBackgroundMetadataFetch = _settingsService.Current.System.EnableBackgroundMetadataFetch;
         AutoCheckUpdates = _settingsService.Current.System.AutoCheckUpdates;
         AutoDownloadUpdates = _settingsService.Current.System.AutoDownloadUpdates;
         NotifyNewEpisodes = _settingsService.Current.System.NotifyNewEpisodes;

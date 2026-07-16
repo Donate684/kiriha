@@ -326,45 +326,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
             if (staffPlusVms.Count >= 10) break;
             if (s.PersonMalId == 0) continue;
 
-            var personData = await _shikiApiService.GetPersonWorksAsync(s.PersonMalId);
-            if (personData?.Works != null)
-            {
-                var vm = new StaffPlusItemVm(s) { Role = matchedRole };
-
-                var validWorks = personData.Works
-                    .Where(w => w.Anime != null && w.Anime.Id != Anime.Id)
-                    .Where(w => w.Role != null && IsRoleMatch(w.Role, matchedRole))
-                    .Select(w => new { Work = w, Score = double.TryParse(w.Anime!.Score, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var score) ? score : 0 })
-                    .OrderByDescending(x => x.Score)
-                    .ToList();
-
-                if (validWorks.Count > 0)
-                {
-                    foreach (var w in validWorks)
-                    {
-                        string scoreDisplay = w.Score > 0 ? w.Work.Anime!.Score! : "-";
-                        
-                        var localAnime = _animeService.Collection.FirstOrDefault(a => a.Id == w.Work.Anime!.Id);
-                        Avalonia.Media.IBrush highlight = Avalonia.Media.Brushes.Transparent;
-                        if (localAnime != null)
-                        {
-                            if (localAnime.Status == Models.Entities.UserAnimeStatus.Watching || localAnime.Status == Models.Entities.UserAnimeStatus.Completed)
-                                highlight = Avalonia.Media.SolidColorBrush.Parse("#334CAF50");
-                            else if (localAnime.Status == Models.Entities.UserAnimeStatus.Dropped)
-                                highlight = Avalonia.Media.SolidColorBrush.Parse("#33F44336");
-                        }
-
-                        vm.BestWorks.Add(new StaffWorkVm 
-                        { 
-                            Title = string.IsNullOrEmpty(w.Work.Anime!.Russian) ? (w.Work.Anime!.Name ?? "Unknown") : w.Work.Anime.Russian,
-                            Url = "https://shikimori.one" + w.Work.Anime.Url, 
-                            Score = scoreDisplay,
-                            HighlightColor = highlight
-                        });
-                    }
-                    staffPlusVms.Add(vm);
-                }
-            }
+            staffPlusVms.Add(new StaffPlusItemVm(s) { Role = matchedRole });
         }
 
         var sorted = staffPlusVms.OrderByDescending(x => x.Role == "Original Creator").ThenBy(x => x.Role).ToList();
@@ -377,6 +339,70 @@ public partial class AnimeDetailsViewModel : ViewModelBase
                 StaffPlus.Add(vm);
             }
         });
+
+        foreach (var vm in sorted)
+        {
+            _ = FetchStaffWorksAsync(vm);
+        }
+    }
+
+    private async Task FetchStaffWorksAsync(StaffPlusItemVm vm)
+    {
+        try
+        {
+            var personData = await _shikiApiService.GetPersonWorksAsync(vm.Staff.PersonMalId);
+            if (personData?.Works != null)
+            {
+                var validWorks = personData.Works
+                    .Where(w => w.Anime != null && w.Anime.Id != Anime.Id)
+                    .Where(w => w.Role != null && IsRoleMatch(w.Role, vm.Role))
+                    .Select(w => new { Work = w, Score = double.TryParse(w.Anime!.Score, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var score) ? score : 0 })
+                    .OrderByDescending(x => x.Score)
+                    .ToList();
+
+                if (validWorks.Count > 0)
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        foreach (var w in validWorks)
+                        {
+                            string scoreDisplay = w.Score > 0 ? w.Work.Anime!.Score! : "-";
+                            
+                            var localAnime = _animeService.Collection.FirstOrDefault(a => a.Id == w.Work.Anime!.Id);
+                            Avalonia.Media.IBrush highlight = Avalonia.Media.Brushes.Transparent;
+                            if (localAnime != null)
+                            {
+                                if (localAnime.Status == Models.Entities.UserAnimeStatus.Watching || localAnime.Status == Models.Entities.UserAnimeStatus.Completed)
+                                    highlight = Avalonia.Media.SolidColorBrush.Parse("#334CAF50");
+                                else if (localAnime.Status == Models.Entities.UserAnimeStatus.Dropped)
+                                    highlight = Avalonia.Media.SolidColorBrush.Parse("#33F44336");
+                            }
+
+                            vm.BestWorks.Add(new StaffWorkVm 
+                            { 
+                                Title = string.IsNullOrEmpty(w.Work.Anime!.Russian) ? (w.Work.Anime!.Name ?? "Unknown") : w.Work.Anime.Russian,
+                                Url = "https://shikimori.one" + w.Work.Anime.Url, 
+                                Score = scoreDisplay,
+                                HighlightColor = highlight
+                            });
+                        }
+                    });
+                }
+                else
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => StaffPlus.Remove(vm));
+                }
+            }
+            else
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => StaffPlus.Remove(vm));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Log.Warning(ex, "Failed to fetch person works for {PersonId}", vm.Staff.PersonMalId);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => StaffPlus.Remove(vm));
+        }
     }
 
     private bool IsRoleMatch(string role, string matchedRole)

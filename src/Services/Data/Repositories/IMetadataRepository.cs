@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Kiriha.Models;
 using Kiriha.Models.Api;
@@ -22,6 +24,9 @@ public interface IMetadataRepository
     /// window is reset on every successful upsert.
     /// </summary>
     Task UpsertAsync(ShikiMetadata meta);
+
+    /// <summary>Returns a set of all currently cached metadata IDs.</summary>
+    Task<HashSet<int>> GetAllIdsAsync();
 }
 
 public sealed class MetadataRepository : IMetadataRepository
@@ -50,5 +55,12 @@ public sealed class MetadataRepository : IMetadataRepository
         else
             context.Entry(existing).CurrentValues.SetValues(meta);
         await context.SaveChangesAsync();
+    }
+
+    public async Task<HashSet<int>> GetAllIdsAsync()
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+        var ids = await context.Metadata.Select(m => m.Id).ToListAsync();
+        return new HashSet<int>(ids);
     }
 }
