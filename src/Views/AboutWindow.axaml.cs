@@ -8,6 +8,7 @@ using Kiriha.Core.Platform;
 using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 using Kiriha.Models;
+using Kiriha.Services.Data;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kiriha.Views;
@@ -64,6 +65,11 @@ public partial class AboutWindow : KirihaWindowBase
     {
         DataContext = this;
         InitializeComponent();
+    }
+
+    public AboutWindow(SettingsService settingsService) : this()
+    {
+        SettingsService = settingsService;
         ApplyMica();
         VersionLabel.Text = $"v{AppInfo.Version}".ToUpperInvariant();
         Opened += OnOpened;
@@ -71,7 +77,8 @@ public partial class AboutWindow : KirihaWindowBase
 
     public void ApplyMica()
     {
-        var settings = App.Services.GetRequiredService<Kiriha.Services.Data.SettingsService>().Current;
+        var settings = SettingsService?.Current;
+        if (settings == null) return;
         if (settings.UI.EnableMica)
         {
             TransparencyLevelHint = new[] { Avalonia.Controls.WindowTransparencyLevel.Mica, Avalonia.Controls.WindowTransparencyLevel.AcrylicBlur };

@@ -49,6 +49,11 @@ public partial class MainWindow : KirihaWindowBase
     public MainWindow()
     {
         InitializeComponent();
+    }
+
+    public MainWindow(SettingsService settingsService) : this()
+    {
+        SettingsService = settingsService;
         ApplyMica();
         RestorePlacement();
         PositionChanged += OnWindowPositionChanged;
@@ -96,7 +101,8 @@ public partial class MainWindow : KirihaWindowBase
     public void ApplyMica()
     {
         // Force transparency hints for testing, ignoring the check for a moment if needed
-        var settings = App.Services.GetRequiredService<SettingsService>().Current;
+        var settings = SettingsService?.Current;
+        if (settings == null) return;
         if (settings.UI.EnableMica)
         {
             TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur };
@@ -149,6 +155,7 @@ public partial class MainWindow : KirihaWindowBase
     }
 
     public bool ForceExit { get; set; } = false;
+    private bool _shutdownDispatched;
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
@@ -160,7 +167,7 @@ public partial class MainWindow : KirihaWindowBase
         bool isSystemShutdown = e.CloseReason == WindowCloseReason.OSShutdown
                              || e.CloseReason == WindowCloseReason.ApplicationShutdown;
 
-        if (!ForceExit && !isSystemShutdown && App.Services.GetRequiredService<SettingsService>().Current.System.CloseToTray)
+        if (!ForceExit && !isSystemShutdown && SettingsService?.Current.System.CloseToTray == true)
         {
             e.Cancel = true;
             this.Hide();
@@ -169,8 +176,9 @@ public partial class MainWindow : KirihaWindowBase
         {
             ClosePlayerWindows();
             base.OnClosing(e);
-            if (!ForceExit && !isSystemShutdown)
+            if (!ForceExit && !isSystemShutdown && !_shutdownDispatched)
             {
+                _shutdownDispatched = true;
                 if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
                 {
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => desktop.Shutdown());
@@ -207,7 +215,7 @@ public partial class MainWindow : KirihaWindowBase
             if (WindowState == WindowState.Minimized)
             {
 
-                if (App.Services.GetRequiredService<SettingsService>().Current.System.MinimizeToTray)
+                if (SettingsService?.Current.System.MinimizeToTray == true)
                 {
                     this.Hide();
                 }
@@ -246,7 +254,7 @@ public partial class MainWindow : KirihaWindowBase
     {
         try
         {
-            var placement = App.Services.GetRequiredService<SettingsService>().Current.UI.Window
+            var placement = SettingsService?.Current.UI.Window
                             ?? new AppSettings.WindowPlacement();
 
             var width = placement.Width > 0 ? placement.Width : DefaultWidth;
@@ -388,7 +396,8 @@ public partial class MainWindow : KirihaWindowBase
     {
         try
         {
-            var settings = App.Services.GetRequiredService<SettingsService>();
+            var settings = SettingsService;
+            if (settings == null) return;
             settings.Update(current =>
             {
                 var placement = current.UI.Window ??= new AppSettings.WindowPlacement();

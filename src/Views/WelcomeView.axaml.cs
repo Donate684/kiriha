@@ -32,9 +32,12 @@ public partial class WelcomeView : UserControl
 
     private void OnAboutClick(object? sender, RoutedEventArgs e)
     {
-        var owner = this.VisualRoot as Window;
-        var dlg = new AboutWindow();
-        if (owner != null) dlg.ShowDialog(owner);
-        else dlg.Show();
+        if (DataContext is Kiriha.ViewModels.WelcomeViewModel vm)
+        {
+            var owner = this.VisualRoot as Window;
+            var dlg = new AboutWindow(vm.SettingsService);
+            if (owner != null) dlg.ShowDialog(owner);
+            else dlg.Show();
+        }
     }
 }

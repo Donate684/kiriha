@@ -36,6 +36,9 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
     private readonly AnimeService _animeService;
     private readonly SeasonalCacheStore _cacheStore;
     private readonly SyncManager _syncManager;
+    private readonly Kiriha.Core.Dialogs.IDialogService _dialogService;
+    
+    public Kiriha.Core.Dialogs.IDialogService DialogService => _dialogService;
 
     public SeasonalViewModel(
         MalApiService apiService,
@@ -43,7 +46,8 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
         LoadQueueService queueService,
         AnimeService animeService,
         SeasonalCacheStore cacheStore,
-        SyncManager syncManager)
+        SyncManager syncManager,
+        Kiriha.Core.Dialogs.IDialogService dialogService)
     {
         _apiService = apiService;
         _settingsService = settingsService;
@@ -51,6 +55,7 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
         _animeService = animeService;
         _cacheStore = cacheStore;
         _syncManager = syncManager;
+        _dialogService = dialogService;
 
         HydrateDiskCacheOnce();
         LoadSettingsState();

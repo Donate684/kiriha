@@ -129,7 +129,7 @@ public class InstanceServer : BackgroundService
                 }
 
                 var playerVm = new PlayerViewModel(videoUrl, metadataResolver.Resolve(videoUrl), metadataResolver, settingsService);
-                var window = new PlayerWindow { DataContext = playerVm };
+                var window = new PlayerWindow(settingsService!) { DataContext = playerVm };
                 window.Show();
             });
         }

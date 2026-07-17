@@ -39,9 +39,9 @@ public partial class SearchView : UserControl
         // async void event handler: any leaked exception kills the process. Wrap defensively.
         try
         {
-            if (sender is Control c && c.DataContext is Models.AnimeItem item)
+            if (sender is Control c && c.DataContext is Models.AnimeItem item && DataContext is SearchViewModel vm)
             {
-                await App.Services.GetRequiredService<Kiriha.Core.Dialogs.IDialogService>().ShowAnimeDetailsAsync(this, item);
+                await vm.DialogService.ShowAnimeDetailsAsync(this, item);
             }
         }
         catch (Exception ex)

@@ -324,8 +324,8 @@ public class SettingsService : IDisposable
 
     private static AppSettings CloneSettings(AppSettings settings)
     {
-        var json = JsonSerializer.Serialize(settings);
-        return JsonSerializer.Deserialize<AppSettings>(json)!;
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(settings);
+        return JsonSerializer.Deserialize<AppSettings>(bytes)!;
     }
 
     private static string ReadAllTextShared(string path)
@@ -377,12 +377,15 @@ public class SettingsService : IDisposable
 
     private void MarkChangedSections(SettingsSection sections)
     {
-        if (sections.HasFlag(SettingsSection.UI)) _uiVersion++;
-        if (sections.HasFlag(SettingsSection.System)) _systemVersion++;
-        if (sections.HasFlag(SettingsSection.Player)) _playerVersion++;
-        if (sections.HasFlag(SettingsSection.Torrents)) _torrentsVersion++;
-        if (sections.HasFlag(SettingsSection.Api)) _apiVersion++;
-        if (sections.HasFlag(SettingsSection.CustomLinks)) _customLinksVersion++;
+        lock (_stateLock)
+        {
+            if (sections.HasFlag(SettingsSection.UI)) _uiVersion++;
+            if (sections.HasFlag(SettingsSection.System)) _systemVersion++;
+            if (sections.HasFlag(SettingsSection.Player)) _playerVersion++;
+            if (sections.HasFlag(SettingsSection.Torrents)) _torrentsVersion++;
+            if (sections.HasFlag(SettingsSection.Api)) _apiVersion++;
+            if (sections.HasFlag(SettingsSection.CustomLinks)) _customLinksVersion++;
+        }
     }
 
     private void MarkAllSectionsChanged()

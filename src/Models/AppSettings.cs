@@ -92,6 +92,7 @@ public class AppSettings
         public ScrobblerConfig Scrobbler { get; set; } = new();
         public bool EnableDiscordRPC { get; set; } = true;
         public bool EnableBackgroundMetadataFetch { get; set; } = true;
+        public bool EnableLogging { get; set; } = false;
     }
 
     public class PlayerConfig

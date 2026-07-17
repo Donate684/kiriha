@@ -105,6 +105,7 @@ internal static class TrackingServicesRegistration
         services.AddSingleton<SmtcService>(sp => new SmtcService(sp.GetRequiredService<SettingsService>()));
         services.AddSingleton<DiscordService>();
         services.AddSingleton<AnisthesiaService>();
+        services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService>(sp => sp.GetRequiredService<AnisthesiaService>());
         services.AddSingleton<IScrobbleService, ScrobbleService>();
         services.AddSingleton<TrackingService>();
         services.AddSingleton<AnimeService>();

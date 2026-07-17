@@ -195,6 +195,12 @@ public class MpvPlayer : IDisposable
         Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "loadfile", url), "load file"));
     }
 
+    public void AddSubtitle(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "sub-add", path), "add subtitle"));
+    }
+
     public void Play()
     {
         Enqueue(handle => Check(LibMpvNative.mpv_set_property_string(handle, "pause", "no"), "play"));

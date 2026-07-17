@@ -59,7 +59,7 @@ public sealed class AvaloniaDialogService : IDialogService
             _services.GetRequiredService<HistoryService>(),
             this);
 
-        var window = new Views.AnimeDetailsWindow { DataContext = vm };
+        var window = new Views.AnimeDetailsWindow(_services.GetRequiredService<SettingsService>()) { DataContext = vm };
 
         try
         {

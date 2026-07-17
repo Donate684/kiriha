@@ -162,7 +162,10 @@ public class SystemIntegrationService
         {
             hive.DeleteSubKeyTree(keyPath, false);
         }
-        catch { /* ignored */ }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Failed to delete registry key tree: {KeyPath}", keyPath);
+        }
     }
 
     private static void DeleteValueSafe(RegistryKey hive, string keyPath, string valueName)
@@ -172,6 +175,9 @@ public class SystemIntegrationService
             using var key = hive.OpenSubKey(keyPath, true);
             key?.DeleteValue(valueName, false);
         }
-        catch { /* ignored */ }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Failed to delete registry value: {KeyPath}\\{ValueName}", keyPath, valueName);
+        }
     }
 }

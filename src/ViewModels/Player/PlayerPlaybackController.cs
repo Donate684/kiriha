@@ -40,6 +40,7 @@ public sealed class PlayerPlaybackController
     }
 
     public void Load(string videoUrl) => _player?.Load(videoUrl);
+    public void AddSubtitle(string path) => _player?.AddSubtitle(path);
     public void Play() => _player?.Play();
     public void Pause() => _player?.Pause();
     public void Seek(double timeInSeconds) => _player?.Seek(timeInSeconds);

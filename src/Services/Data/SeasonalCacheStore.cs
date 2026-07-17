@@ -85,7 +85,7 @@ public sealed class SeasonalCacheStore
                 {
                     // Expired — best-effort delete so the directory doesn't
                     // accumulate decades of stale seasons.
-                    try { info.Delete(); } catch { }
+                    try { info.Delete(); } catch (Exception ex) { Log.Debug(ex, "Failed to delete expired seasonal cache file {File}", file); }
                     continue;
                 }
 
@@ -102,7 +102,7 @@ public sealed class SeasonalCacheStore
             {
                 Log.Debug(ex, "SeasonalCacheStore: failed to load {File}", file);
                 // Corrupt file — drop it so we don't keep tripping on it.
-                try { File.Delete(file); } catch { }
+                try { File.Delete(file); } catch (Exception delEx) { Log.Debug(delEx, "Failed to delete corrupt seasonal cache file {File}", file); }
             }
         }
 
@@ -135,7 +135,7 @@ public sealed class SeasonalCacheStore
                 catch (Exception ex)
                 {
                     Log.Debug(ex, "SeasonalCacheStore: failed to save {Key}", key);
-                    try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
+                    try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch (Exception delEx) { Log.Debug(delEx, "Failed to delete temp seasonal cache file {TmpPath}", tmpPath); }
                 }
             });
         }

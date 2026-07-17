@@ -15,27 +15,7 @@ public partial class App : Application
     private ShutdownCoordinator? _shutdownCoordinator;
     private TrayService? _trayService;
 
-    /// <summary>
-    /// Process-wide DI root. Prefer constructor injection wherever possible;
-    /// this static accessor exists strictly for places that Avalonia constructs
-    /// without DI participation (XAML-instantiated <c>Window</c> code-behind
-    /// and a handful of static helpers). It is consciously the only escape
-    /// hatch - do NOT add new call sites in ViewModels or services.
-    /// </summary>
-    public static IServiceProvider Services
-    {
-        get
-        {
-            if (Current is not App app)
-                throw new InvalidOperationException("App is not initialized");
 
-            var sp = app._serviceProvider;
-            if (sp == null)
-                throw new InvalidOperationException("Service provider is not yet built (called before OnFrameworkInitializationCompleted)");
-
-            return sp;
-        }
-    }
 
     public override void OnFrameworkInitializationCompleted()
     {

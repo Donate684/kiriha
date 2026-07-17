@@ -8,14 +8,15 @@ namespace Kiriha.Views;
 
 public class KirihaWindowBase : Window
 {
+    protected SettingsService? SettingsService { get; set; }
+
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
         
-        var settings = App.Services.GetService<SettingsService>();
-        if (settings != null)
+        if (SettingsService != null)
         {
-            ApplyUiScale(settings.Current.UI.UiScale);
+            ApplyUiScale(SettingsService.Current.UI.UiScale);
         }
     }
 

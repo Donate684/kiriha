@@ -116,7 +116,7 @@ public sealed class CacheCleanupService
                 .Select(x =>
                 {
                     try { return new FileInfo(x); }
-                    catch { return null; }
+                    catch (Exception ex) { Log.Debug(ex, "CacheCleanupService: failed to get file info for {File}", x); return null; }
                 })
                 .Where(x => x is { Exists: true })
                 .ToList();
@@ -145,7 +145,7 @@ public sealed class CacheCleanupService
                      .ToList())
         {
             try { Directory.Delete(dir, recursive: false); }
-            catch { }
+            catch (Exception ex) { Log.Debug(ex, "CacheCleanupService: failed to delete directory {Dir}", dir); }
         }
     }
 }

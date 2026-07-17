@@ -2,6 +2,7 @@ using System;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Serilog;
 
 namespace Kiriha.ViewModels.Player;
 
@@ -72,10 +73,10 @@ public sealed partial class PlayerOverlayViewModel : ObservableObject, IDisposab
             _osdTimer.Stop();
             _osdTimer.Tick -= OnOsdTimerTick;
         }
-        catch { }
+        catch (Exception ex) { Log.Debug(ex, "Error stopping OSD timer"); }
         finally
         {
-            try { ClearTimelinePreview(); } catch { }
+            try { ClearTimelinePreview(); } catch (Exception ex) { Log.Debug(ex, "Error clearing timeline preview"); }
         }
     }
 }

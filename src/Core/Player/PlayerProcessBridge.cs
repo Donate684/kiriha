@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.IO.Pipes;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace Kiriha.Core.Player;
 
@@ -56,7 +57,7 @@ public static class PlayerProcessBridge
         };
 
         try { System.Diagnostics.Process.Start(startInfo); }
-        catch { }
+        catch (Exception ex) { Log.Debug(ex, "Failed to start resident player process"); }
     }
 
     public static Task StopResidentAsync()

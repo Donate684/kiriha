@@ -166,7 +166,7 @@ public sealed class AppStartupCoordinator
         }
 
         var mainWindowVm = _serviceProvider.GetRequiredService<MainWindowViewModel>();
-        desktop.MainWindow = new MainWindow { DataContext = mainWindowVm };
+        desktop.MainWindow = new MainWindow(settings) { DataContext = mainWindowVm };
 
         var startMinimized = args.Any(arg => arg.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
         var hideToTrayOnStart = startMinimized && settings.Current.System.MinimizeToTray;
@@ -204,7 +204,7 @@ public sealed class AppStartupCoordinator
                     setupVm.SetupCompleted -= OnSetupCompleted;
 
                 var mainWindowVm = _serviceProvider.GetRequiredService<MainWindowViewModel>();
-                var main = new MainWindow { DataContext = mainWindowVm };
+                var main = new MainWindow(_serviceProvider.GetRequiredService<SettingsService>()) { DataContext = mainWindowVm };
                 main.Show();
                 desktop.MainWindow = main;
                 setupWindow.Close();

@@ -43,7 +43,8 @@ public partial class PlayerOverlayWindow : Window
     private PlayerWindow _ownerWindow;
     private static readonly HashSet<string> DropMediaExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".webm", ".m4v", ".flv", ".ts", ".m2ts", ".mpg", ".mpeg", ".ogm", ".ogg"
+        ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".webm", ".m4v", ".flv", ".ts", ".m2ts", ".mpg", ".mpeg", ".ogm", ".ogg",
+        ".ass", ".srt"
     };
 
     // Auto-hide: hide panels after 3 seconds of no mouse movement
@@ -153,7 +154,15 @@ public partial class PlayerOverlayWindow : Window
         Log.Information("Dropped media file: {Path}", path);
         if (DataContext is PlayerViewModel vm)
         {
-            vm.LoadVideo(path);
+            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            if (ext is ".ass" or ".srt")
+            {
+                vm.LoadSubtitle(path);
+            }
+            else
+            {
+                vm.LoadVideo(path);
+            }
             ShowControls();
         }
     }

@@ -163,6 +163,9 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _enableBackgroundMetadataFetch;
 
     [ObservableProperty]
+    private bool _enableLogging;
+
+    [ObservableProperty]
     private bool _autoCheckUpdates;
 
     [ObservableProperty]
@@ -307,6 +310,7 @@ public partial class SettingsViewModel : ViewModelBase
         ScrobbleNotifyOnSkip = _settingsService.Current.System.Scrobbler.NotifyOnSkippedEpisode;
         EnableDiscordRPC = _settingsService.Current.System.EnableDiscordRPC;
         EnableBackgroundMetadataFetch = _settingsService.Current.System.EnableBackgroundMetadataFetch;
+        EnableLogging = _settingsService.Current.System.EnableLogging;
         AutoCheckUpdates = _settingsService.Current.System.AutoCheckUpdates;
         AutoDownloadUpdates = _settingsService.Current.System.AutoDownloadUpdates;
         NotifyNewEpisodes = _settingsService.Current.System.NotifyNewEpisodes;

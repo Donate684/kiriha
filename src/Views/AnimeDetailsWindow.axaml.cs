@@ -14,6 +14,11 @@ public partial class AnimeDetailsWindow : KirihaWindowBase
     public AnimeDetailsWindow()
     {
         InitializeComponent();
+    }
+
+    public AnimeDetailsWindow(SettingsService settingsService) : this()
+    {
+        SettingsService = settingsService;
         ApplyMica();
         Opened += OnOpened;
     }
@@ -86,7 +91,8 @@ public partial class AnimeDetailsWindow : KirihaWindowBase
 
     public void ApplyMica()
     {
-        var settings = App.Services.GetRequiredService<SettingsService>().Current;
+        var settings = SettingsService?.Current;
+        if (settings == null) return;
         if (settings.UI.EnableMica)
         {
             TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur };

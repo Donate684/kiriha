@@ -40,6 +40,9 @@ public sealed class ShutdownCoordinator
 
         await DrainAsync();
 
+        if (_serviceProvider is IDisposable disposable)
+            disposable.Dispose();
+
         if (sender is IClassicDesktopStyleApplicationLifetime desktop)
             await Dispatcher.UIThread.InvokeAsync(() => desktop.Shutdown());
     }

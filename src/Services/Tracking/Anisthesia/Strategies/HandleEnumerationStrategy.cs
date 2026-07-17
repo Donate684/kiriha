@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Kiriha.Models;
 using Serilog;
+using System.IO;
 
 namespace Kiriha.Services.Tracking.Anisthesia.Strategies;
 
@@ -157,23 +158,24 @@ public class HandleEnumerationStrategy
                 var group = elements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementReleaseGroup)?.Value;
 
                 string animeTitle;
-                if (titleElement != null)
+                bool isEmber = file.Contains("EMBER", StringComparison.OrdinalIgnoreCase) || EmberTitleResolver.ScanFileForEmber(file);
+
+                if (titleElement != null && !isEmber)
                 {
                     animeTitle = titleElement.Value;
                 }
                 else
                 {
-                    var directoryName = System.IO.Path.GetDirectoryName(file);
-                    if (!string.IsNullOrEmpty(directoryName))
+                    string meaningfulDir = EmberTitleResolver.GetMeaningfulDirectoryName(file);
+                    if (!string.IsNullOrEmpty(meaningfulDir))
                     {
-                        string dirName = System.IO.Path.GetFileName(directoryName);
-                        var dirElements = Kiriha.Utils.Parsing.AnimeParseCache.Parse(dirName);
+                        var dirElements = Kiriha.Utils.Parsing.AnimeParseCache.Parse(meaningfulDir);
                         var dirTitleElement = dirElements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
-                        animeTitle = dirTitleElement != null ? dirTitleElement.Value : dirName;
+                        animeTitle = dirTitleElement != null ? dirTitleElement.Value : meaningfulDir;
                     }
                     else
                     {
-                        animeTitle = System.IO.Path.GetFileNameWithoutExtension(filename);
+                        animeTitle = titleElement != null ? titleElement.Value : Path.GetFileNameWithoutExtension(filename);
                     }
                 }
 

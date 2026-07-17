@@ -64,11 +64,11 @@ public sealed class MpvThumbnailer : IDisposable
                                 Directory.Delete(dir, recursive: true);
                             }
                         }
-                        catch { }
+                        catch (Exception ex) { Log.Debug(ex, "Failed to clean up thumbnail directory: {Dir}", dir); }
                     }
                 }
             }
-            catch { }
+            catch (Exception ex) { Log.Debug(ex, "Failed to enumerate root thumbnail directory"); }
         });
     }
 
@@ -401,7 +401,7 @@ public sealed class MpvThumbnailer : IDisposable
             {
                 _lockFile?.Dispose();
             }
-            catch { }
+            catch (Exception ex) { Log.Debug(ex, "Failed to dispose lock file"); }
         }
 
         try
@@ -409,8 +409,9 @@ public sealed class MpvThumbnailer : IDisposable
             if (Directory.Exists(_thumbnailDirectory))
                 Directory.Delete(_thumbnailDirectory, recursive: true);
         }
-        catch
+        catch (Exception ex)
         {
+            Log.Debug(ex, "Failed to delete thumbnail directory during dispose");
             // Temp cleanup is allowed to fail when an image is still being released by UI.
         }
     }

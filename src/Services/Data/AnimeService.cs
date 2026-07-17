@@ -1,15 +1,3 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -59,6 +47,7 @@ public class AnimeService
     private int _initStarted; // Interlocked guard for InitializeAsync
     private int _syncing;     // Interlocked guard for SyncWithTrackersAsync
     private readonly Dictionary<int, CancellationTokenSource> _recentlyDeletedIds = new();
+    private readonly Dictionary<int, AnimeItem> _idIndex = new();
     public Task InitializationTask => _initTcs.Task;
 
     public bool IsRecentlyDeleted(int animeId)
@@ -128,9 +117,16 @@ public class AnimeService
             await _uiDispatcher.InvokeAsync(() =>
             {
                 if (cached != null && cached.Count > 0)
+                {
                     Collection.Reset(cached);
+                    _idIndex.Clear();
+                    foreach (var item in cached) _idIndex[item.Id] = item;
+                }
                 else
+                {
                     Collection.Clear();
+                    _idIndex.Clear();
+                }
             });
             
             // Build the recognition cache using background thread
@@ -334,7 +330,11 @@ public class AnimeService
         {
             await _uiDispatcher.InvokeAsync(() => 
             {
-                foreach (var item in toRemove) Collection.Remove(item);
+                foreach (var item in toRemove)
+                {
+                    Collection.Remove(item);
+                    _idIndex.Remove(item.Id);
+                }
             });
         }
 
@@ -365,7 +365,11 @@ public class AnimeService
             }
             else
             {
-                uiBatch.Add(() => Collection.Add(newItem));
+                uiBatch.Add(() =>
+                {
+                    Collection.Add(newItem);
+                    _idIndex[newItem.Id] = newItem;
+                });
             }
 
             // Batch adding new items to keep UI smooth
@@ -410,7 +414,7 @@ public class AnimeService
         // and AnimeItem property setters raise PropertyChanged that UI bindings must observe on UI.
         var existing = await _uiDispatcher.InvokeAsync(() =>
         {
-            var found = Collection.FirstOrDefault(x => x.Id == item.Id);
+            _idIndex.TryGetValue(item.Id, out var found);
             if (found != null)
             {
                 item.CopyTo(found);
@@ -418,6 +422,7 @@ public class AnimeService
             else
             {
                 Collection.Add(item);
+                _idIndex[item.Id] = item;
             }
             return found;
         });
@@ -468,8 +473,11 @@ public class AnimeService
 
         await _uiDispatcher.InvokeAsync(() =>
         {
-            var item = Collection.FirstOrDefault(x => x.Id == animeId);
-            if (item != null) Collection.Remove(item);
+            if (_idIndex.TryGetValue(animeId, out var item))
+            {
+                Collection.Remove(item);
+                _idIndex.Remove(animeId);
+            }
         });
 
         // Remove locally first so the UI is responsive even when offline.

@@ -47,6 +47,9 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
     private readonly LoadQueueService _queueService;
     private readonly AnimeService _animeService;
     private readonly SyncManager _syncManager;
+    private readonly Kiriha.Core.Dialogs.IDialogService _dialogService;
+    
+    public Kiriha.Core.Dialogs.IDialogService DialogService => _dialogService;
     
     [ObservableProperty] private string _searchQuery = string.Empty;
     [ObservableProperty] private bool _isLoading;
@@ -83,7 +86,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
 
     public SearchViewModel(MalApiService apiService, ShikiMetadataService shikiMetadataService, 
         SettingsService settingsService, LoadQueueService queueService,
-        AnimeService animeService, SyncManager syncManager)
+        AnimeService animeService, SyncManager syncManager, Kiriha.Core.Dialogs.IDialogService dialogService)
     {
         _apiService = apiService;
         _shikiMetadataService = shikiMetadataService;
@@ -91,6 +94,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
         _queueService = queueService;
         _animeService = animeService;
         _syncManager = syncManager;
+        _dialogService = dialogService;
 
         _searchDebouncer = new Kiriha.Utils.Async.Debouncer(TimeSpan.FromMilliseconds(800), _ =>
         {

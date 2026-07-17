@@ -101,6 +101,11 @@ public partial class SettingsViewModel
         _settingsService.Update(settings => settings.System.EnableBackgroundMetadataFetch = value, SettingsSection.System);
     }
 
+    partial void OnEnableLoggingChanged(bool value)
+    {
+        _settingsService.Update(settings => settings.System.EnableLogging = value, SettingsSection.System);
+    }
+
     partial void OnKeepPlayerProcessAliveChanged(bool value)
     {
         _settingsService.Update(settings => settings.System.KeepPlayerProcessAlive = value, SettingsSection.System);

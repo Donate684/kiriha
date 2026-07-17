@@ -164,6 +164,7 @@ public partial class PlayerViewModel
     private void ApplyMetadata(PlayerMediaMetadata metadata)
     {
         _animeId = metadata.AnimeId;
+        OriginalTitle = metadata.OriginalTitle;
         AnimeTitleRu = metadata.TitleRu;
         AnimeTitleEn = metadata.TitleEn;
         RawEpisodeText = metadata.EpisodeText;

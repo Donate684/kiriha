@@ -21,12 +21,28 @@ public sealed class FilenamePlayerMediaMetadataResolver : IPlayerMediaMetadataRe
         try
         {
             var filename = System.IO.Path.GetFileNameWithoutExtension(videoPath);
-            var parsed = AnimeParseCache.Parse(filename);
+            var filenameToParse = System.Text.RegularExpressions.Regex.Replace(filename, @"([sS]?\d*[eE]\d+)\s*-(.*)", "$1 - $2");
+            var parsed = AnimeParseCache.Parse(filenameToParse);
 
-            var title = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle)?.Value;
+            string? title = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle)?.Value;
             var episode = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementEpisodeNumber)?.Value;
 
+            string originalTitle = filename;
+            bool isEmber = videoPath.Contains("EMBER", StringComparison.OrdinalIgnoreCase) || EmberTitleResolver.ScanFileForEmber(videoPath);
+            if (isEmber)
+            {
+                string meaningfulDir = EmberTitleResolver.GetMeaningfulDirectoryName(videoPath);
+                if (!string.IsNullOrEmpty(meaningfulDir))
+                {
+                    var dirParsed = AnimeParseCache.Parse(meaningfulDir);
+                    var dirTitle = dirParsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle)?.Value;
+                    title = dirTitle ?? meaningfulDir;
+                    originalTitle = meaningfulDir;
+                }
+            }
+
             return new PlayerMediaMetadata(
+                originalTitle,
                 string.IsNullOrWhiteSpace(title) ? filename : title,
                 string.Empty,
                 episode ?? string.Empty,

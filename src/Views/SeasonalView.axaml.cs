@@ -185,7 +185,10 @@ public partial class SeasonalView : UserControl
         {
             if (sender is Control c && c.DataContext is Models.AnimeItem item)
             {
-                await App.Services.GetRequiredService<Kiriha.Core.Dialogs.IDialogService>().ShowAnimeDetailsAsync(this, item);
+                if (DataContext is SeasonalViewModel vm)
+                {
+                    await vm.DialogService.ShowAnimeDetailsAsync(this, item);
+                }
             }
         }
         catch (Exception ex)

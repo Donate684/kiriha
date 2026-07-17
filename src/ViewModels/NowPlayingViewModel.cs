@@ -237,7 +237,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
 
         var cts = new CancellationTokenSource();
         var oldCts = Interlocked.Exchange(ref _searchCts, cts);
-        try { oldCts?.Cancel(); } catch { }
+        try { oldCts?.Cancel(); } catch (Exception ex) { Log.Debug(ex, "Error canceling search CTS"); }
         oldCts?.Dispose();
 
         IsSearching = true;
@@ -322,6 +322,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
 
         Dispatcher.UIThread.InvokeAsync(async () => {
             MatchedAnime = anime;
+            OnPropertyChanged(nameof(CurrentMedia));
             if (anime != null)
             {
                 IsManuallyMapped = _trackingService.IsManuallyMapped();
@@ -490,9 +491,9 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
         _trackingService.CountdownUpdated -= OnCountdownUpdated;
         _trackingService.StatusUpdated -= OnStatusUpdated;
 
-        try { _searchCts?.Cancel(); } catch { }
-        try { _searchCts?.Dispose(); } catch { }
-        try { _disposeCts.Cancel(); } catch { }
-        try { _disposeCts.Dispose(); } catch { }
+        try { _searchCts?.Cancel(); } catch (Exception ex) { Log.Debug(ex, "Error canceling search CTS during dispose"); }
+        try { _searchCts?.Dispose(); } catch (Exception ex) { Log.Debug(ex, "Error disposing search CTS"); }
+        try { _disposeCts.Cancel(); } catch (Exception ex) { Log.Debug(ex, "Error canceling dispose CTS"); }
+        try { _disposeCts.Dispose(); } catch (Exception ex) { Log.Debug(ex, "Error disposing dispose CTS"); }
     }
 }

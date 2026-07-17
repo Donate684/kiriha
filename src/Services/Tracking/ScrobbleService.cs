@@ -138,7 +138,6 @@ public class ScrobbleService : IScrobbleService, IDisposable
 
                 if (!isPlaying)
                 {
-                    elapsed = 0;
                     CountdownUpdated?.Invoke(this, Kiriha.Core.UIUtils.GetLoc("scrobbler.status.paused"));
                     await Task.Delay(1000, ct);
                     continue;

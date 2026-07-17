@@ -51,20 +51,41 @@ sealed class Program
                     using var writer = new System.IO.StreamWriter(client);
                     writer.WriteLine(PipeArgumentSerializer.Serialize(args));
                 }
-                catch { }
+                catch (Exception ex) { Console.WriteLine("Failed to forward arguments: " + ex.Message); }
 
                 // Logger is not configured yet - write to console for diagnostics.
                 Console.WriteLine("Another instance is already running. Arguments forwarded. Exiting.");
                 return;
             }
 
+            bool enableLogging = false;
+            try
+            {
+                var settingsPath = Kiriha.Core.Platform.PathHelper.GetSettingsPath();
+                if (File.Exists(settingsPath))
+                {
+                    var content = File.ReadAllText(settingsPath);
+                    if (content.Contains("\"EnableLogging\": true", StringComparison.OrdinalIgnoreCase) || 
+                        content.Contains("\"EnableLogging\":true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        enableLogging = true;
+                    }
+                }
+            }
+            catch { }
+
             string logTemplate = Path.Combine(Kiriha.Core.Platform.PathHelper.GetLogsPath(), "kiriha-.txt");
 
-            Log.Logger = new LoggerConfiguration()
+            var loggerConfig = new LoggerConfiguration()
                 .MinimumLevel.Information()
-                .WriteTo.Console()
-                .WriteTo.File(logTemplate, rollingInterval: RollingInterval.Day)
-                .CreateLogger();
+                .WriteTo.Console();
+
+            if (enableLogging)
+            {
+                loggerConfig.WriteTo.File(logTemplate, rollingInterval: RollingInterval.Day);
+            }
+
+            Log.Logger = loggerConfig.CreateLogger();
 
             Log.Information(Kiriha.Core.Constants.System.AppStartedLog);
             // Mask OAuth callback parameters (code, token, refresh) before logging command-line args.
@@ -115,6 +136,7 @@ sealed class Program
     }
 
     private static readonly string[] SensitiveQueryKeys = { "code", "token", "access_token", "refresh_token", "client_secret" };
+    private static readonly char[] SensitiveArgSeparators = { '&', ' ' };
 
     /// <summary>
     /// Masks OAuth-sensitive query parameters in command-line arguments so they don't
@@ -132,7 +154,7 @@ sealed class Program
             {
                 var idx = a.IndexOf(key + "=", StringComparison.OrdinalIgnoreCase);
                 if (idx < 0) continue;
-                var end = a.IndexOfAny(new[] { '&', ' ' }, idx);
+                var end = a.IndexOfAny(SensitiveArgSeparators, idx);
                 if (end < 0) end = a.Length;
                 a = a.Substring(0, idx + key.Length + 1) + "***" + (end < a.Length ? a.Substring(end) : "");
             }

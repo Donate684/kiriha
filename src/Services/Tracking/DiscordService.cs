@@ -29,10 +29,10 @@ public class DiscordService : IDisposable
 
     public void Initialize()
     {
-        if (!_settingsService.Current.System.EnableDiscordRPC) return;
-
         lock (_gate)
         {
+            if (!_settingsService.Current.System.EnableDiscordRPC) return;
+
             if (_client?.IsInitialized == true) return;
 
             try
@@ -56,70 +56,73 @@ public class DiscordService : IDisposable
 
     public void UpdatePresence(string displayTitle, string? episode, int totalEpisodes = 0, string? malUrl = null, string? shikiUrl = null, TimeSpan? position = null, TimeSpan? duration = null, string? imageUrl = null, bool isPlaying = true)
     {
-        if (_client == null || !_settingsService.Current.System.EnableDiscordRPC) return;
-
-        try
+        lock (_gate)
         {
-            string state;
-            if (totalEpisodes > 0)
-            {
-                state = string.Format(UIUtils.GetLoc("anime.labels.series_of"), episode, totalEpisodes);
-            }
-            else
-            {
-                state = string.Format(UIUtils.GetLoc("anime.labels.series_only"), episode);
-            }
+            if (_client == null || !_settingsService.Current.System.EnableDiscordRPC) return;
 
-            Timestamps? timestamps = null;
-            if (isPlaying && position.HasValue && duration.HasValue && position.Value.TotalSeconds > 0 && duration.Value.TotalSeconds > 0)
+            try
             {
-                var now = DateTime.UtcNow;
-                timestamps = new Timestamps()
+                string state;
+                if (totalEpisodes > 0)
                 {
-                    Start = now.Subtract(position.Value),
-                    End = now.Subtract(position.Value).Add(duration.Value)
+                    state = string.Format(UIUtils.GetLoc("anime.labels.series_of"), episode, totalEpisodes);
+                }
+                else
+                {
+                    state = string.Format(UIUtils.GetLoc("anime.labels.series_only"), episode);
+                }
+
+                Timestamps? timestamps = null;
+                if (isPlaying && position.HasValue && duration.HasValue && position.Value.TotalSeconds > 0 && duration.Value.TotalSeconds > 0)
+                {
+                    var now = DateTime.UtcNow;
+                    timestamps = new Timestamps()
+                    {
+                        Start = now.Subtract(position.Value),
+                        End = now.Subtract(position.Value).Add(duration.Value)
+                    };
+                }
+                else if (isPlaying)
+                {
+                    timestamps = Timestamps.Now;
+                }
+                else if (!isPlaying && position.HasValue && duration.HasValue && duration.Value.TotalSeconds > 0)
+                {
+                    string format = duration.Value.TotalHours >= 1 ? @"hh\:mm\:ss" : @"mm\:ss";
+                    state += $" [{position.Value.ToString(format)} / {duration.Value.ToString(format)}]";
+                }
+
+                var presence = new RichPresence()
+                {
+                    Type = ActivityType.Watching,
+                    StatusDisplay = StatusDisplayType.Details,
+                    Details = TruncateDiscordText(displayTitle),
+                    State = TruncateDiscordText(state),
+                    Assets = new Assets()
+                    {
+                        LargeImageKey = !string.IsNullOrEmpty(imageUrl) && imageUrl.Length <= 256 ? imageUrl : "icon_large",
+                        LargeImageText = TruncateDiscordText(displayTitle),
+                        SmallImageKey = isPlaying ? "play_icon" : "pause_icon",
+                        SmallImageText = isPlaying ? "Watching" : "Paused"
+                    },
+                    Timestamps = timestamps
                 };
+
+                // Discord Rich Presence allows at most 2 buttons per presence — that's a hard
+                // SDK limit, not ours, so a third row (e.g. Anilist/AniDB) isn't possible here.
+                var buttons = new List<Button>();
+                if (!string.IsNullOrEmpty(malUrl)) buttons.Add(new Button { Label = "MyAnimeList", Url = malUrl });
+                if (!string.IsNullOrEmpty(shikiUrl)) buttons.Add(new Button { Label = "Shikimori", Url = shikiUrl });
+
+                if (buttons.Count > 0) presence.Buttons = buttons.ToArray();
+
+                _client.SetPresence(presence);
+                Log.Debug("Updating Discord Presence: {Details} | {State}", displayTitle, presence.State);
             }
-            else if (isPlaying)
+            catch (Exception ex)
             {
-                timestamps = Timestamps.Now;
+                Log.Error(ex, "Error updating Discord presence");
             }
-            else if (!isPlaying && position.HasValue && duration.HasValue && duration.Value.TotalSeconds > 0)
-            {
-                string format = duration.Value.TotalHours >= 1 ? @"hh\:mm\:ss" : @"mm\:ss";
-                state += $" [{position.Value.ToString(format)} / {duration.Value.ToString(format)}]";
-            }
-
-            var presence = new RichPresence()
-            {
-                Type = ActivityType.Watching,
-                StatusDisplay = StatusDisplayType.Details,
-                Details = TruncateDiscordText(displayTitle),
-                State = TruncateDiscordText(state),
-                Assets = new Assets()
-                {
-                    LargeImageKey = !string.IsNullOrEmpty(imageUrl) && imageUrl.Length <= 256 ? imageUrl : "icon_large",
-                    LargeImageText = TruncateDiscordText(displayTitle),
-                    SmallImageKey = isPlaying ? "play_icon" : "pause_icon",
-                    SmallImageText = isPlaying ? "Watching" : "Paused"
-                },
-                Timestamps = timestamps
-            };
-
-            // Discord Rich Presence allows at most 2 buttons per presence — that's a hard
-            // SDK limit, not ours, so a third row (e.g. Anilist/AniDB) isn't possible here.
-            var buttons = new List<Button>();
-            if (!string.IsNullOrEmpty(malUrl)) buttons.Add(new Button { Label = "MyAnimeList", Url = malUrl });
-            if (!string.IsNullOrEmpty(shikiUrl)) buttons.Add(new Button { Label = "Shikimori", Url = shikiUrl });
-
-            if (buttons.Count > 0) presence.Buttons = buttons.ToArray();
-
-            _client.SetPresence(presence);
-            Log.Debug("Updating Discord Presence: {Details} | {State}", displayTitle, presence.State);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating Discord presence");
         }
     }
 
@@ -130,29 +133,39 @@ public class DiscordService : IDisposable
 
     public void ClearPresence()
     {
-        _client?.ClearPresence();
+        lock (_gate)
+        {
+            _client?.ClearPresence();
+        }
     }
 
     public void UpdateStatus(bool enabled)
     {
-        if (enabled)
+        lock (_gate)
         {
-            if (_client == null) Initialize();
-            else if (!_client.IsInitialized) _client.Initialize();
-        }
-        else
-        {
-            _client?.ClearPresence();
-            _client?.Deinitialize();
-            // DiscordRpcClient owns a named pipe + worker thread; Deinitialize alone
-            // does not release them. Dispose to avoid leaking on every toggle.
-            _client?.Dispose();
-            _client = null;
+            if (enabled)
+            {
+                if (_client == null) Initialize();
+                else if (!_client.IsInitialized) _client.Initialize();
+            }
+            else
+            {
+                _client?.ClearPresence();
+                _client?.Deinitialize();
+                // DiscordRpcClient owns a named pipe + worker thread; Deinitialize alone
+                // does not release them. Dispose to avoid leaking on every toggle.
+                _client?.Dispose();
+                _client = null;
+            }
         }
     }
 
     public void Dispose()
     {
-        _client?.Dispose();
+        lock (_gate)
+        {
+            _client?.Dispose();
+            _client = null;
+        }
     }
 }

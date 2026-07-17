@@ -11,6 +11,7 @@ using Kiriha.ViewModels.Settings;
 using Kiriha.ViewModels.Torrents;
 using Kiriha.ViewModels.Search;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,6 +48,8 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     private UpdateDialogViewModel? _updateDialog;
 
     public SettingsViewModel? SettingsViewModel => _settingsViewModel;
+
+    private readonly HashSet<ViewModelBase> _cachedVms = new();
 
     private AnimeListViewModel? _animeListViewModel;
     private SettingsViewModel? _settingsViewModel;
@@ -91,7 +94,7 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
                 case NavigationPage.Home: NavigateHome(); break;
                 case NavigationPage.AnimeList: NavigateAnimeList(); break;
                 case NavigationPage.Profile: NavigateAnalytics(); break;
-                case NavigationPage.Seasonal: NavigateSeasonal(); break;
+                case NavigationPage.Seasonal: _ = NavigateSeasonal(); break;
                 case NavigationPage.History: NavigateHistory(); break;
                 case NavigationPage.Torrents: NavigateTorrents(); break;
                 case NavigationPage.Search: NavigateSearch(); break;
@@ -117,17 +120,21 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
 
     private void SetCurrentPage(ViewModelBase page)
     {
-        if (CurrentPage is IDisposable disposable && 
-            CurrentPage != _animeListViewModel && 
-            CurrentPage != _nowPlayingViewModel &&
-            CurrentPage != _historyViewModel &&
-            CurrentPage != _torrentsViewModel &&
-            CurrentPage != _seasonalViewModel &&
-            CurrentPage != _analyticsViewModel)
+        if (CurrentPage is IDisposable disposable && !_cachedVms.Contains(CurrentPage))
         {
             disposable.Dispose();
         }
         CurrentPage = page;
+    }
+
+    private T EnsureCachedViewModel<T>(ref T? backingField) where T : ViewModelBase
+    {
+        if (backingField == null)
+        {
+            backingField = _viewModelFactory.Create<T>();
+            _cachedVms.Add(backingField);
+        }
+        return backingField;
     }
 
     private SettingsViewModel EnsureSettingsViewModel()
@@ -136,27 +143,28 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
             return _settingsViewModel;
 
         _settingsViewModel = _viewModelFactory.Create<SettingsViewModel>();
+        _cachedVms.Add(_settingsViewModel);
         OnPropertyChanged(nameof(SettingsViewModel));
         return _settingsViewModel;
     }
 
     private AnimeListViewModel EnsureAnimeListViewModel() =>
-        _animeListViewModel ??= _viewModelFactory.Create<AnimeListViewModel>();
+        EnsureCachedViewModel(ref _animeListViewModel);
 
     private NowPlayingViewModel EnsureNowPlayingViewModel() =>
-        _nowPlayingViewModel ??= _viewModelFactory.Create<NowPlayingViewModel>();
+        EnsureCachedViewModel(ref _nowPlayingViewModel);
 
     private HistoryViewModel EnsureHistoryViewModel() =>
-        _historyViewModel ??= _viewModelFactory.Create<HistoryViewModel>();
+        EnsureCachedViewModel(ref _historyViewModel);
 
     private TorrentsViewModel EnsureTorrentsViewModel() =>
-        _torrentsViewModel ??= _viewModelFactory.Create<TorrentsViewModel>();
+        EnsureCachedViewModel(ref _torrentsViewModel);
 
     private SeasonalViewModel EnsureSeasonalViewModel() =>
-        _seasonalViewModel ??= _viewModelFactory.Create<SeasonalViewModel>();
+        EnsureCachedViewModel(ref _seasonalViewModel);
 
     private AnalyticsViewModel EnsureAnalyticsViewModel() =>
-        _analyticsViewModel ??= _viewModelFactory.Create<AnalyticsViewModel>();
+        EnsureCachedViewModel(ref _analyticsViewModel);
 
     partial void OnSelectedNavigationIndexChanged(int value)
     {
@@ -173,7 +181,7 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
             case 0: NavigateAnalytics(); break;
             case 1: NavigateHome(); break;
             case 2: NavigateAnimeList(); break;
-            case 3: NavigateSeasonal(); break;
+            case 3: _ = NavigateSeasonal(); break;
             case 4: NavigateHistory(); break;
             case 5: NavigateTorrents(); break;
             case 6: NavigateSearch(); break;
@@ -240,13 +248,16 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     }
 
     [RelayCommand]
-    public void NavigateSeasonal()
+    public async Task NavigateSeasonal()
     {
         var animeList = EnsureAnimeListViewModel();
         var seasonal = EnsureSeasonalViewModel();
-        var userStore = animeList.AnimeItems
+        
+        var itemsSnapshot = animeList.AnimeItems.ToArray();
+        var userStore = await Task.Run(() => itemsSnapshot
             .GroupBy(x => x.Id)
-            .ToDictionary(x => x.Key, x => x.First().Status);
+            .ToDictionary(x => x.Key, x => x.First().Status));
+
         seasonal.UpdateUserList(userStore);
         // Trigger the initial Shikimori/MAL load on the very first navigation
         // (no-op on subsequent navigations - the call is idempotent). This
@@ -321,25 +332,17 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     {
         if (disposing)
         {
-            if (CurrentPage is IDisposable disposable && 
-                CurrentPage != _animeListViewModel && 
-                CurrentPage != _nowPlayingViewModel &&
-                CurrentPage != _historyViewModel &&
-                CurrentPage != _torrentsViewModel &&
-                CurrentPage != _seasonalViewModel &&
-                CurrentPage != _analyticsViewModel)
+            if (CurrentPage is IDisposable disposable && !_cachedVms.Contains(CurrentPage))
             {
                 disposable.Dispose();
             }
 
-            (_animeListViewModel as IDisposable)?.Dispose();
-            (_settingsViewModel as IDisposable)?.Dispose();
-            (_nowPlayingViewModel as IDisposable)?.Dispose();
-            (_historyViewModel as IDisposable)?.Dispose();
-            (_torrentsViewModel as IDisposable)?.Dispose();
-            (_seasonalViewModel as IDisposable)?.Dispose();
-            (_analyticsViewModel as IDisposable)?.Dispose();
-            (_updateDialog as IDisposable)?.Dispose();
+            foreach (var vm in _cachedVms)
+            {
+                (vm as IDisposable)?.Dispose();
+            }
+
+            (UpdateDialog as IDisposable)?.Dispose();
 
             WeakReferenceMessenger.Default.UnregisterAll(this);
         }

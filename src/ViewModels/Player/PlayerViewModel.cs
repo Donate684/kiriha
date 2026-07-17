@@ -84,6 +84,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     };
 
     [ObservableProperty] private string _videoUrl = string.Empty;
+    [ObservableProperty] private string _originalTitle = string.Empty;
     [ObservableProperty] private string _animeTitle = string.Empty;
     [ObservableProperty] private string _animeTitleRu = string.Empty;
     [ObservableProperty] private string _animeTitleEn = string.Empty;

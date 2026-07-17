@@ -80,7 +80,8 @@ public partial class AnimeListView : UserControl
     {
         base.OnLoaded(e);
 
-        var settings = App.Services.GetRequiredService<Kiriha.Services.Data.SettingsService>();
+        if (DataContext is not AnimeListViewModel vm) return;
+        var settings = vm.SettingsService;
         
         // Ensure ItemsRepeater uses the Poster First template
         if (_gridRepeater != null && this.TryFindResource("CardTemplatePosterFirst", this.ActualThemeVariant, out var resource) && resource is IDataTemplate dt)
@@ -203,12 +204,14 @@ public partial class AnimeListView : UserControl
         // async void event handler: any leaked exception kills the process. Wrap defensively.
         try
         {
-            if (sender is Control c && c.DataContext is AnimeItem item)
+            if (sender is Control c && c.DataContext is Models.AnimeItem item)
             {
-                if (await App.Services.GetRequiredService<Kiriha.Core.Dialogs.IDialogService>().ShowAnimeDetailsAsync(this, item))
+                if (DataContext is AnimeListViewModel vm)
                 {
-                    if (DataContext is AnimeListViewModel vm)
+                    if (await vm.DialogService.ShowAnimeDetailsAsync(this, item))
                     {
+                        // The details dialog might have mutated the item's Status or Rewatching state.
+                        // Refresh the view model to apply filters and counts.
                         vm.RefreshAfterDetailsEdit();
                     }
                 }

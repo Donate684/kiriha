@@ -181,7 +181,7 @@ public partial class AnimeListView
             Background = Brushes.Transparent
         });
 
-        if (App.Services.GetService(typeof(Kiriha.Services.Data.ShikiMetadataService)) is Kiriha.Services.Data.ShikiMetadataService shiki)
+        if (DataContext is AnimeListViewModel vm && vm.ShikiMetadataService is { } shiki)
         {
             var tasks = releases.Select(r => shiki.EnsureLocalizedAsync(r.Item));
             _ = Task.WhenAll(tasks);

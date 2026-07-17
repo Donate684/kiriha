@@ -325,6 +325,14 @@
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding EnableBackgroundMetadataFetch}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
                     </Grid>
+                    <Border Classes="Divider"/>
+                    <Grid Classes="Row" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="Title" Text="Запись логов"/>
+                            <TextBlock Classes="Sub" Text="Вести лог работы приложения в файл (нужно для отладки)"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding EnableLogging}" OnContent="{DynamicResource l.common.status.on}" OffContent="{DynamicResource l.common.status.off}"/>
+                    </Grid>
                     <!-- invisible spacer to compensate viewport/visible area mismatch -->
                     <Border Height="110" IsHitTestVisible="False"/>
             </StackPanel>

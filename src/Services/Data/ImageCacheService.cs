@@ -27,7 +27,7 @@ public class ImageCacheService : IDisposable
 {
     private readonly string CacheRoot = Kiriha.Core.Platform.PathHelper.GetImageCachePath();
 
-    private readonly HttpClient _client;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IBackgroundTaskSupervisor _backgroundTasks;
     private readonly IUiDispatcher _uiDispatcher;
 
@@ -49,8 +49,7 @@ public class ImageCacheService : IDisposable
     {
         _backgroundTasks = backgroundTasks;
         _uiDispatcher = uiDispatcher;
-        _client = httpClientFactory.CreateClient();
-        _client.DefaultRequestHeaders.UserAgent.ParseAdd(Kiriha.Core.AppInfo.UserAgent);
+        _httpClientFactory = httpClientFactory;
 
         if (!Directory.Exists(CacheRoot))
         {
@@ -85,12 +84,12 @@ public class ImageCacheService : IDisposable
                 var fileInfo = new FileInfo(candidatePath);
                 if (fileInfo.Length > 0)
                 {
-                    try { fileInfo.LastWriteTime = DateTime.Now; } catch { }
+                    try { fileInfo.LastWriteTime = DateTime.Now; } catch (Exception ex) { Log.Debug(ex, "Failed to update LastWriteTime for {FilePath}", localPath); }
                     localPath = candidatePath;
                 }
                 else
                 {
-                    try { fileInfo.Delete(); } catch { }
+                    try { fileInfo.Delete(); } catch (Exception ex) { Log.Debug(ex, "Failed to delete corrupted file {FilePath}", localPath); }
                     localPath = await GetLocalPathOrDownload(url, ct);
                 }
             }
@@ -205,7 +204,7 @@ public class ImageCacheService : IDisposable
         {
             var fileInfo = new FileInfo(localPath);
             if (fileInfo.Length > 0) return localPath;
-            try { fileInfo.Delete(); } catch { }
+            try { fileInfo.Delete(); } catch (Exception ex) { Log.Debug(ex, "Failed to delete old file {FilePath}", localPath); }
         }
 
         int retryCount = 2;
@@ -220,19 +219,21 @@ public class ImageCacheService : IDisposable
                     {
                         var fileInfo = new FileInfo(localPath);
                         if (fileInfo.Length > 0) return localPath;
-                        try { fileInfo.Delete(); } catch { }
+                        try { fileInfo.Delete(); } catch (Exception ex) { Log.Debug(ex, "Failed to delete file {FilePath} on collision", localPath); }
                     }
 
                     if (File.Exists(tmpPath))
                     {
-                        try { File.Delete(tmpPath); } catch { }
+                        try { File.Delete(tmpPath); } catch (Exception ex) { Log.Debug(ex, "Failed to delete temp file {TmpPath} after copy error", tmpPath); }
                     }
 
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     cts.CancelAfter(TimeSpan.FromSeconds(30));
                     try
                     {
-                        var bytes = await _client.GetByteArrayAsync(url, cts.Token);
+                        using var client = _httpClientFactory.CreateClient();
+                        client.DefaultRequestHeaders.UserAgent.ParseAdd(Kiriha.Core.AppInfo.UserAgent);
+                        var bytes = await client.GetByteArrayAsync(url, cts.Token);
                         await File.WriteAllBytesAsync(tmpPath, bytes, cts.Token);
                         
                         File.Move(tmpPath, localPath, true);
@@ -242,7 +243,7 @@ public class ImageCacheService : IDisposable
                     {
                         if (File.Exists(tmpPath))
                         {
-                            try { File.Delete(tmpPath); } catch { }
+                            try { File.Delete(tmpPath); } catch (Exception ex) { Log.Debug(ex, "Failed to delete temp file {TmpPath} in finally", tmpPath); }
                         }
                         throw;
                     }
@@ -300,7 +301,7 @@ public class ImageCacheService : IDisposable
                                 reclaimedSpace += len;
                                 deletedCount++;
                             }
-                            catch { /* file may have been removed concurrently */ }
+                            catch (Exception ex) { Log.Debug(ex, "File may have been removed concurrently: {FilePath}", file.FullName); }
                         }
                     }
                 }
@@ -340,15 +341,19 @@ public class ImageCacheService : IDisposable
                         file.Delete();
                         totalSize -= len;
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Log.Debug(ex, "Failed to delete file {FilePath} during cleanup", file.FullName);
                         // File locked (antivirus, in-use). Skip and keep evicting older files
                         // — we don't want a single locked file to abort the whole LRU pass.
                     }
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Cache cleanup failed");
+        }
     }
 
     private string GetHashString(string inputString)
@@ -418,8 +423,5 @@ public class ImageCacheService : IDisposable
         _downloadSemaphore.Dispose();
         _decodeSemaphore.Dispose();
         _memCache.Clear();
-        // NOTE: _client comes from IHttpClientFactory.CreateClient(); the factory
-        // owns the underlying HttpMessageHandler lifetime. Disposing it here is
-        // an antipattern that can lead to ObjectDisposedException on shared handlers.
     }
 }

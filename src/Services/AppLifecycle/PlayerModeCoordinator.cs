@@ -133,7 +133,7 @@ public sealed class PlayerModeCoordinator
         if (_app.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
             return;
 
-        var metadata = new PlayerMediaMetadata(titleRu, titleEn, episodeText, animeId);
+        var metadata = new PlayerMediaMetadata(originalTitle, titleRu, titleEn, episodeText, animeId);
         var playerWindows = desktop.Windows.OfType<PlayerWindow>().ToArray();
         var updated = false;
 
@@ -160,7 +160,7 @@ public sealed class PlayerModeCoordinator
         var metadataResolver = _serviceProvider.GetRequiredService<IPlayerMediaMetadataResolver>();
         var settingsService = _serviceProvider.GetRequiredService<SettingsService>();
         var playerVm = new PlayerViewModel(videoUrl, metadataResolver.Resolve(videoUrl), metadataResolver, settingsService);
-        return new PlayerWindow { DataContext = playerVm };
+        return new PlayerWindow(settingsService) { DataContext = playerVm };
     }
 
     private static string? GetArgValue(string[] args, string name)

@@ -60,7 +60,7 @@ public partial class SettingsViewModel
     private async Task ManagePlayers()
     {
         using var viewModel = new PlayerSelectionViewModel(_anisthesiaService, _settingsService);
-        var window = new PlayerSelectionWindow
+        var window = new PlayerSelectionWindow(_settingsService)
         {
             DataContext = viewModel
         };

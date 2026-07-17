@@ -33,6 +33,7 @@ public class TrackingService : IDisposable
     private readonly DiscordService _discordService;
     private readonly IScrobbleService _scrobbleService;
     private readonly IUiDispatcher _uiDispatcher;
+    private readonly IEnumerable<ITrackerService> _trackers;
 
     public event EventHandler<ParsedMedia?>? MediaChanged;
     public event EventHandler<AnimeItem?>? AnimeMatched;
@@ -56,7 +57,8 @@ public class TrackingService : IDisposable
         SettingsService settingsService,
         DiscordService discordService,
         IScrobbleService scrobbleService,
-        IUiDispatcher uiDispatcher)
+        IUiDispatcher uiDispatcher,
+        IEnumerable<ITrackerService> trackers)
     {
         _anisthesiaService = anisthesiaService;
         _mappingService = mappingService;
@@ -65,6 +67,7 @@ public class TrackingService : IDisposable
         _discordService = discordService;
         _scrobbleService = scrobbleService;
         _uiDispatcher = uiDispatcher;
+        _trackers = trackers;
 
         _anisthesiaService.MediaDetected += OnMediaDetected;
         _anisthesiaService.MediaCleared += OnMediaCleared;
@@ -167,17 +170,7 @@ public class TrackingService : IDisposable
                 {
                     NotifyPlayerMetadata(media, currentMatched);
 
-                    string? mainTitle = currentMatched.Title ?? currentMatched.EnglishTitle;
-                    string? subTitle = currentMatched.RussianTitle;
-
-                    string discordTitle = (!string.IsNullOrEmpty(subTitle) && !string.IsNullOrEmpty(mainTitle) && subTitle != mainTitle)
-                        ? $"{mainTitle} | {subTitle}"
-                        : (!string.IsNullOrEmpty(subTitle) ? subTitle : (mainTitle ?? "Anime"));
-
-                    string malUrl = $"https://myanimelist.net/anime/{currentMatched.Id}";
-                    string shikiUrl = $"{ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{currentMatched.Id}";
-
-                    _discordService.UpdatePresence(discordTitle, media.Episode, currentMatched.TotalEpisodes, malUrl, shikiUrl, media.Position, media.Duration, currentMatched.MainPictureUrl, media.IsPlaying);
+                    UpdateDiscordPresence(media, currentMatched);
                 }
             }
             return;
@@ -198,12 +191,38 @@ public class TrackingService : IDisposable
             var userList = await _uiDispatcher.InvokeAsync(() => _animeService.Collection.ToList());
             var matched = userList.FirstOrDefault(x => x.Id == animeId);
 
+            if (matched == null)
+            {
+                var activeTracker = _trackers.FirstOrDefault(t => t.IsEnabled);
+                if (activeTracker != null)
+                {
+                    try
+                    {
+                        var fetched = await activeTracker.GetAnimeDetailsAsync(animeId);
+                        if (fetched != null)
+                        {
+                            matched = fetched;
+                            matched.Status = UserAnimeStatus.None; // Ensure it's not scrobbled or auto-added incorrectly
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to fetch anime details for ID {AnimeId}", animeId);
+                    }
+                }
+            }
+
             ParsedMedia? cur;
             lock (_state) cur = _currentMedia;
             if (!IsSameMedia(cur, media)) return;
 
             if (matched != null)
             {
+                if (matched.TotalEpisodes <= 1 && string.IsNullOrWhiteSpace(media.Episode))
+                {
+                    media.Episode = "1";
+                }
+
                 NotifyPlayerMetadata(media, matched);
 
                 bool isValid;
@@ -221,7 +240,9 @@ public class TrackingService : IDisposable
                     AnimeMatched?.Invoke(this, matched);
 
                     UpdateDiscordPresence(media, matched);
-                    _scrobbleService.StartScrobble(media, matched);
+                    
+                    if (matched.Status != UserAnimeStatus.None)
+                        _scrobbleService.StartScrobble(media, matched);
                 }
             }
             else
@@ -389,7 +410,33 @@ public class TrackingService : IDisposable
             if (malId.HasValue)
             {
                 var matched = userList.FirstOrDefault(x => x.Id == malId.Value);
+
+                if (matched == null)
+                {
+                    var activeTracker = _trackers.FirstOrDefault(t => t.IsEnabled);
+                    if (activeTracker != null)
+                    {
+                        try
+                        {
+                            var fetched = await activeTracker.GetAnimeDetailsAsync(malId.Value);
+                            if (fetched != null)
+                            {
+                                matched = fetched;
+                                matched.Status = UserAnimeStatus.None; // Ensure it's not scrobbled or auto-added incorrectly
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warning(ex, "Failed to fetch anime details for ID {AnimeId}", malId.Value);
+                        }
+                    }
+                }
                 
+                if (matched != null && matched.TotalEpisodes <= 1 && string.IsNullOrWhiteSpace(media.Episode))
+                {
+                    media.Episode = "1";
+                }
+
                 bool isValid;
                 lock (_state)
                 {
@@ -408,18 +455,10 @@ public class TrackingService : IDisposable
                 {
                     NotifyPlayerMetadata(media, matched);
 
-                    string? mainTitle = matched.Title ?? matched.EnglishTitle;
-                    string? subTitle = matched.RussianTitle;
-
-                    string discordTitle = (!string.IsNullOrEmpty(subTitle) && !string.IsNullOrEmpty(mainTitle) && subTitle != mainTitle)
-                        ? $"{mainTitle} | {subTitle}"
-                        : (!string.IsNullOrEmpty(subTitle) ? subTitle : (mainTitle ?? "Anime"));
-
-                    string malUrl = $"https://myanimelist.net/anime/{matched.Id}";
-                    string shikiUrl = $"{ShikiEndpoints.WebsiteUrl(_settingsService.Current.Api.ShikiMirror)}{matched.Id}";
-
-                    _discordService.UpdatePresence(discordTitle, media.Episode, matched.TotalEpisodes, malUrl, shikiUrl, media.Position, media.Duration, matched.MainPictureUrl, media.IsPlaying);
-                    _scrobbleService.StartScrobble(media, matched);
+                    UpdateDiscordPresence(media, matched);
+                    
+                    if (matched.Status != UserAnimeStatus.None)
+                        _scrobbleService.StartScrobble(media, matched);
                 }
                 else
                 {

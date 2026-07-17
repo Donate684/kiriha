@@ -67,7 +67,7 @@ public class FaviconService : IDisposable
         if (string.IsNullOrEmpty(host)) return null;
 
         var dir = PathHelper.GetCustomIconsPath();
-        try { Directory.CreateDirectory(dir); } catch { /* best-effort */ }
+        try { Directory.CreateDirectory(dir); } catch (Exception ex) { Log.Debug(ex, "Failed to create directory {Dir} for custom favicons", dir); }
 
         // Sanitize host into a stable filename component.
         var safeHost = SanitizeHost(host);

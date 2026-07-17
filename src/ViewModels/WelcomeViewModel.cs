@@ -12,6 +12,7 @@ using Kiriha.ViewModels.Torrents;
 using Kiriha.ViewModels.Search;
 using System;
 using System.ComponentModel;
+using Kiriha.Services.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Kiriha.ViewModels;
@@ -22,10 +23,14 @@ public partial class WelcomeViewModel : ViewModelBase, IDisposable
     private bool _isLoading = true;
 
     private readonly AnimeListViewModel _animeListViewModel;
+    private readonly SettingsService _settingsService;
 
-    public WelcomeViewModel(AnimeListViewModel animeListViewModel)
+    public SettingsService SettingsService => _settingsService;
+
+    public WelcomeViewModel(AnimeListViewModel animeListViewModel, SettingsService settingsService)
     {
         _animeListViewModel = animeListViewModel;
+        _settingsService = settingsService;
         _isLoading = _animeListViewModel.IsBusy;
         _animeListViewModel.PropertyChanged += OnAnimeListPropertyChanged;
     }

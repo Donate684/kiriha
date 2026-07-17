@@ -27,9 +27,16 @@ public partial class PlayerWindow : Window
 
     public MpvPlayer? Player => _player;
     
+    private readonly SettingsService? _settingsService;
+
     public PlayerWindow()
     {
         InitializeComponent();
+    }
+
+    public PlayerWindow(SettingsService settingsService) : this()
+    {
+        _settingsService = settingsService;
     }
 
     protected override void OnOpened(EventArgs e)
@@ -39,7 +46,8 @@ public partial class PlayerWindow : Window
         try
         {
             Log.Information("Initializing MPV player with libmpv render API");
-            var playerSettings = App.Services.GetRequiredService<SettingsService>().Current.Player;
+            var playerSettings = _settingsService?.Current.Player;
+            if (playerSettings == null) return;
             var mpvOptions = new MpvOptions(
                 playerSettings.MpvHwdec,
                 playerSettings.MpvVideoOutput,

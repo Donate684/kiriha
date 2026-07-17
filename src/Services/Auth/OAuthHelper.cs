@@ -85,7 +85,7 @@ public static class OAuthHelper
         }
         finally
         {
-            try { listener.Stop(); } catch { }
+            try { listener.Stop(); } catch (Exception ex) { Log.Debug(ex, "Failed to stop HttpListener"); }
         }
 
         return null;

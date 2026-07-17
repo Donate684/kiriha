@@ -17,9 +17,11 @@ using Kiriha.Services.Data;
 using Kiriha.Services.Tracking.Anisthesia;
 using Serilog;
 
+using Microsoft.Extensions.Hosting;
+
 namespace Kiriha.Services.Tracking;
 
-public class AnisthesiaService : IDisposable
+public class AnisthesiaService : IHostedService, IDisposable
 {
     private readonly SettingsService _settingsService;
     private readonly SmtcService _smtcService;
@@ -64,7 +66,10 @@ public class AnisthesiaService : IDisposable
         }
 
         _detectionManager = new DetectionManager(_availablePlayers, _settingsService);
+    }
 
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
         _backgroundTasks.Run("AnisthesiaService.PollingLoop", async ct =>
         {
             try
@@ -77,6 +82,22 @@ public class AnisthesiaService : IDisposable
                 // Expected on cancellation
             }
         });
+
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!_disposeCts.IsCancellationRequested)
+            {
+                _disposeCts.Cancel();
+            }
+        }
+        catch (ObjectDisposedException) { }
+
+        return Task.CompletedTask;
     }
 
     private async Task PollingLoopAsync(CancellationToken ct)
