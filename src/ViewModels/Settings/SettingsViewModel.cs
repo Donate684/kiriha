@@ -248,6 +248,7 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly AnisthesiaService _anisthesiaService;
     private readonly DiscordService _discordService;
     private readonly SystemIntegrationService _systemIntegrationService;
+    private readonly FaviconService _faviconService;
 
     public SettingsViewModel(
         SettingsService settingsService,
@@ -263,7 +264,8 @@ public partial class SettingsViewModel : ViewModelBase
         ImageCacheService imageCacheService,
         MappingService mappingService,
         SeasonalViewModel seasonalViewModel,
-        SystemIntegrationService systemIntegrationService)
+        SystemIntegrationService systemIntegrationService,
+        FaviconService faviconService)
     {
         _settingsService = settingsService;
         _authService = authService;
@@ -279,6 +281,7 @@ public partial class SettingsViewModel : ViewModelBase
         _mappingService = mappingService;
         _seasonalViewModel = seasonalViewModel;
         _systemIntegrationService = systemIntegrationService;
+        _faviconService = faviconService;
 
         // Update state
         IsUpdateAvailable = _updateService.IsUpdateAvailable;

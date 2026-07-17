@@ -112,6 +112,7 @@ public sealed class InternalPlayerStateClient : IDisposable
         }
 
         DisposeConnection();
+        _writeGate.Dispose();
     }
 
     private void DisposeConnection()

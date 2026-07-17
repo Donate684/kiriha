@@ -29,6 +29,7 @@ public class AnisthesiaService : IDisposable
     private readonly List<AnisthesiaPlayer> _availablePlayers;
     private HashSet<string> _runningPlayerNames = new();
     private uint _lastTrackedPid;
+    private readonly CancellationTokenSource _disposeCts = new();
 
     public event EventHandler<ParsedMedia>? MediaDetected;
     public event EventHandler? MediaCleared;
@@ -64,7 +65,18 @@ public class AnisthesiaService : IDisposable
 
         _detectionManager = new DetectionManager(_availablePlayers, _settingsService);
 
-        _backgroundTasks.Run("AnisthesiaService.PollingLoop", PollingLoopAsync);
+        _backgroundTasks.Run("AnisthesiaService.PollingLoop", async ct =>
+        {
+            try
+            {
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, _disposeCts.Token);
+                await PollingLoopAsync(linkedCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected on cancellation
+            }
+        });
     }
 
     private async Task PollingLoopAsync(CancellationToken ct)
@@ -157,5 +169,19 @@ public class AnisthesiaService : IDisposable
 
     public void Dispose()
     {
+        try
+        {
+            if (!_disposeCts.IsCancellationRequested)
+            {
+                _disposeCts.Cancel();
+            }
+        }
+        catch (ObjectDisposedException) { }
+        
+        _disposeCts.Dispose();
+
+        MediaDetected = null;
+        MediaCleared = null;
+        RunningPlayersChanged = null;
     }
 }

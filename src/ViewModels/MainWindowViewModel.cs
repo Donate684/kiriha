@@ -32,7 +32,7 @@ using Kiriha.Utils.UI;
 
 namespace Kiriha.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationMessage>
+public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationMessage>, IDisposable
 {
     [ObservableProperty]
     private bool _isPaneOpen = true;
@@ -315,5 +315,39 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
         {
             Serilog.Log.Error(ex, "Failed to launch player process");
         }
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            if (CurrentPage is IDisposable disposable && 
+                CurrentPage != _animeListViewModel && 
+                CurrentPage != _nowPlayingViewModel &&
+                CurrentPage != _historyViewModel &&
+                CurrentPage != _torrentsViewModel &&
+                CurrentPage != _seasonalViewModel &&
+                CurrentPage != _analyticsViewModel)
+            {
+                disposable.Dispose();
+            }
+
+            (_animeListViewModel as IDisposable)?.Dispose();
+            (_settingsViewModel as IDisposable)?.Dispose();
+            (_nowPlayingViewModel as IDisposable)?.Dispose();
+            (_historyViewModel as IDisposable)?.Dispose();
+            (_torrentsViewModel as IDisposable)?.Dispose();
+            (_seasonalViewModel as IDisposable)?.Dispose();
+            (_analyticsViewModel as IDisposable)?.Dispose();
+            (_updateDialog as IDisposable)?.Dispose();
+
+            WeakReferenceMessenger.Default.UnregisterAll(this);
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 }

@@ -107,10 +107,18 @@ public class MpvPlayer : IDisposable
 
                 _renderUpdateCallback = OnRenderUpdate;
                 _renderUpdateHandle = GCHandle.Alloc(this);
-                LibMpvNative.mpv_render_context_set_update_callback(
-                    _renderContext,
-                    _renderUpdateCallback,
-                    GCHandle.ToIntPtr(_renderUpdateHandle));
+                try
+                {
+                    LibMpvNative.mpv_render_context_set_update_callback(
+                        _renderContext,
+                        _renderUpdateCallback,
+                        GCHandle.ToIntPtr(_renderUpdateHandle));
+                }
+                catch
+                {
+                    _renderUpdateHandle.Free();
+                    throw;
+                }
             }
             finally
             {
@@ -456,13 +464,18 @@ public class MpvPlayer : IDisposable
 
         Task.Run(() =>
         {
-            MpvPlayerLifecycle.Dispose(
-                handle,
-                _commandQueue,
-                _eventLoop,
-                UnobservePlaybackProperties);
-                
-            _renderGate.Dispose();
+            try
+            {
+                MpvPlayerLifecycle.Dispose(
+                    handle,
+                    _commandQueue,
+                    _eventLoop,
+                    UnobservePlaybackProperties);
+            }
+            finally
+            {
+                _renderGate.Dispose();
+            }
         });
     }
 

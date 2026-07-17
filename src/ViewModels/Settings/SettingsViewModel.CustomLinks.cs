@@ -113,7 +113,7 @@ public partial class SettingsViewModel
             try
             {
                 if (delayMs > 0) await Task.Delay(delayMs, token);
-                var path = await FaviconService.TryGetFaviconAsync(template, token);
+                var path = await _faviconService.TryGetFaviconAsync(template, token);
                 if (token.IsCancellationRequested) return;
                 if (string.IsNullOrEmpty(path)) return;
 

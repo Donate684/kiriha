@@ -139,6 +139,9 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty] private bool _isSearchPanelOpen;
 
+    private CancellationTokenSource? _searchCts;
+    private readonly CancellationTokenSource _disposeCts = new();
+
     public NowPlayingViewModel(
         TrackingService trackingService, 
         SettingsService settingsService, 
@@ -232,10 +235,18 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
     {
         if (string.IsNullOrWhiteSpace(SearchQuery)) return;
 
+        var cts = new CancellationTokenSource();
+        var oldCts = Interlocked.Exchange(ref _searchCts, cts);
+        try { oldCts?.Cancel(); } catch { }
+        oldCts?.Dispose();
+
         IsSearching = true;
         try
         {
-            var results = await _malApi.SearchAnimeAsync(SearchQuery);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, _disposeCts.Token);
+            var results = await _malApi.SearchAnimeAsync(SearchQuery, linkedCts.Token);
+            if (linkedCts.Token.IsCancellationRequested) return;
+
             Suggestions.Clear();
 
             foreach (var r in results)
@@ -246,13 +257,18 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
             ShowSuggestions = Suggestions.Count > 0;
             OnPropertyChanged(nameof(HasSuggestions));
         }
+        catch (OperationCanceledException)
+        {
+            // Expected
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to search anime inline");
         }
         finally
         {
-            IsSearching = false;
+            if (_searchCts == cts)
+                IsSearching = false;
         }
     }
 
@@ -319,7 +335,11 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
                 // UI stayed empty whenever the DB had no Shiki row yet.
                 try
                 {
-                    await _shikiMetadataService.EnsureLocalizedAsync(anime);
+                    await _shikiMetadataService.EnsureLocalizedAsync(anime, _disposeCts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Ignore
                 }
                 catch (Exception ex)
                 {
@@ -469,5 +489,10 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
         _trackingService.AnimeMatched -= OnAnimeMatched;
         _trackingService.CountdownUpdated -= OnCountdownUpdated;
         _trackingService.StatusUpdated -= OnStatusUpdated;
+
+        try { _searchCts?.Cancel(); } catch { }
+        try { _searchCts?.Dispose(); } catch { }
+        try { _disposeCts.Cancel(); } catch { }
+        try { _disposeCts.Dispose(); } catch { }
     }
 }

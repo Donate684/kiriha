@@ -417,6 +417,7 @@ public class ImageCacheService : IDisposable
     {
         _downloadSemaphore.Dispose();
         _decodeSemaphore.Dispose();
+        _memCache.Clear();
         // NOTE: _client comes from IHttpClientFactory.CreateClient(); the factory
         // owns the underlying HttpMessageHandler lifetime. Disposing it here is
         // an antipattern that can lead to ObjectDisposedException on shared handlers.

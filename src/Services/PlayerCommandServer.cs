@@ -86,7 +86,17 @@ public sealed class PlayerCommandServer : IDisposable
             _currentPipe?.Dispose();
             _currentPipe = null;
         }
-        try { _loopTask?.Wait(500); } catch { }
-        _cts.Dispose();
+        
+        try
+        {
+            if (_loopTask?.Wait(500) != false)
+            {
+                _cts.Dispose();
+            }
+        }
+        catch
+        {
+            _cts.Dispose();
+        }
     }
 }

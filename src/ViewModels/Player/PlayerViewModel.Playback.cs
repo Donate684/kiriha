@@ -201,8 +201,12 @@ public partial class PlayerViewModel
         
         try { _timelinePreview.Dispose(); } catch { }
         
-        try { _timer?.Stop(); } catch { }
-        _timer = null;
+        if (_timer != null)
+        {
+            _timer.Tick -= OnTimerTick;
+            try { _timer.Stop(); } catch { }
+            _timer = null;
+        }
         
         try { Overlay.Dispose(); } catch { }
         
@@ -211,9 +215,9 @@ public partial class PlayerViewModel
         _playback.PlaybackStateChanged -= OnPlayerPlaybackStateChanged;
         _playback.TracksChanged -= OnPlayerTracksChanged;
         
-        try { _playback.Detach(); } catch { }
-        
         try { _statePublisher.PublishClosed(); } catch { }
+        
+        try { _playback.Detach(); } catch { }
         try { _statePublisher.Dispose(); } catch { }
     }
 

@@ -25,12 +25,12 @@ namespace Kiriha.Core;
 /// reuse the same icon file. This file is NOT keyed by link id, so removing
 /// a link must NOT delete the icon (other links may still rely on it).
 /// </summary>
-public static class FaviconService
+public class FaviconService : IDisposable
 {
     // Reasonable defaults: short timeout so a slow / dead host doesn't keep
     // a debounced fetch alive forever, and a small concurrency cap so we
     // don't fire dozens of requests if the user pastes many URLs in a row.
-    private static readonly HttpClient _http = new(new HttpClientHandler
+    private readonly HttpClient _http = new(new HttpClientHandler
     {
         AllowAutoRedirect = true,
     })
@@ -38,7 +38,7 @@ public static class FaviconService
         Timeout = TimeSpan.FromSeconds(8),
     };
 
-    private static readonly SemaphoreSlim _gate = new(4);
+    private readonly SemaphoreSlim _gate = new(4);
 
     /// <summary>
     /// Tries to fetch a favicon for the host of <paramref name="urlTemplate"/>.
@@ -46,7 +46,7 @@ public static class FaviconService
     /// parsing so e.g. <c>https://x.com/?q={title}</c> still yields host
     /// <c>x.com</c>.
     /// </summary>
-    public static async Task<string?> TryGetFaviconAsync(string urlTemplate, CancellationToken ct = default)
+    public async Task<string?> TryGetFaviconAsync(string urlTemplate, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(urlTemplate)) return null;
 
@@ -136,5 +136,11 @@ public static class FaviconService
         var chars = host.ToLowerInvariant().Select(c =>
             char.IsLetterOrDigit(c) || c == '.' || c == '-' ? c : '_').ToArray();
         return new string(chars);
+    }
+
+    public void Dispose()
+    {
+        _gate.Dispose();
+        _http.Dispose();
     }
 }

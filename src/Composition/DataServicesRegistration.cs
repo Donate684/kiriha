@@ -74,6 +74,7 @@ internal static class DataServicesRegistration
         services.AddSingleton<MappingService>();
         services.AddSingleton<SystemIntegrationService>();
         services.AddSingleton<IPlayerMediaMetadataResolver, PlayerMediaMetadataResolver>();
+        services.AddSingleton<FaviconService>();
 
         return services;
     }
