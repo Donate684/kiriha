@@ -29,6 +29,9 @@ public sealed class NowPlayingIntegrationTests
     {
         // Use the real DI container to get the actual MappingService used by TrackingService/NowPlaying
         var provider = AppStartupCoordinator.BuildServiceProvider(false);
+        var dbInit = provider.GetRequiredService<DatabaseInitializer>();
+        await dbInit.InitializeAsync();
+
         var mappingService = provider.GetRequiredService<MappingService>();
         var userRepo = provider.GetRequiredService<IUserAnimeRepository>();
 
