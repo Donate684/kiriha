@@ -54,6 +54,7 @@ public class AnimeService
     private readonly HistoryService _historyService;
     private readonly IBackgroundTaskSupervisor _backgroundTasks;
     private readonly IUiDispatcher _uiDispatcher;
+    private readonly RecognitionCache _recognitionCache;
     private readonly TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _initStarted; // Interlocked guard for InitializeAsync
     private int _syncing;     // Interlocked guard for SyncWithTrackersAsync
@@ -83,7 +84,8 @@ public class AnimeService
         SettingsService settingsService,
         HistoryService historyService,
         IBackgroundTaskSupervisor backgroundTasks,
-        IUiDispatcher uiDispatcher)
+        IUiDispatcher uiDispatcher,
+        RecognitionCache recognitionCache)
     {
         _userAnimeRepo = userAnimeRepo;
         _syncTaskRepo = syncTaskRepo;
@@ -94,6 +96,7 @@ public class AnimeService
         _historyService = historyService;
         _backgroundTasks = backgroundTasks;
         _uiDispatcher = uiDispatcher;
+        _recognitionCache = recognitionCache;
     }
 
     public async Task InitializeAsync()
@@ -129,6 +132,10 @@ public class AnimeService
                 else
                     Collection.Clear();
             });
+            
+            // Build the recognition cache using background thread
+            await Task.Run(() => _recognitionCache.BuildIndex(Collection));
+
             Log.Information(
                 "StartupTiming: cached anime applied to UI collection count={Count} elapsedMs={ElapsedMs}",
                 Collection.Count,
@@ -203,6 +210,9 @@ public class AnimeService
             // the UI is iterating concurrently. ObservableCollection is not thread-safe.
             var snapshot = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Anime).ToList());
             await _userAnimeRepo.SyncFromRemoteAsync(snapshot, new[] { MediaKind.Anime });
+            
+            // Re-build recognition index after sync
+            await Task.Run(() => _recognitionCache.BuildIndex(Collection));
             
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
             return true;

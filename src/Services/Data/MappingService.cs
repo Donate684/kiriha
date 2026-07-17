@@ -21,16 +21,15 @@ public partial class MappingService
     private readonly MalApiService _malApi;
     private readonly ManualMappingService _manualMapping;
     private readonly Repositories.IMalSearchCacheRepository _malSearchCache;
+    private readonly RecognitionCache _recognitionCache;
     private readonly ConcurrentDictionary<string, int> _sessionCache = new();
-    private readonly ConcurrentDictionary<string, List<WeightedMatch>> _recognitionCache = new();
 
-    private readonly record struct WeightedMatch(int Id, float Weight);
-
-    public MappingService(MalApiService malApi, ManualMappingService manualMapping, Repositories.IMalSearchCacheRepository malSearchCache)
+    public MappingService(MalApiService malApi, ManualMappingService manualMapping, Repositories.IMalSearchCacheRepository malSearchCache, RecognitionCache recognitionCache)
     {
         _malApi = malApi;
         _manualMapping = manualMapping;
         _malSearchCache = malSearchCache;
+        _recognitionCache = recognitionCache;
     }
 
     public void ClearRecognitionCaches()
@@ -91,7 +90,7 @@ public partial class MappingService
     {
         if (string.IsNullOrWhiteSpace(title)) return null;
 
-        var (cleanTitle, searchTitle, parsedSeason) = ParseAnimeTitle(title);
+        var (cleanTitle, searchTitle, parsedSeason, parsedEpisode) = ParseAnimeTitle(title);
         
         string normalized = cleanTitle.Trim().ToLowerInvariant();
         string normalizedWithSeason = searchTitle.Trim().ToLowerInvariant();
@@ -112,11 +111,16 @@ public partial class MappingService
         // 2. Recognition Cache
         string normSearch = Normalize(searchTitle);
 
-        if (_recognitionCache.TryGetValue(normSearch, out var cachedMatches))
+        var cachedMatches = _recognitionCache.Lookup(normSearch);
+        if (cachedMatches != null)
         {
             var matches = cachedMatches.OrderByDescending(m => m.Weight).ToList();
-            if (matches.FirstOrDefault() is { Id: not 0 } match)
+            foreach (var match in matches)
             {
+                if (match.Id == 0) continue;
+                var anime = userList.FirstOrDefault(x => x.Id == match.Id);
+                if (anime != null && !IsValidMatch(anime, parsedEpisode)) continue;
+                
                 _sessionCache[normalizedWithSeason] = match.Id;
                 return match.Id;
             }
@@ -140,7 +144,7 @@ public partial class MappingService
                 string.Equals(x.RussianTitle, cleanTitle, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (localMatch != null)
+        if (localMatch != null && IsValidMatch(localMatch, parsedEpisode))
         {
             _sessionCache[normalizedWithSeason] = localMatch.Id;
             return localMatch.Id;
@@ -166,13 +170,21 @@ public partial class MappingService
                 Normalize(x.RussianTitle ?? "") == normTitle);
         }
 
-        if (localMatch != null)
+        if (localMatch != null && IsValidMatch(localMatch, parsedEpisode))
         {
             _sessionCache[normalizedWithSeason] = localMatch.Id;
             return localMatch.Id;
         }
 
         return null;
+    }
+
+    private bool IsValidMatch(AnimeItem match, int? episodeNumber)
+    {
+        if (episodeNumber == null) return true;
+        if (match.TotalEpisodes <= 1) return true;
+        if (episodeNumber > match.TotalEpisodes) return false;
+        return true;
     }
 
     [System.Text.RegularExpressions.GeneratedRegex(@"[sS](\d{1,2})[eE]\d+|\b[sS]eason\s*(\d{1,2})\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
@@ -191,7 +203,7 @@ public partial class MappingService
         return 0;
     }
 
-    private (string CleanTitle, string SearchTitle, int ParsedSeason) ParseAnimeTitle(string title)
+    private (string CleanTitle, string SearchTitle, int ParsedSeason, int? ParsedEpisode) ParseAnimeTitle(string title)
     {
         var parsed = Kiriha.Utils.Parsing.AnimeParseCache.Parse(title);
         var titleElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
@@ -202,6 +214,12 @@ public partial class MappingService
         var episodeElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementEpisodeNumber);
 
         int parsedSeason = ExtractSeason(title, seasonElement);
+        int? parsedEpisode = null;
+        if (episodeElement != null && int.TryParse(episodeElement.Value, out int ep))
+        {
+            parsedEpisode = ep;
+        }
+
         string cleanTitle = titleElement != null ? titleElement.Value : Path.GetFileNameWithoutExtension(title);
         
         if (episodeElement == null)
@@ -223,18 +241,19 @@ public partial class MappingService
         if (searchTitle == cleanTitle && parsedSeason > 1)
             searchTitle = $"{cleanTitle} Season {parsedSeason}";
 
-        return (cleanTitle, searchTitle, parsedSeason);
+        return (cleanTitle, searchTitle, parsedSeason, parsedEpisode);
     }
 
     public async Task<int?> SearchOnMalAsync(string title)
     {
-        var (cleanTitle, searchQuery, _) = ParseAnimeTitle(title);
+        var (cleanTitle, searchQuery, _, _) = ParseAnimeTitle(title);
 
         string normQuery = Normalize(searchQuery);
         if (_sessionCache.TryGetValue(normQuery, out int cachedId))
             return cachedId == 0 ? null : cachedId;
 
-        if (!_recognitionCache.IsEmpty && _recognitionCache.TryGetValue(normQuery, out var cachedMatches))
+        var cachedMatches = _recognitionCache.Lookup(normQuery);
+        if (cachedMatches != null)
         {
             var bestMatch = cachedMatches.OrderByDescending(m => m.Weight).FirstOrDefault();
             return bestMatch.Id != 0 ? bestMatch.Id : null;
@@ -315,7 +334,7 @@ public partial class MappingService
 
         var resolvedId = bestMalMatch.Result.Id;
         _sessionCache[normQuery] = resolvedId;
-        _recognitionCache[normQuery] = new List<WeightedMatch> { new(resolvedId, bestMalMatch.Score) };
+        _recognitionCache.AddMatch(normQuery, resolvedId, bestMalMatch.Score);
 
         // Persist to DB so future sessions skip the MAL round-trip.
         try { await _malSearchCache.UpsertAsync(normQuery, resolvedId, bestMalMatch.Score); }

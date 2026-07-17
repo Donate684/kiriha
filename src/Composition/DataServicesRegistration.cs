@@ -71,6 +71,7 @@ internal static class DataServicesRegistration
         services.AddSingleton<SeasonalCacheStore>();
         services.AddSingleton<HistoryService>();
         services.AddSingleton<ManualMappingService>();
+        services.AddSingleton<RecognitionCache>();
         services.AddSingleton<MappingService>();
         services.AddSingleton<SystemIntegrationService>();
         services.AddSingleton<IPlayerMediaMetadataResolver, PlayerMediaMetadataResolver>();

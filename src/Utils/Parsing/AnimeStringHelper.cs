@@ -6,6 +6,7 @@ using Kiriha.Utils.Graphs;
 using Kiriha.Utils.UI;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -51,12 +52,18 @@ public static class AnimeStringHelper
         { "(tv)", "" }
     };
 
+    private static readonly Dictionary<string, string> WapuroMap = new()
+    {
+        { "wa", "ha" }, { "e", "he" }, { "o", "wo" }
+    };
+
     // Pre-compiled Regexes for maximum performance
     private static readonly Regex SpacesRegex = new(@"\s+", RegexOptions.Compiled);
     private static readonly Regex RomanRegex;
     private static readonly Regex OrdinalRegex;
     private static readonly Regex SeasonRegex;
     private static readonly Regex GenericRegex;
+    private static readonly Regex WapuroRegex;
 
     static AnimeStringHelper()
     {
@@ -64,6 +71,7 @@ public static class AnimeStringHelper
         OrdinalRegex = BuildGroupRegex(Ordinals.Keys);
         SeasonRegex = BuildGroupRegex(SeasonsMap.Keys);
         GenericRegex = BuildGroupRegex(GenericReplacements.Keys);
+        WapuroRegex = BuildGroupRegex(WapuroMap.Keys);
     }
 
     private static Regex BuildGroupRegex(IEnumerable<string> patterns)
@@ -92,14 +100,25 @@ public static class AnimeStringHelper
         // 1. Initial cleanup and lower case
         string result = title.Trim().ToLowerInvariant();
 
+        // 1.5 Unicode Normalization
+        result = result.Normalize(NormalizationForm.FormKD);
+        var sbNorm = new StringBuilder(result.Length);
+        foreach (char c in result)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                sbNorm.Append(c);
+        }
+        result = sbNorm.ToString().Normalize(NormalizationForm.FormKC);
+
         // 2. Specific character replacements
         result = result.Replace("ō", "ou").Replace("ū", "uu")
-                       .Replace("@", "a").Replace("Ч", "x");
+                       .Replace("@", "a").Replace("×", "x").Replace("꞉", ":").Replace("Ч", "x");
 
         // 3. Batch replacements using compiled regexes
         result = ApplyGroupReplacements(result, RomanRegex, RomanNumerals);
         result = ApplyGroupReplacements(result, OrdinalRegex, Ordinals);
         result = ApplyGroupReplacements(result, SeasonRegex, SeasonsMap);
+        result = ApplyGroupReplacements(result, WapuroRegex, WapuroMap);
         result = ApplyGroupReplacements(result, GenericRegex, GenericReplacements);
 
         // 4. Punctuation removal and simplification using StringBuilder

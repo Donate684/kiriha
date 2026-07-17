@@ -156,7 +156,27 @@ public class HandleEnumerationStrategy
                 var season = elements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementAnimeSeason)?.Value;
                 var group = elements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementReleaseGroup)?.Value;
 
-                string animeTitle = titleElement != null ? titleElement.Value : System.IO.Path.GetFileNameWithoutExtension(filename);
+                string animeTitle;
+                if (titleElement != null)
+                {
+                    animeTitle = titleElement.Value;
+                }
+                else
+                {
+                    var directoryName = System.IO.Path.GetDirectoryName(file);
+                    if (!string.IsNullOrEmpty(directoryName))
+                    {
+                        string dirName = System.IO.Path.GetFileName(directoryName);
+                        var dirElements = Kiriha.Utils.Parsing.AnimeParseCache.Parse(dirName);
+                        var dirTitleElement = dirElements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
+                        animeTitle = dirTitleElement != null ? dirTitleElement.Value : dirName;
+                    }
+                    else
+                    {
+                        animeTitle = System.IO.Path.GetFileNameWithoutExtension(filename);
+                    }
+                }
+
                 string episodeTitle = string.Empty;
 
                 if (subTitleElement != null)

@@ -35,7 +35,7 @@ public sealed class MappingServiceTests
         try
         {
             var manualMapping = new ManualMappingService(path);
-            var service = new MappingService(null!, manualMapping, null!);
+            var service = new MappingService(null!, manualMapping, null!, new RecognitionCache());
 
             var userList = new List<AnimeItem>
             {
@@ -59,7 +59,7 @@ public sealed class MappingServiceTests
         try
         {
             var manualMapping = new ManualMappingService(path);
-            var service = new MappingService(null!, manualMapping, null!);
+            var service = new MappingService(null!, manualMapping, null!, new RecognitionCache());
 
             var userList = new List<AnimeItem>
             {
@@ -83,7 +83,7 @@ public sealed class MappingServiceTests
         try
         {
             var manualMapping = new ManualMappingService(path);
-            var service = new MappingService(null!, manualMapping, null!);
+            var service = new MappingService(null!, manualMapping, null!, new RecognitionCache());
 
             var userList = new List<AnimeItem>
             {
@@ -107,7 +107,7 @@ public sealed class MappingServiceTests
         try
         {
             var manualMapping = new ManualMappingService(path);
-            var service = new MappingService(null!, manualMapping, null!);
+            var service = new MappingService(null!, manualMapping, null!, new RecognitionCache());
 
             var userList = new List<AnimeItem>
             {
@@ -130,7 +130,7 @@ public sealed class MappingServiceTests
         try
         {
             var manualMapping = new ManualMappingService(path);
-            var service = new MappingService(null!, manualMapping, null!);
+            var service = new MappingService(null!, manualMapping, null!, new RecognitionCache());
 
             var userList = new List<AnimeItem>
             {
