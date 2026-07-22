@@ -20,6 +20,7 @@ public class AnimeService
     private const int MinimumStatusGuardCount = 10;
     private const int MinimumStatusDropCount = 5;
     private const double MaximumAllowedStatusDropRatio = 0.30;
+    private const double MaxAllowedTotalDropRatio = 0.70;
 
     private readonly Repositories.IUserAnimeRepository _userAnimeRepo;
     private readonly Repositories.ISyncTaskRepository _syncTaskRepo;
@@ -177,7 +178,7 @@ public class AnimeService
             // non-trivial. The user can always do a full re-sync after restart if this triggers.
             var currentItems = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Anime).ToList());
             var localCount = currentItems.Count;
-            if (localCount >= 50 && apiList.Count < localCount * 0.7)
+            if (localCount >= 50 && apiList.Count < localCount * MaxAllowedTotalDropRatio)
             {
                 Log.Warning("SyncWithTrackers: aborting - incoming list ({Incoming}) is much smaller than local cache ({Local}). Likely a partial fetch.",
                     apiList.Count, localCount);
@@ -232,7 +233,7 @@ public class AnimeService
 
             var currentItems = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Manga || x.MediaKind == MediaKind.LightNovel).ToList());
             var localCount = currentItems.Count;
-            if (localCount >= 50 && apiList.Count < localCount * 0.7)
+            if (localCount >= 50 && apiList.Count < localCount * MaxAllowedTotalDropRatio)
             {
                 Log.Warning("SyncMangaWithTrackers: aborting - incoming list ({Incoming}) is much smaller than local cache ({Local}). Likely a partial fetch.",
                     apiList.Count, localCount);

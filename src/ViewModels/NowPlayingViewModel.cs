@@ -58,7 +58,26 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
     partial void OnMatchedAnimeChanged(AnimeItem? value)
     {
         CustomShareLinks.Clear();
-        if (value == null) return;
+        
+        if (value == null)
+        {
+            _allAlternativeTitles = Array.Empty<string>();
+            return;
+        }
+
+        var list = new System.Collections.Generic.List<string>();
+        if (!string.IsNullOrEmpty(value.EnglishTitle) && value.EnglishTitle != value.Title)
+            list.Add(value.EnglishTitle);
+        if (!string.IsNullOrEmpty(value.JapaneseTitle) && value.JapaneseTitle != value.Title)
+            list.Add(value.JapaneseTitle);
+
+        foreach (var syn in value.AlternativeTitles)
+        {
+            if (syn != value.Title && !list.Contains(syn))
+                list.Add(syn);
+        }
+        _allAlternativeTitles = list;
+
         foreach (var link in _settingsService.Current.CustomLinks)
         {
             if (string.IsNullOrWhiteSpace(link.UrlTemplate)) continue;
@@ -74,26 +93,8 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
 
     public bool IsNotInList => MatchedAnime != null && MatchedAnime.Status == UserAnimeStatus.None;
 
-    public System.Collections.Generic.IEnumerable<string> AllAlternativeTitles
-    {
-        get
-        {
-            var list = new System.Collections.Generic.List<string>();
-            if (MatchedAnime == null) return list;
-
-            if (!string.IsNullOrEmpty(MatchedAnime.EnglishTitle) && MatchedAnime.EnglishTitle != MatchedAnime.Title)
-                list.Add(MatchedAnime.EnglishTitle);
-            if (!string.IsNullOrEmpty(MatchedAnime.JapaneseTitle) && MatchedAnime.JapaneseTitle != MatchedAnime.Title)
-                list.Add(MatchedAnime.JapaneseTitle);
-
-            foreach (var syn in MatchedAnime.AlternativeTitles)
-            {
-                if (syn != MatchedAnime.Title && !list.Contains(syn))
-                    list.Add(syn);
-            }
-            return list;
-        }
-    }
+    private System.Collections.Generic.IReadOnlyList<string> _allAlternativeTitles = Array.Empty<string>();
+    public System.Collections.Generic.IEnumerable<string> AllAlternativeTitles => _allAlternativeTitles;
 
     public bool HasAlternativeTitles => AllAlternativeTitles.Any();
 

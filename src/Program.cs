@@ -61,11 +61,11 @@ sealed class Program
                 if (File.Exists(settingsPath))
                 {
                     var content = File.ReadAllText(settingsPath);
-                    if (content.Contains("\"EnableLogging\": true", StringComparison.OrdinalIgnoreCase) ||
-                        content.Contains("\"EnableLogging\":true", StringComparison.OrdinalIgnoreCase))
-                    {
-                        enableLogging = true;
-                    }
+                    using var doc = System.Text.Json.JsonDocument.Parse(content);
+                    enableLogging = doc.RootElement
+                        .GetProperty("System")
+                        .GetProperty("EnableLogging")
+                        .GetBoolean();
                 }
             }
             catch { }

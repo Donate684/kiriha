@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,8 @@ namespace Kiriha.Services.Tracking.Anisthesia.Strategies;
 
 public class HandleEnumerationStrategy
 {
+    private static readonly FrozenSet<string> _videoExtensions = new[] { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".ogm" }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
     // P/Invoke constants and structures
     private const int SystemExtendedHandleInformation = 64;
     private const int STATUS_INFO_LENGTH_MISMATCH = unchecked((int)0xC0000004);
@@ -160,13 +163,11 @@ public class HandleEnumerationStrategy
     public static ParsedMedia? Apply(AnisthesiaPlayer player, uint pid)
     {
         var files = GetOpenFiles(pid);
-        // Video file extensions to filter
-        var videoExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".ogm" };
 
         foreach (var file in files)
         {
             string ext = System.IO.Path.GetExtension(file);
-            if (videoExtensions.Contains(ext))
+            if (_videoExtensions.Contains(ext))
             {
                 string filename = System.IO.Path.GetFileName(file);
 

@@ -9,7 +9,7 @@ namespace Kiriha;
 
 public partial class App : Application
 {
-    private IServiceProvider _serviceProvider = null!;
+    public IServiceProvider ServiceProvider { get; private set; } = null!;
     private AppStartupCoordinator? _startupCoordinator;
     private PlayerModeCoordinator? _playerModeCoordinator;
     private ShutdownCoordinator? _shutdownCoordinator;
@@ -24,13 +24,13 @@ public partial class App : Application
         var args = Environment.GetCommandLineArgs();
         var isPlayerMode = PlayerModeCoordinator.IsPlayerMode(args);
 
-        _serviceProvider = AppStartupCoordinator.BuildServiceProvider(isPlayerMode);
-        _shutdownCoordinator = new ShutdownCoordinator(_serviceProvider);
-        _trayService = new TrayService(this, _serviceProvider, _shutdownCoordinator);
+        ServiceProvider = AppStartupCoordinator.BuildServiceProvider(isPlayerMode);
+        _shutdownCoordinator = new ShutdownCoordinator(ServiceProvider);
+        _trayService = new TrayService(this, ServiceProvider, _shutdownCoordinator);
 
         if (isPlayerMode)
         {
-            _playerModeCoordinator = new PlayerModeCoordinator(this, _serviceProvider, _trayService);
+            _playerModeCoordinator = new PlayerModeCoordinator(this, ServiceProvider, _trayService);
             _playerModeCoordinator.Initialize(args);
 
             base.OnFrameworkInitializationCompleted();
@@ -38,7 +38,7 @@ public partial class App : Application
             return;
         }
 
-        _startupCoordinator = new AppStartupCoordinator(this, _serviceProvider, _trayService, _shutdownCoordinator);
+        _startupCoordinator = new AppStartupCoordinator(this, ServiceProvider, _trayService, _shutdownCoordinator);
         _startupCoordinator.Initialize(args);
 
         base.OnFrameworkInitializationCompleted();

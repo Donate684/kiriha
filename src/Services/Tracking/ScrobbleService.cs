@@ -140,13 +140,7 @@ public class ScrobbleService : IScrobbleService, IDisposable
                 int delaySeconds = _settingsService.Current.System.Scrobbler.DelaySeconds;
                 int remaining = delaySeconds - elapsed;
 
-                if (remaining < 0)
-                {
-                    elapsed = 0;
-                    remaining = delaySeconds;
-                }
-
-                if (remaining == 0) break;
+                if (remaining <= 0) break;
 
                 CountdownUpdated?.Invoke(this, $"{TimeSpan.FromSeconds(remaining):mm\\:ss}");
                 await Task.Delay(1000, ct);
