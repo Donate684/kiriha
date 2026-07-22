@@ -9,7 +9,6 @@ using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;
 using Kiriha.Utils.Async;
 using Serilog;
-using Serilog;
 
 namespace Kiriha.Services.Maintenance;
 

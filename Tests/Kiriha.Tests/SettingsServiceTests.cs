@@ -248,8 +248,7 @@ public sealed class SettingsServiceTests
                 service.Update(settings => settings.UI.LanguageCode = "uk", save: false);
                 service.SaveImmediate();
             }
-
-            File.WriteAllText(path, "{ broken json");
+            File.WriteAllText(path, "broken json");
 
             using (new SettingsService(path))
             {

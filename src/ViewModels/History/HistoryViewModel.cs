@@ -75,7 +75,7 @@ public partial class HistoryViewModel : ViewModelBase
     // Constructor-injected: explicit dependencies, testable, no static service locator.
     private readonly HistoryService _historyService;
     private readonly DatabaseInitializer _dbInit;
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
     private readonly MalApiService _malApi;
     private readonly IDialogService _dialogs;
     private readonly SettingsService _settings;
@@ -104,14 +104,14 @@ public partial class HistoryViewModel : ViewModelBase
     public HistoryViewModel(
         HistoryService historyService,
         DatabaseInitializer dbInit,
-        AnimeService animeService,
+        AnimeRepository animeRepo,
         MalApiService malApi,
         IDialogService dialogs,
         SettingsService settings)
     {
         _historyService = historyService;
         _dbInit = dbInit;
-        _animeService = animeService;
+        _animeRepo = animeRepo;
         _malApi = malApi;
         _dialogs = dialogs;
         _settings = settings;
@@ -169,7 +169,7 @@ public partial class HistoryViewModel : ViewModelBase
         // Resolve posters from the local user collection (cheap dictionary lookup).
         try
         {
-            var collection = _animeService.Collection;
+            var collection = _animeRepo.Collection;
             var posterMap = collection
                 .GroupBy(x => x.Id)
                 .ToDictionary(g => g.Key, g => g.First());
@@ -181,7 +181,7 @@ public partial class HistoryViewModel : ViewModelBase
                 }
             }
         }
-        catch { /* AnimeService may not be ready at very early startup */ }
+        catch { /* AnimeRepository may not be ready at very early startup */ }
 
         HasHistory = _rawItems.Count > 0;
         ApplyFilters();
@@ -274,7 +274,7 @@ public partial class HistoryViewModel : ViewModelBase
     {
         if (entry == null) return;
 
-        var fullItem = _animeService.Collection.FirstOrDefault(x => x.Id == entry.AnimeId);
+        var fullItem = _animeRepo.Collection.FirstOrDefault(x => x.Id == entry.AnimeId);
         if (fullItem == null)
             fullItem = await _malApi.GetAnimeDetailsAsync(entry.AnimeId);
 

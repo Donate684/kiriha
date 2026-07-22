@@ -46,8 +46,8 @@ public class HandleEnumerationStrategy
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool DuplicateHandle(IntPtr hSourceProcessHandle, IntPtr hSourceHandle, IntPtr hTargetProcessHandle, out IntPtr lpTargetHandle, uint dwDesiredAccess, bool bInheritHandle, uint dwOptions);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern uint GetFinalPathNameByHandle(IntPtr hFile, [Out] StringBuilder lpszFilePath, uint cchFilePath, uint dwFlags);
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern uint GetFinalPathNameByHandle(IntPtr hFile, [Out] char[] lpszFilePath, uint cchFilePath, uint dwFlags);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern uint GetFileType(IntPtr hFile);
@@ -58,9 +58,10 @@ public class HandleEnumerationStrategy
     private const uint FILE_NAME_NORMALIZED = 0x0;
     private const uint VOLUME_NAME_DOS = 0x0;
 
-    public static List<string> GetOpenFiles(uint pid)
+    public static unsafe List<string> GetOpenFiles(uint pid)
     {
         var files = new List<string>();
+        var seenFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         IntPtr processHandle = OpenProcess(PROCESS_DUP_HANDLE, false, pid);
         if (processHandle == IntPtr.Zero) return files;
 
@@ -68,53 +69,81 @@ public class HandleEnumerationStrategy
         {
             int bufferSize = 1024 * 1024; // 1MB initial
             IntPtr buffer = Marshal.AllocHGlobal(bufferSize);
-            int returnLength;
-
-            while (NtQuerySystemInformation(SystemExtendedHandleInformation, buffer, bufferSize, out returnLength) == STATUS_INFO_LENGTH_MISMATCH)
+            try
             {
-                bufferSize = returnLength;
-                Marshal.FreeHGlobal(buffer);
-                buffer = Marshal.AllocHGlobal(bufferSize);
-            }
+                int returnLength;
 
-            long handleCount = Marshal.ReadInt64(buffer);
-            int entrySize = Marshal.SizeOf<SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX>();
-            IntPtr currentPtr = buffer + 16; // Skip NumberOfHandles and Reserved (8+8 bytes)
-
-            for (long i = 0; i < handleCount; i++)
-            {
-                var entry = Marshal.PtrToStructure<SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX>(currentPtr);
-                currentPtr += entrySize;
-
-                if ((uint)entry.UniqueProcessId != pid) continue;
-
-                // Simple access mask check (FILE_READ_DATA = 0x0001)
-                // Anisthesia uses more complex checks, but let's start with basic
-                if ((entry.GrantedAccess & 0x0001) == 0) continue;
-
-                if (DuplicateHandle(processHandle, entry.HandleValue, GetCurrentProcess(), out IntPtr dupHandle, 0, false, DUPLICATE_SAME_ACCESS))
+                while (NtQuerySystemInformation(SystemExtendedHandleInformation, buffer, bufferSize, out returnLength) == STATUS_INFO_LENGTH_MISMATCH)
                 {
-                    try
+                    bufferSize = returnLength;
+                    Marshal.FreeHGlobal(buffer);
+                    buffer = IntPtr.Zero;
+                    buffer = Marshal.AllocHGlobal(bufferSize);
+                }
+
+                long handleCount = Marshal.ReadInt64(buffer);
+                int entrySize = Marshal.SizeOf<SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX>();
+                IntPtr currentPtr = buffer + 16; // Skip NumberOfHandles and Reserved (8+8 bytes)
+
+                char[] pathBuffer = System.Buffers.ArrayPool<char>.Shared.Rent(32768);
+                try
+                {
+                    for (long i = 0; i < handleCount; i++)
                     {
-                        if (GetFileType(dupHandle) == FILE_TYPE_DISK)
+                        SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX* entry = (SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX*)currentPtr;
+                        currentPtr += entrySize;
+
+                        if ((uint)entry->UniqueProcessId != pid) continue;
+
+                        // Simple access mask check (FILE_READ_DATA = 0x0001)
+                        // Anisthesia uses more complex checks, but let's start with basic
+                        if ((entry->GrantedAccess & 0x0001) == 0) continue;
+
+                        if (DuplicateHandle(processHandle, entry->HandleValue, GetCurrentProcess(), out IntPtr dupHandle, 0, false, DUPLICATE_SAME_ACCESS))
                         {
-                            StringBuilder pathBuilder = new StringBuilder(1024);
-                            if (GetFinalPathNameByHandle(dupHandle, pathBuilder, (uint)pathBuilder.Capacity, 0) > 0)
+                            try
                             {
-                                string path = pathBuilder.ToString();
-                                if (path.StartsWith(@"\\?\")) path = path.Substring(4);
-                                files.Add(path);
+                                if (GetFileType(dupHandle) == FILE_TYPE_DISK)
+                                {
+                                    uint pathLen = GetFinalPathNameByHandle(dupHandle, pathBuffer, (uint)pathBuffer.Length, 0);
+                                    if (pathLen > 0 && pathLen < pathBuffer.Length)
+                                    {
+                                        string path;
+                                        if (pathLen >= 4 && pathBuffer[0] == '\\' && pathBuffer[1] == '\\' && pathBuffer[2] == '?' && pathBuffer[3] == '\\')
+                                        {
+                                            path = new string(pathBuffer, 4, (int)pathLen - 4);
+                                        }
+                                        else
+                                        {
+                                            path = new string(pathBuffer, 0, (int)pathLen);
+                                        }
+                                        
+                                        if (seenFiles.Add(path))
+                                        {
+                                            files.Add(path);
+                                        }
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                CloseHandle(dupHandle);
                             }
                         }
                     }
-                    finally
-                    {
-                        CloseHandle(dupHandle);
-                    }
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<char>.Shared.Return(pathBuffer);
                 }
             }
-
-            Marshal.FreeHGlobal(buffer);
+            finally
+            {
+                if (buffer != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(buffer);
+                }
+            }
         }
         catch (Exception ex)
         {

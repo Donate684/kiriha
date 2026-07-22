@@ -63,9 +63,15 @@ public sealed class AppReadinessService
             Log.Information("StartupTiming: readiness database stage elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
 
             stage.Restart();
-            var animeService = _serviceProvider.GetRequiredService<AnimeService>();
-            await animeService.InitializeAsync();
-            await animeService.InitializationTask;
+            var animeRepo = _serviceProvider.GetRequiredService<AnimeRepository>();
+            await animeRepo.InitializeAsync();
+            await animeRepo.InitializationTask;
+            
+            if (animeRepo.Collection.Count == 0)
+            {
+                var orchestrator = _serviceProvider.GetRequiredService<AnimeSyncOrchestrator>();
+                await orchestrator.SyncWithTrackersAsync();
+            }
             Log.Information("StartupTiming: readiness anime stage elapsedMs={ElapsedMs}", stage.ElapsedMilliseconds);
 
             stage.Restart();

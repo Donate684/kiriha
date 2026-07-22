@@ -108,7 +108,9 @@ internal static class TrackingServicesRegistration
         services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService>(sp => sp.GetRequiredService<AnisthesiaService>());
         services.AddSingleton<IScrobbleService, ScrobbleService>();
         services.AddSingleton<TrackingService>();
-        services.AddSingleton<AnimeService>();
+        services.AddSingleton<AnimeRepository>();
+        services.AddSingleton<AnimeSyncOrchestrator>();
+        services.AddSingleton<AnimeProgressService>();
         services.AddSingleton<SyncManager>();
         services.AddSingleton<InternalPlayerServer>();
         services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService>(sp => sp.GetRequiredService<InternalPlayerServer>());

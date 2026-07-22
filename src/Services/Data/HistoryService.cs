@@ -73,7 +73,7 @@ public class HistoryService
         }
     }
 
-    public void AddEntry(int animeId, string title, string? russianTitle, int episode, string actionType = "Watched", object? detail = null)
+    public virtual void AddEntry(int animeId, string title, string? russianTitle, int episode, string actionType = "Watched", object? detail = null)
     {
         var task = AddEntryAsync(animeId, title, russianTitle, episode, actionType, detail);
         if (task.IsCompleted) return; // Synchronous fast-path: nothing to track.

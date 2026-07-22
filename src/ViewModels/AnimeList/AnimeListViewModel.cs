@@ -46,7 +46,9 @@ namespace Kiriha.ViewModels.AnimeList;
 public partial class AnimeListViewModel : ViewModelBase, IDisposable
 {
     private readonly SettingsService _settingsService;
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
+    private readonly AnimeSyncOrchestrator _syncOrchestrator;
+    private readonly AnimeProgressService _progressService;
     private readonly LoadQueueService _queueService;
     private readonly AiringInfoService _airingInfoService;
     private readonly RssFeedService _rssService;
@@ -59,7 +61,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     public Kiriha.Core.Dialogs.IDialogService DialogService => _dialogService;
     public ShikiMetadataService ShikiMetadataService => _shikiMetadataService;
 
-    public ObservableCollection<AnimeItem> AnimeItems => _animeService.Collection;
+    public ObservableCollection<AnimeItem> AnimeItems => _animeRepo.Collection;
 
     [ObservableProperty] private AvaloniaList<AnimeItem> _filteredItems = new();
     [ObservableProperty] private string _watchingHeader = string.Empty;
@@ -156,7 +158,9 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
     public AnimeListViewModel(
         SettingsService settingsService,
-        AnimeService animeService,
+        AnimeRepository animeRepo,
+        AnimeSyncOrchestrator syncOrchestrator,
+        AnimeProgressService progressService,
         LoadQueueService queueService,
         AiringInfoService airingInfoService,
         RssFeedService rssService,
@@ -165,7 +169,9 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         ShikiMetadataService shikiMetadataService)
     {
         _settingsService = settingsService;
-        _animeService = animeService;
+        _animeRepo = animeRepo;
+        _syncOrchestrator = syncOrchestrator;
+        _progressService = progressService;
         _queueService = queueService;
         _airingInfoService = airingInfoService;
         _rssService = rssService;
@@ -200,7 +206,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
             await ApplyCurrentFiltersAsync(ct);
         });
 
-        _animeService.Collection.CollectionChanged += OnCollectionChanged;
+        _animeRepo.Collection.CollectionChanged += OnCollectionChanged;
 
         // Tick once a minute on the UI thread to refresh the airing countdown.
         // Cheap: each tick only iterates currently-loaded items and emits
@@ -258,7 +264,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (_animeService.IsSyncing || _animeService.IsInitializing)
+        if (_syncOrchestrator.IsSyncing || _animeRepo.IsInitializing)
         {
             // During mass sync/init, we'll trigger one big update at the end 
             // instead of hundreds of individual UI refreshes.
@@ -269,7 +275,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
         // Coalesce bursts: airing/Shikimori sync can fire 30+ Add events in a
         // few hundred ms. The debouncer collapses them into a single refresh.
-        _listProjection.ApplyCollectionChange(e, _animeService.Collection);
+        _listProjection.ApplyCollectionChange(e, _animeRepo.Collection);
         _collectionChangeDebouncer?.Invoke();
     }
 
@@ -360,8 +366,8 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         try
         {
             bool success = SelectedMediaKind == MediaKind.Manga || SelectedMediaKind == MediaKind.LightNovel
-                ? await _animeService.SyncMangaWithTrackersAsync()
-                : await _animeService.SyncWithTrackersAsync();
+                ? await _syncOrchestrator.SyncMangaWithTrackersAsync()
+                : await _syncOrchestrator.SyncWithTrackersAsync();
             
             if (success)
             {
@@ -438,7 +444,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
     private void RebuildListProjection()
     {
-        _listProjection.Rebuild(_animeService.Collection);
+        _listProjection.Rebuild(_animeRepo.Collection);
     }
 
     [RelayCommand]
@@ -455,7 +461,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         var oldStatus = item.Status;
         var oldRewatching = item.IsRewatching;
         
-        await _animeService.SmartIncrementProgressAsync(item, nextProgress);
+        await _progressService.SmartIncrementProgressAsync(item, nextProgress);
         
         await UpdateCountsAsync();
         
@@ -469,7 +475,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     public async Task DecrementProgress(AnimeItem item)
     {
-        await _animeService.SmartDecrementProgressAsync(item);
+        await _progressService.SmartDecrementProgressAsync(item);
         await UpdateCountsAsync();
     }
 
@@ -481,7 +487,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     {
         if (ActiveItem == null || rating == null) return;
         int.TryParse(rating.Value, out int score);
-        await _animeService.SetScoreAsync(ActiveItem, score);
+        await _progressService.SetScoreAsync(ActiveItem, score);
     }
 
     [RelayCommand]
@@ -489,7 +495,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     {
         if (item == null) return;
         int.TryParse(item.Score, out int score);
-        await _animeService.SetScoreAsync(item, score);
+        await _progressService.SetScoreAsync(item, score);
     }
 
     public void Dispose()
@@ -500,7 +506,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         _airingTicker?.Stop();
         _airingTicker = null;
         _readinessService.StateChanged -= OnReadinessStateChanged;
-        _animeService.Collection.CollectionChanged -= OnCollectionChanged;
+        _animeRepo.Collection.CollectionChanged -= OnCollectionChanged;
         _listProjection.Dispose();
     }
 }

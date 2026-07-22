@@ -25,7 +25,7 @@ public partial class SeasonalViewModel
         try
         {
             item.Status = status;
-            await _animeService.AddOrUpdateAnimeAsync(item);
+            await _animeRepo.AddOrUpdateAnimeAsync(item);
             await _syncManager.EnqueueUpdateAsync(item.Id, 0, status);
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
         }

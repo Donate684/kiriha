@@ -67,6 +67,11 @@ internal static class DataServicesRegistration
         services.AddSingleton<ISyncTaskRepository, SyncTaskRepository>();
         services.AddSingleton<LocalizationService>();
         services.AddSingleton<ShikiMetadataService>();
+        services.AddHttpClient("ImageClient", c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(30);
+            c.DefaultRequestHeaders.Add("User-Agent", AppInfo.UserAgent);
+        });
         services.AddSingleton<ImageCacheService>();
         services.AddSingleton<SeasonalCacheStore>();
         services.AddSingleton<HistoryService>();

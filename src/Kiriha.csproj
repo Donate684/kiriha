@@ -28,6 +28,7 @@
     <!-- Optimization: Ahead-of-time compilation for faster startup -->
     <PublishReadyToRun>true</PublishReadyToRun>
     <TieredCompilation>true</TieredCompilation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

@@ -33,7 +33,7 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
     private readonly MalApiService _apiService;
     private readonly SettingsService _settingsService;
     private readonly LoadQueueService _queueService;
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
     private readonly SeasonalCacheStore _cacheStore;
     private readonly SyncManager _syncManager;
     private readonly Kiriha.Core.Dialogs.IDialogService _dialogService;
@@ -44,7 +44,7 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
         MalApiService apiService,
         SettingsService settingsService,
         LoadQueueService queueService,
-        AnimeService animeService,
+        AnimeRepository animeRepo,
         SeasonalCacheStore cacheStore,
         SyncManager syncManager,
         Kiriha.Core.Dialogs.IDialogService dialogService)
@@ -52,7 +52,7 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
         _apiService = apiService;
         _settingsService = settingsService;
         _queueService = queueService;
-        _animeService = animeService;
+        _animeRepo = animeRepo;
         _cacheStore = cacheStore;
         _syncManager = syncManager;
         _dialogService = dialogService;
@@ -72,7 +72,7 @@ public partial class SeasonalViewModel : ViewModelBase, IDisposable
             Dispatcher.UIThread.Post(() =>
             {
                 var vm = (SeasonalViewModel)r;
-                var userStore = vm._animeService.Collection
+                var userStore = vm._animeRepo.Collection
                     .GroupBy(x => x.Id)
                     .ToDictionary(x => x.Key, x => x.First().Status);
                 vm.UpdateUserList(userStore);

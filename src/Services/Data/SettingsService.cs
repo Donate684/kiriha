@@ -9,6 +9,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Models;
@@ -22,6 +23,12 @@ using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.Services.Data;
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(AppSettings))]
+internal partial class AppSettingsJsonContext : JsonSerializerContext
+{
+}
 
 [Flags]
 public enum SettingsSection
@@ -38,8 +45,6 @@ public enum SettingsSection
 
 public class SettingsService : IDisposable
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     private readonly string _settingsPath;
     private readonly Debouncer _debouncer;
     private readonly SemaphoreSlim _saveLock = new(1, 1);
@@ -51,7 +56,8 @@ public class SettingsService : IDisposable
     private long _apiVersion;
     private long _customLinksVersion;
 
-    public AppSettings Current { get; private set; } = new();
+    private AppSettings _current = new();
+    public AppSettings Current => Volatile.Read(ref _current);
 
     public SettingsService(string? settingsPath = null)
     {
@@ -112,7 +118,9 @@ public class SettingsService : IDisposable
 
         lock (_stateLock)
         {
-            update(Current);
+            var clone = CloneSettings(_current);
+            update(clone);
+            Volatile.Write(ref _current, clone);
             MarkAllSectionsChanged();
         }
 
@@ -125,7 +133,9 @@ public class SettingsService : IDisposable
 
         lock (_stateLock)
         {
-            update(Current);
+            var clone = CloneSettings(_current);
+            update(clone);
+            Volatile.Write(ref _current, clone);
             MarkChangedSections(changedSections);
         }
 
@@ -138,7 +148,7 @@ public class SettingsService : IDisposable
 
         lock (_stateLock)
         {
-            return read(Current);
+            return read(_current);
         }
     }
 
@@ -240,7 +250,7 @@ public class SettingsService : IDisposable
         SettingsVersions versions;
         lock (_stateLock)
         {
-            snapshot = CloneSettings(Current);
+            snapshot = CloneSettings(_current);
             versions = GetVersions();
         }
 
@@ -261,7 +271,7 @@ public class SettingsService : IDisposable
         var clone = CloneSettings(settings);
         EncryptTokens(clone.Api.Mal);
         EncryptTokens(clone.Api.Shiki);
-        return JsonSerializer.Serialize(clone, JsonOptions);
+        return JsonSerializer.Serialize(clone, AppSettingsJsonContext.Default.AppSettings);
     }
 
     private AppSettings? TryLoadSettingsFromDisk()
@@ -313,7 +323,7 @@ public class SettingsService : IDisposable
     private AppSettings? LoadSettingsFile(string path)
     {
         var json = ReadAllTextShared(path);
-        var loaded = JsonSerializer.Deserialize<AppSettings>(json);
+        var loaded = JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings);
         if (loaded == null)
             return null;
 
@@ -324,8 +334,8 @@ public class SettingsService : IDisposable
 
     private static AppSettings CloneSettings(AppSettings settings)
     {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(settings);
-        return JsonSerializer.Deserialize<AppSettings>(bytes)!;
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(settings, AppSettingsJsonContext.Default.AppSettings);
+        return JsonSerializer.Deserialize(bytes, AppSettingsJsonContext.Default.AppSettings)!;
     }
 
     private static string ReadAllTextShared(string path)
@@ -345,8 +355,25 @@ public class SettingsService : IDisposable
     {
         try
         {
-            var json = ReadAllTextShared(path);
-            return JsonSerializer.Deserialize<AppSettings>(json) != null;
+            var info = new FileInfo(path);
+            if (!info.Exists || info.Length == 0)
+                return false;
+
+            using var stream = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+
+            int ch;
+            while ((ch = reader.Read()) != -1)
+            {
+                if (!char.IsWhiteSpace((char)ch))
+                    return ch == '{';
+            }
+
+            return false;
         }
         catch
         {
@@ -527,7 +554,7 @@ public class SettingsService : IDisposable
     {
         lock (_stateLock)
         {
-            Current = settings;
+            Volatile.Write(ref _current, settings);
         }
     }
 

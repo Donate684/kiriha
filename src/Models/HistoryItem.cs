@@ -16,7 +16,7 @@ public class HistoryItem
     public int ActionType { get; set; } = 1; // 1: Watched, etc.
     public string Detail { get; set; } = string.Empty;
 
-    /// <summary>Runtime-resolved poster URL (from user's AnimeService.Collection). Not persisted.</summary>
+    /// <summary>Runtime-resolved poster URL (from user's AnimeRepository.Collection). Not persisted.</summary>
     [NotMapped]
     public string? PosterUrl { get; set; }
 }

@@ -51,7 +51,7 @@ public partial class MappingService
         ClearRecognitionCaches();
     }
 
-    public bool IsManuallyMapped(string title)
+    public virtual bool IsManuallyMapped(string title)
     {
         if (string.IsNullOrWhiteSpace(title)) return false;
         string normOriginal = Normalize(title);
@@ -67,7 +67,7 @@ public partial class MappingService
         return false;
     }
 
-    public bool IsNegativelyMapped(string title)
+    public virtual bool IsNegativelyMapped(string title)
     {
         if (string.IsNullOrWhiteSpace(title)) return false;
         if (_manualMapping.IsNegativelyMapped(Normalize(title))) return true;
@@ -86,7 +86,7 @@ public partial class MappingService
         ClearRecognitionCaches();
     }
 
-    public async Task<int?> GetIdFromTitleAsync(string title, IEnumerable<AnimeItem> userList)
+    public virtual async Task<int?> GetIdFromTitleAsync(string title, IEnumerable<AnimeItem> userList)
     {
         if (string.IsNullOrWhiteSpace(title)) return null;
 
@@ -244,7 +244,7 @@ public partial class MappingService
         return (cleanTitle, searchTitle, parsedSeason, parsedEpisode);
     }
 
-    public async Task<int?> SearchOnMalAsync(string title)
+    public virtual async Task<int?> SearchOnMalAsync(string title)
     {
         var (cleanTitle, searchQuery, _, _) = ParseAnimeTitle(title);
 

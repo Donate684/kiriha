@@ -24,18 +24,21 @@ namespace Kiriha.Services.Tracking;
 public class AiringInfoService
 {
     private readonly AniListApiService _aniListApi;
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
+    private readonly AnimeSyncOrchestrator _syncOrchestrator;
     private readonly NotificationService _notificationService;
     private readonly IUiDispatcher _uiDispatcher;
 
     public AiringInfoService(
         AniListApiService aniListApi,
-        AnimeService animeService,
+        AnimeRepository animeRepo,
+        AnimeSyncOrchestrator syncOrchestrator,
         NotificationService notificationService,
         IUiDispatcher uiDispatcher)
     {
         _aniListApi = aniListApi;
-        _animeService = animeService;
+        _animeRepo = animeRepo;
+        _syncOrchestrator = syncOrchestrator;
         _notificationService = notificationService;
         _uiDispatcher = uiDispatcher;
     }
@@ -85,7 +88,7 @@ public class AiringInfoService
 
     public async Task SyncEpisodesForAnimeAsync(AnimeItem anime, CancellationToken ct = default)
     {
-        if (_animeService.IsSyncing) return;
+        if (_syncOrchestrator.IsSyncing) return;
         if (anime.Status != UserAnimeStatus.Watching) return;
         
         var status = anime.StatusDetailed?.ToLowerInvariant();
@@ -96,22 +99,22 @@ public class AiringInfoService
         Log.Information("AiringInfoService: Immediate AniList sync requested for {Title} (ID: {Id})", anime.Title, anime.Id);
 
         var airing = await _aniListApi.GetNextAiringAsync(anime.Id, force: true, ct);
-        if (_animeService.IsRecentlyDeleted(anime.Id)) return;
+        if (_animeRepo.IsRecentlyDeleted(anime.Id)) return;
 
         if (airing == null)
         {
             await MarkSyncedAsync(anime, DateTime.Now);
-            await _animeService.AddOrUpdateAnimeAsync(anime);
+            await _animeRepo.AddOrUpdateAnimeAsync(anime);
             return;
         }
 
         await ApplyAiringAsync(anime, airing, DateTime.Now);
-        await _animeService.AddOrUpdateAnimeAsync(anime);
+        await _animeRepo.AddOrUpdateAnimeAsync(anime);
     }
 
     public async Task SyncOngoingEpisodesAsync(bool force = false, IProgress<string>? progress = null, CancellationToken ct = default)
     {
-        if (_animeService.IsSyncing)
+        if (_syncOrchestrator.IsSyncing)
         {
             Log.Information("AiringInfoService: Main sync is in progress, skipping episode sync to avoid DB conflicts.");
             return;
@@ -122,7 +125,7 @@ public class AiringInfoService
         var threshold = DateTime.Now.AddHours(-6);
         // Snapshot on UI thread - ObservableCollection is not thread-safe.
         var toSync = await _uiDispatcher.InvokeAsync(() =>
-            _animeService.Collection
+            _animeRepo.Collection
                 .Where(x => {
                     var s = x.StatusDetailed?.ToLowerInvariant();
                     return (s == "currently_airing" || s == "currently airing" || x.NextEpisodeAt.HasValue) &&
@@ -143,7 +146,7 @@ public class AiringInfoService
         {
             var anime = toSync[i];
             if (ct.IsCancellationRequested) break;
-            if (_animeService.IsRecentlyDeleted(anime.Id)) continue;
+            if (_animeRepo.IsRecentlyDeleted(anime.Id)) continue;
 
             var progressMsg = UIUtils.GetLoc("sync.syncing.episodes_progress", (i + 1).ToString(), toSync.Count.ToString(), anime.Title);
             progress?.Report(progressMsg);
@@ -155,12 +158,12 @@ public class AiringInfoService
             if (airing == null)
             {
                 await MarkSyncedAsync(anime, now);
-                await _animeService.AddOrUpdateAnimeAsync(anime);
+                await _animeRepo.AddOrUpdateAnimeAsync(anime);
                 continue;
             }
 
             await ApplyAiringAsync(anime, airing, now);
-            await _animeService.AddOrUpdateAnimeAsync(anime);
+            await _animeRepo.AddOrUpdateAnimeAsync(anime);
         }
 
         Log.Information("AiringInfoService: AniList sync cycle completed.");

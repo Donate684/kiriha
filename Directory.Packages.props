@@ -33,20 +33,18 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.10" />
     <PackageVersion Include="System.Threading.RateLimiting" Version="10.0.10" />
-
     <!-- Transitive update pins: keep outdated reports clean while CPM is enabled. -->
     <PackageVersion Include="Humanizer.Core" Version="3.0.10" />
     <PackageVersion Include="Microsoft.Build.Framework" Version="18.7.1" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-
     <!-- Transitive security pins to resolve NU1903 (GHSA-2m69-gcr7-jv3q) -->
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="SQLitePCLRaw.core" Version="3.0.3" />
     <PackageVersion Include="SQLitePCLRaw.provider.e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.0.3" />
-
     <!-- Logging -->
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />

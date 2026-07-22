@@ -30,7 +30,7 @@ public class TrackingService : IDisposable
 {
     private readonly AnisthesiaService _anisthesiaService;
     private readonly MappingService _mappingService;
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
     private readonly SettingsService _settingsService;
     private readonly DiscordService _discordService;
     private readonly IScrobbleService _scrobbleService;
@@ -50,7 +50,7 @@ public class TrackingService : IDisposable
     public TrackingService(
         AnisthesiaService anisthesiaService,
         MappingService mappingService,
-        AnimeService animeService,
+        AnimeRepository animeRepo,
         SettingsService settingsService,
         DiscordService discordService,
         IScrobbleService scrobbleService,
@@ -59,7 +59,7 @@ public class TrackingService : IDisposable
     {
         _anisthesiaService = anisthesiaService;
         _mappingService = mappingService;
-        _animeService = animeService;
+        _animeRepo = animeRepo;
         _settingsService = settingsService;
         _discordService = discordService;
         _scrobbleService = scrobbleService;
@@ -142,36 +142,37 @@ public class TrackingService : IDisposable
             ParsedMedia? prev;
             lock (_state) prev = _currentMedia;
             if (prev != null && prev.AnimeTitle == media.AnimeTitle && prev.Episode == media.Episode)
-        {
-            bool timeLeap = false;
-            if (prev.Position.HasValue && media.Position.HasValue)
             {
-                timeLeap = Math.Abs((media.Position.Value - prev.Position.Value).TotalSeconds) > 3;
-            }
+                bool timeLeap = false;
+                if (prev.Position.HasValue && media.Position.HasValue)
+                {
+                    timeLeap = Math.Abs((media.Position.Value - prev.Position.Value).TotalSeconds) > 3;
+                }
 
-            bool changed = prev.IsPlaying != media.IsPlaying || prev.ProcessName != media.ProcessName || timeLeap;
-            lock (_state) _currentMedia = media;
-            if (changed)
-            {
+                bool changed = prev.IsPlaying != media.IsPlaying || prev.ProcessName != media.ProcessName || timeLeap;
+                lock (_state) _currentMedia = media;
+                
+                if (!changed)
+                {
+                    return;
+                }
+
                 _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new MediaChangedMessage(media)));
                 _scrobbleService.UpdatePlayingState(media.IsPlaying);
-            }
-            
-            // We need to update presence periodically for position/duration changes if we seek, 
-            // but for smooth ticking Discord handles it. We just call it if IsPlaying changed, or significant time leap.
-            if (changed)
-            {
+                
+                // We need to update presence periodically for position/duration changes if we seek, 
+                // but for smooth ticking Discord handles it. We just call it if IsPlaying changed, or significant time leap.
                 AnimeItem? currentMatched;
                 lock (_state) currentMatched = _matchedAnime;
+                
                 if (currentMatched != null)
                 {
                     NotifyPlayerMetadata(media, currentMatched);
-
                     UpdateDiscordPresence(media, currentMatched);
                 }
+                
+                return;
             }
-            return;
-        }
 
             lock (_state)
             {
@@ -185,9 +186,9 @@ public class TrackingService : IDisposable
                 WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(null));
             });
 
-            await Task.WhenAny(_animeService.InitializationTask, Task.Delay(5000));
+            await Task.WhenAny(_animeRepo.InitializationTask, Task.Delay(5000));
             
-            var userList = await _uiDispatcher.InvokeAsync(() => _animeService.Collection.ToList());
+            var userList = await _uiDispatcher.InvokeAsync(() => _animeRepo.Collection.ToList());
             var matched = userList.FirstOrDefault(x => x.Id == animeId);
 
             if (matched == null)
@@ -380,7 +381,7 @@ public class TrackingService : IDisposable
         try
         {
             // Wait for services to be ready (e.g. at app startup)
-            await Task.WhenAny(_animeService.InitializationTask, Task.Delay(5000));
+            await Task.WhenAny(_animeRepo.InitializationTask, Task.Delay(5000));
             
             // Respect user's explicit unlink: skip all mapping attempts.
             if (_mappingService.IsNegativelyMapped(media.OriginalTitle) ||
@@ -393,7 +394,7 @@ public class TrackingService : IDisposable
             // Snapshot the user list on UI thread — ObservableCollection is not thread-safe
             // and MappingService enumerates it lazily multiple times.
             var userList = await _uiDispatcher.InvokeAsync(
-                () => _animeService.Collection.ToList());
+                () => _animeRepo.Collection.ToList());
 
             // Perform Mapping
             int? malId = await _mappingService.GetIdFromTitleAsync(media.OriginalTitle, userList);

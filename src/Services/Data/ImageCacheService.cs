@@ -231,8 +231,7 @@ public class ImageCacheService : IDisposable
                     cts.CancelAfter(TimeSpan.FromSeconds(30));
                     try
                     {
-                        using var client = _httpClientFactory.CreateClient();
-                        client.DefaultRequestHeaders.UserAgent.ParseAdd(Kiriha.Core.AppInfo.UserAgent);
+                        using var client = _httpClientFactory.CreateClient("ImageClient");
                         var bytes = await client.GetByteArrayAsync(url, cts.Token);
                         await File.WriteAllBytesAsync(tmpPath, bytes, cts.Token);
                         

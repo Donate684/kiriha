@@ -31,6 +31,9 @@ jobs:
       - name: Install Velopack
         run: dotnet tool install -g vpk
 
+      - name: Build with warnings-as-errors
+        run: dotnet build --configuration Release /p:TreatWarningsAsErrors=true
+
       - name: Run tests
         run: dotnet test .\tests\Kiriha.Tests\Kiriha.Tests.csproj --configuration Release
 

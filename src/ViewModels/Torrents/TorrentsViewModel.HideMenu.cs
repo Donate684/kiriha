@@ -31,7 +31,7 @@ public partial class TorrentsViewModel
     public void RefreshWatchingList()
     {
         var hidden = new HashSet<int>(_settingsService.Current.Torrents.HiddenAnimeIds ?? new List<int>());
-        var watching = _animeService.Collection.Where(x => x.Status == UserAnimeStatus.Watching).ToList();
+        var watching = _animeRepo.Collection.Where(x => x.Status == UserAnimeStatus.Watching).ToList();
 
         WatchingAnime.Clear();
         foreach (var a in watching)

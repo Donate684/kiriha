@@ -54,7 +54,7 @@ public class DiscordService : IDisposable
         }
     }
 
-    public void UpdatePresence(string displayTitle, string? episode, int totalEpisodes = 0, string? malUrl = null, string? shikiUrl = null, TimeSpan? position = null, TimeSpan? duration = null, string? imageUrl = null, bool isPlaying = true)
+    public virtual void UpdatePresence(string displayTitle, string? episode, int totalEpisodes = 0, string? malUrl = null, string? shikiUrl = null, TimeSpan? position = null, TimeSpan? duration = null, string? imageUrl = null, bool isPlaying = true)
     {
         lock (_gate)
         {
@@ -131,7 +131,7 @@ public class DiscordService : IDisposable
         return value?.Length > 128 ? value.Substring(0, 125) + "..." : value;
     }
 
-    public void ClearPresence()
+    public virtual void ClearPresence()
     {
         lock (_gate)
         {

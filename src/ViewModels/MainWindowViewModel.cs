@@ -337,11 +337,6 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
                 disposable.Dispose();
             }
 
-            foreach (var vm in _cachedVms)
-            {
-                (vm as IDisposable)?.Dispose();
-            }
-
             (UpdateDialog as IDisposable)?.Dispose();
 
             WeakReferenceMessenger.Default.UnregisterAll(this);

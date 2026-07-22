@@ -47,7 +47,8 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
     private int _pendingManualMatchId;
     private readonly SettingsService _settingsService;
     private readonly MappingService _mappingService;
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
+    private readonly AnimeProgressService _progressService;
     private readonly SyncManager _syncManager;
     private readonly ShikiMetadataService _shikiMetadataService;
     private readonly Services.Api.MalApiService _malApi;
@@ -150,7 +151,8 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
         TrackingService trackingService, 
         SettingsService settingsService, 
         MappingService mappingService, 
-        AnimeService animeService, 
+        AnimeRepository animeRepo,
+        AnimeProgressService progressService,
         SyncManager syncManager,
         ShikiMetadataService shikiMetadataService,
         Services.Api.MalApiService malApi)
@@ -158,7 +160,8 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
         _trackingService = trackingService;
         _settingsService = settingsService;
         _mappingService = mappingService;
-        _animeService = animeService;
+        _animeRepo = animeRepo;
+        _progressService = progressService;
         _syncManager = syncManager;
         _shikiMetadataService = shikiMetadataService;
         _malApi = malApi;
@@ -178,9 +181,9 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
 
         try
         {
-            if (await _animeService.UpdateProgressAsync(MatchedAnime, MatchedAnime.Progress, UserAnimeStatus.Watching))
+            if (await _progressService.UpdateProgressAsync(MatchedAnime, MatchedAnime.Progress, UserAnimeStatus.Watching))
             {
-                await _animeService.AddOrUpdateAnimeAsync(MatchedAnime);
+                await _animeRepo.AddOrUpdateAnimeAsync(MatchedAnime);
                 WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
             }
 
@@ -200,7 +203,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
         Log.Information("Selecting anime suggestion: {Title} (ID: {Id})", suggestion.Title, suggestion.Id);
         LogDetection(CurrentMedia ?? new ParsedMedia { AnimeTitle = suggestion.Title }, UIUtils.GetLoc("scrobbler.status.mapped_by") + " " + suggestion.DisplayTitle);
 
-        _pendingManualMatchId = suggestion.Id;
+        Volatile.Write(ref _pendingManualMatchId, suggestion.Id);
         ShowSuggestions = false;
         Suggestions.Clear();
         OnPropertyChanged(nameof(HasSuggestions));
@@ -218,7 +221,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
         catch
         {
             // On error, drop the pending guard so the UI isn't permanently stuck.
-            _pendingManualMatchId = 0;
+            Volatile.Write(ref _pendingManualMatchId, 0);
             throw;
         }
     }
@@ -315,11 +318,11 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
         // - null: a transient "clearing previous match" event before MappingService re-resolves
         // - different id: stale background match for a previous media — would clobber UI choice
         // We let through the matching id so we can clear the pending guard below.
-        var pending = _pendingManualMatchId;
+        var pending = Volatile.Read(ref _pendingManualMatchId);
         if (pending != 0 && (anime == null || anime.Id != pending)) return;
         if (pending != 0 && anime != null && anime.Id == pending)
         {
-            _pendingManualMatchId = 0;
+            Interlocked.CompareExchange(ref _pendingManualMatchId, 0, pending);
         }
 
         MatchedAnime = anime;
@@ -370,7 +373,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
         var prev = CurrentMedia;
         bool sameFile = media != null && prev != null
             && string.Equals(prev.OriginalTitle, media.OriginalTitle, StringComparison.Ordinal);
-        if (!sameFile) _pendingManualMatchId = 0;
+        if (!sameFile) Volatile.Write(ref _pendingManualMatchId, 0);
 
         CurrentMedia = media;
         IsMediaDetected = media != null;

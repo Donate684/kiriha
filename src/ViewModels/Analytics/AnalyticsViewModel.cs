@@ -39,7 +39,7 @@ public partial class AnalyticsViewModel : ViewModelBase
 {
     private const int RecentHistoryDays = 14;
 
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
     private readonly HistoryService _historyService;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
@@ -109,9 +109,9 @@ public partial class AnalyticsViewModel : ViewModelBase
         set { if (value) SelectedSection = 4; }
     }
 
-    public AnalyticsViewModel(AnimeService animeService, HistoryService historyService)
+    public AnalyticsViewModel(AnimeRepository animeRepo, HistoryService historyService)
     {
-        _animeService = animeService;
+        _animeRepo = animeRepo;
         _historyService = historyService;
     }
 
@@ -136,7 +136,7 @@ public partial class AnalyticsViewModel : ViewModelBase
         {
             IsRefreshing = true;
 
-            var items = _animeService.Collection.ToList();
+            var items = _animeRepo.Collection.ToList();
             var history = await _historyService.GetHistoryAsync(5000);
             HasData = items.Count > 0;
             UpdatedAt = DateTime.Now.ToString("HH:mm", CultureInfo.CurrentCulture);

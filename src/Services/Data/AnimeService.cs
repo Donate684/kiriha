@@ -47,7 +47,7 @@ public class AnimeService
     private int _initStarted; // Interlocked guard for InitializeAsync
     private int _syncing;     // Interlocked guard for SyncWithTrackersAsync
     private readonly Dictionary<int, CancellationTokenSource> _recentlyDeletedIds = new();
-    private readonly Dictionary<int, AnimeItem> _idIndex = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, AnimeItem> _idIndex = new();
     public Task InitializationTask => _initTcs.Task;
 
     public bool IsRecentlyDeleted(int animeId)
@@ -333,7 +333,7 @@ public class AnimeService
                 foreach (var item in toRemove)
                 {
                     Collection.Remove(item);
-                    _idIndex.Remove(item.Id);
+                    _idIndex.TryRemove(item.Id, out _);
                 }
             });
         }
@@ -476,7 +476,7 @@ public class AnimeService
             if (_idIndex.TryGetValue(animeId, out var item))
             {
                 Collection.Remove(item);
-                _idIndex.Remove(animeId);
+                _idIndex.TryRemove(animeId, out _);
             }
         });
 

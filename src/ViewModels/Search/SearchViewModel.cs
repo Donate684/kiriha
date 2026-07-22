@@ -45,7 +45,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
     private readonly ShikiMetadataService _shikiMetadataService;
     private readonly SettingsService _settingsService;
     private readonly LoadQueueService _queueService;
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
     private readonly SyncManager _syncManager;
     private readonly Kiriha.Core.Dialogs.IDialogService _dialogService;
     
@@ -86,13 +86,13 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
 
     public SearchViewModel(MalApiService apiService, ShikiMetadataService shikiMetadataService, 
         SettingsService settingsService, LoadQueueService queueService,
-        AnimeService animeService, SyncManager syncManager, Kiriha.Core.Dialogs.IDialogService dialogService)
+        AnimeRepository animeRepo, SyncManager syncManager, Kiriha.Core.Dialogs.IDialogService dialogService)
     {
         _apiService = apiService;
         _shikiMetadataService = shikiMetadataService;
         _settingsService = settingsService;
         _queueService = queueService;
-        _animeService = animeService;
+        _animeRepo = animeRepo;
         _syncManager = syncManager;
         _dialogService = dialogService;
 
@@ -219,7 +219,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
         try
         {
             item.Status = status;
-            await _animeService.AddOrUpdateAnimeAsync(item);
+            await _animeRepo.AddOrUpdateAnimeAsync(item);
             await _syncManager.EnqueueUpdateAsync(item.Id, 0, status);
             
             // Notify UI

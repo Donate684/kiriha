@@ -136,7 +136,7 @@ sealed class Program
     }
 
     private static readonly string[] SensitiveQueryKeys = { "code", "token", "access_token", "refresh_token", "client_secret" };
-    private static readonly char[] SensitiveArgSeparators = { '&', ' ' };
+    private static readonly char[] SensitiveArgSeparators = { '&', ' ', '?', '#' };
 
     /// <summary>
     /// Masks OAuth-sensitive query parameters in command-line arguments so they don't

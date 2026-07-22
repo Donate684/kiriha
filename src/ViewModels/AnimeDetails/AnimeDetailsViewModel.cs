@@ -116,7 +116,8 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     private readonly ShikiApiService _shikiApiService;
     private readonly JikanApiService _jikanApiService;
     private readonly SyncManager _syncManager;
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
+    private readonly AnimeProgressService _animeProgressService;
     private readonly AiringInfoService _airingInfoService;
     private readonly HistoryService _historyService;
     private readonly IDialogService _dialogs;
@@ -210,7 +211,8 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         ShikiApiService shikiApiService,
         JikanApiService jikanApiService,
         SyncManager syncManager,
-        AnimeService animeService,
+        AnimeRepository animeRepo,
+        AnimeProgressService animeProgressService,
         AiringInfoService airingInfoService,
         SettingsService settingsService,
         HistoryService historyService,
@@ -223,7 +225,8 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         _shikiApiService = shikiApiService;
         _jikanApiService = jikanApiService;
         _syncManager = syncManager;
-        _animeService = animeService;
+        _animeRepo = animeRepo;
+        _animeProgressService = animeProgressService;
         _airingInfoService = airingInfoService;
         _settingsService = settingsService;
         _historyService = historyService;
@@ -368,7 +371,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
                         {
                             string scoreDisplay = w.Score > 0 ? w.Work.Anime!.Score! : "-";
                             
-                            var localAnime = _animeService.Collection.FirstOrDefault(a => a.Id == w.Work.Anime!.Id);
+                            var localAnime = _animeRepo.Collection.FirstOrDefault(a => a.Id == w.Work.Anime!.Id);
                             Avalonia.Media.IBrush highlight = Avalonia.Media.Brushes.Transparent;
                             if (localAnime != null)
                             {
@@ -431,7 +434,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         var type = vm.Relation.TargetType?.ToLowerInvariant() ?? "";
         bool isAnime = type == "anime" || type == "tv" || type == "movie" || type == "ova" || type == "ona" || type == "special";
 
-        var existing = _animeService.Collection.FirstOrDefault(x => x.Id == vm.Relation.TargetMalId && (isAnime ? x.MediaKind == MediaKind.Anime : x.MediaKind != MediaKind.Anime));
+        var existing = _animeRepo.Collection.FirstOrDefault(x => x.Id == vm.Relation.TargetMalId && (isAnime ? x.MediaKind == MediaKind.Anime : x.MediaKind != MediaKind.Anime));
         if (existing != null && !string.IsNullOrEmpty(existing.MainPictureUrl))
         {
             vm.ImageUrl = existing.MainPictureUrl;
@@ -705,7 +708,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         if (_originalAnime.Status != UserAnimeStatus.None)
         {
             // Update local collection (add if new, update if exists)
-            await _animeService.AddOrUpdateAnimeAsync(_originalAnime);
+            await _animeRepo.AddOrUpdateAnimeAsync(_originalAnime);
 
             if (markedAsDropped)
             {
@@ -744,7 +747,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         }
 
         _isRemoving = true;
-        await _animeService.RemoveAnimeAsync(_originalAnime.Id);
+        await _animeProgressService.RemoveAnimeAsync(_originalAnime.Id);
         
         // Notify UI to refresh lists
         WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
@@ -789,7 +792,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         };
 
         // If the item exists in the collection, use the full one to ensure all offline fields are loaded.
-        var existing = _animeService.Collection.FirstOrDefault(x => x.Id == targetAnime.Id && x.MediaKind == targetAnime.MediaKind);
+        var existing = _animeRepo.Collection.FirstOrDefault(x => x.Id == targetAnime.Id && x.MediaKind == targetAnime.MediaKind);
         await _dialogs.ShowAnimeDetailsAsync(null, existing ?? targetAnime);
     }
 

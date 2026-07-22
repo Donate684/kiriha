@@ -28,7 +28,7 @@ namespace Kiriha.Services.Tracking;
 public partial class RssFeedService
 {
     private readonly HttpClient _httpClient;
-    private readonly AnimeService _animeService;
+    private readonly AnimeRepository _animeRepo;
     private readonly MappingService _mappingService;
     private readonly HttpConditionalCache _httpCache;
     private readonly IUiDispatcher _uiDispatcher;
@@ -39,13 +39,13 @@ public partial class RssFeedService
 
     public RssFeedService(
         IHttpClientFactory httpClientFactory,
-        AnimeService animeService,
+        AnimeRepository animeRepo,
         MappingService mappingService,
         IHttpCacheRepository httpCacheRepo,
         IUiDispatcher uiDispatcher)
     {
         _httpClient = httpClientFactory.CreateClient("RssClient");
-        _animeService = animeService;
+        _animeRepo = animeRepo;
         _mappingService = mappingService;
         _uiDispatcher = uiDispatcher;
         _httpCache = new HttpConditionalCache(_httpClient, httpCacheRepo, "Nyaa");
@@ -245,7 +245,7 @@ public partial class RssFeedService
 
             // Snapshot ObservableCollection on UI thread to avoid "Collection was modified" races.
             var activeAnime = await _uiDispatcher.InvokeAsync(() =>
-                _animeService.Collection
+                _animeRepo.Collection
                     .Where(x => x.Status == UserAnimeStatus.Watching || x.Status == UserAnimeStatus.PlanToWatch)
                     .ToList());
 
@@ -286,7 +286,7 @@ public partial class RssFeedService
         // (NextEpisodeAt is null or already passed). Otherwise torrents have nothing new for us.
         // Snapshot on UI thread — ObservableCollection is not thread-safe.
         var awaitingEpisode = await _uiDispatcher.InvokeAsync(() =>
-            _animeService.Collection.Any(NeedsNyaaCheck));
+            _animeRepo.Collection.Any(NeedsNyaaCheck));
         if (!awaitingEpisode)
         {
             Log.Debug("RssFeedService: Skipping Nyaa RSS check - no anime is awaiting a new episode");
@@ -305,7 +305,7 @@ public partial class RssFeedService
             // Get only ongoing/watching items to save resources.
             // Snapshot on UI thread — ObservableCollection is not thread-safe.
             var activeAnime = await _uiDispatcher.InvokeAsync(() =>
-                _animeService.Collection
+                _animeRepo.Collection
                     .Where(x => x.Status == UserAnimeStatus.Watching || x.Status == UserAnimeStatus.PlanToWatch)
                     .ToList());
 

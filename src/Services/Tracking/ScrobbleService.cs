@@ -26,7 +26,7 @@ public interface IScrobbleService
 
 public class ScrobbleService : IScrobbleService, IDisposable
 {
-    private readonly AnimeService _animeService;
+    private readonly AnimeProgressService _progressService;
     private readonly HistoryService _historyService;
     private readonly SettingsService _settingsService;
     private readonly Services.NotificationService _notificationService;
@@ -42,13 +42,13 @@ public class ScrobbleService : IScrobbleService, IDisposable
     private bool _isPlaying;
 
     public ScrobbleService(
-        AnimeService animeService,
+        AnimeProgressService progressService,
         HistoryService historyService,
         SettingsService settingsService,
         Services.NotificationService notificationService,
         IBackgroundTaskSupervisor backgroundTasks)
     {
-        _animeService = animeService;
+        _progressService = progressService;
         _historyService = historyService;
         _settingsService = settingsService;
         _notificationService = notificationService;
@@ -167,7 +167,7 @@ public class ScrobbleService : IScrobbleService, IDisposable
                 nextStatus = UserAnimeStatus.Completed;
             }
 
-            await _animeService.UpdateProgressAsync(match, targetEp, nextStatus);
+            await _progressService.UpdateProgressAsync(match, targetEp, nextStatus);
             _historyService.AddEntry(match.Id, match.Title, match.RussianTitle, targetEp, nextStatus == UserAnimeStatus.Completed ? "Completed" : "Scrobbled");
             
             CountdownUpdated?.Invoke(this, Kiriha.Core.UIUtils.GetLoc("scrobbler.status.updated"));

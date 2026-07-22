@@ -8,7 +8,6 @@ using Kiriha.Services;
 using Kiriha.Services.Data;
 using Kiriha.Services.Data.Repositories;
 using Serilog;
-using Serilog;
 
 namespace Kiriha.Services.Maintenance;
 

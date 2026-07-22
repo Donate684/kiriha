@@ -102,7 +102,7 @@ public class NotificationService
     /// progress by more than one episode and <c>NotifyOnSkippedEpisode</c> is on.
     /// Surfaces a toast so the user knows progress was NOT updated.
     /// </summary>
-    public void NotifyScrobbleSkipped(Kiriha.Models.AnimeItem anime, int detectedEp)
+    public virtual void NotifyScrobbleSkipped(Kiriha.Models.AnimeItem anime, int detectedEp)
     {
         if (anime == null) return;
 
