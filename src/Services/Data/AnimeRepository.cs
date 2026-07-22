@@ -4,17 +4,13 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.Messaging;
-using Kiriha.Core;
-using Kiriha.Models.Entities;
-using Kiriha.Services.Data.Repositories;
-using Kiriha.Utils;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.UI;
-using Serilog;
-using Kiriha.Models;
 using Kiriha.Core.Infrastructure;
+using Kiriha.Models;
+using Kiriha.Models.Entities;
 using Kiriha.Services.AppLifecycle;
+using Kiriha.Services.Data.Repositories;
+using Kiriha.Utils.Collections;
+using Serilog;
 
 namespace Kiriha.Services.Data;
 
@@ -25,7 +21,7 @@ public class AnimeRepository
     private readonly IBackgroundTaskSupervisor _backgroundTasks;
     private readonly IUiDispatcher _uiDispatcher;
     private readonly RecognitionCache _recognitionCache;
-    
+
     private readonly TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _initStarted;
     private readonly Dictionary<int, CancellationTokenSource> _recentlyDeletedIds = new();
@@ -76,7 +72,7 @@ public class AnimeRepository
                 "StartupTiming: cached anime loaded count={Count} elapsedMs={ElapsedMs}",
                 cached?.Count ?? 0,
                 stage.ElapsedMilliseconds);
-            
+
             stage.Restart();
             await _uiDispatcher.InvokeAsync(() =>
             {
@@ -92,14 +88,14 @@ public class AnimeRepository
                     _idIndex.Clear();
                 }
             });
-            
+
             await Task.Run(() => _recognitionCache.BuildIndex(Collection));
 
             Log.Information(
                 "StartupTiming: cached anime applied to UI collection count={Count} elapsedMs={ElapsedMs}",
                 Collection.Count,
                 stage.ElapsedMilliseconds);
-            
+
             Log.Information("StartupTiming: anime repo initialized elapsedMs={ElapsedMs}", total.ElapsedMilliseconds);
         }
         catch (Exception ex)
@@ -190,7 +186,7 @@ public class AnimeRepository
     {
         if (toRemove.Any())
         {
-            await _uiDispatcher.InvokeAsync(() => 
+            await _uiDispatcher.InvokeAsync(() =>
             {
                 foreach (var item in toRemove)
                 {
@@ -202,7 +198,7 @@ public class AnimeRepository
 
         if (uiBatch.Any())
         {
-            await _uiDispatcher.InvokeAsync(() => 
+            await _uiDispatcher.InvokeAsync(() =>
             {
                 foreach (var action in uiBatch) action();
             });
@@ -211,13 +207,13 @@ public class AnimeRepository
 
     public Task<Dictionary<int, AnimeItem>> GetExistingMapAsync(MediaKind[] kinds)
     {
-        return _uiDispatcher.InvokeAsync(() => 
+        return _uiDispatcher.InvokeAsync(() =>
             Collection.Where(x => kinds.Contains(x.MediaKind)).ToDictionary(x => x.Id));
     }
-    
+
     public Task<List<AnimeItem>> GetSnapshotAsync(MediaKind[] kinds)
     {
-        return _uiDispatcher.InvokeAsync(() => 
+        return _uiDispatcher.InvokeAsync(() =>
             Collection.Where(x => kinds.Contains(x.MediaKind)).ToList());
     }
 

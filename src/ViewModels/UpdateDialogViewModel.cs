@@ -36,7 +36,7 @@ public partial class UpdateDialogViewModel : ViewModelBase
         _updateService = updateService;
         _closeAction = closeAction;
         _isDownloaded = isDownloaded;
-        
+
         if (isDownloaded)
         {
             _versionText = Core.UIUtils.GetLoc("updates.downloaded");
@@ -58,12 +58,12 @@ public partial class UpdateDialogViewModel : ViewModelBase
 
         try
         {
-            var success = await _updateService.DownloadAndInstallAsync(p => 
+            var success = await _updateService.DownloadAndInstallAsync(p =>
             {
                 Progress = p;
                 OnPropertyChanged(nameof(ProgressText));
             }, _cts.Token);
-            
+
             if (success)
             {
                 IsDownloaded = true;

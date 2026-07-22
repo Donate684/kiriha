@@ -1,28 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
 using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
 using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
+using Kiriha.Models.Messages;
 using Kiriha.Services.Api;
 using Kiriha.Services.Data;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using Serilog;
-using CommunityToolkit.Mvvm.Messaging;
-using Kiriha.Models.Messages;
 
 namespace Kiriha.Services.Tracking;
 
@@ -151,7 +142,7 @@ public class TrackingService : IDisposable
 
                 bool changed = prev.IsPlaying != media.IsPlaying || prev.ProcessName != media.ProcessName || timeLeap;
                 lock (_state) _currentMedia = media;
-                
+
                 if (!changed)
                 {
                     return;
@@ -159,18 +150,18 @@ public class TrackingService : IDisposable
 
                 _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new MediaChangedMessage(media)));
                 _scrobbleService.UpdatePlayingState(media.IsPlaying);
-                
+
                 // We need to update presence periodically for position/duration changes if we seek, 
                 // but for smooth ticking Discord handles it. We just call it if IsPlaying changed, or significant time leap.
                 AnimeItem? currentMatched;
                 lock (_state) currentMatched = _matchedAnime;
-                
+
                 if (currentMatched != null)
                 {
                     NotifyPlayerMetadata(media, currentMatched);
                     UpdateDiscordPresence(media, currentMatched);
                 }
-                
+
                 return;
             }
 
@@ -180,14 +171,15 @@ public class TrackingService : IDisposable
                 _matchedAnime = null;
             }
             _scrobbleService.CancelScrobble();
-            
-            _uiDispatcher.Post(() => {
+
+            _uiDispatcher.Post(() =>
+            {
                 WeakReferenceMessenger.Default.Send(new MediaChangedMessage(media));
                 WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(null));
             });
 
             await Task.WhenAny(_animeRepo.InitializationTask, Task.Delay(5000));
-            
+
             var userList = await _uiDispatcher.InvokeAsync(() => _animeRepo.Collection.ToList());
             var matched = userList.FirstOrDefault(x => x.Id == animeId);
 
@@ -240,7 +232,7 @@ public class TrackingService : IDisposable
                     _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(matched)));
 
                     UpdateDiscordPresence(media, matched);
-                    
+
                     if (matched.Status != UserAnimeStatus.None)
                         _scrobbleService.StartScrobble(media, matched);
                 }
@@ -307,7 +299,7 @@ public class TrackingService : IDisposable
         ParsedMedia? media;
         lock (_state) media = _currentMedia;
         if (media == null) return false;
-        return _mappingService.IsManuallyMapped(media.AnimeTitle) || 
+        return _mappingService.IsManuallyMapped(media.AnimeTitle) ||
                _mappingService.IsManuallyMapped(media.OriginalTitle);
     }
 
@@ -319,8 +311,9 @@ public class TrackingService : IDisposable
             _matchedAnime = null;
         }
         _scrobbleService.CancelScrobble();
-        
-        _uiDispatcher.Post(() => {
+
+        _uiDispatcher.Post(() =>
+        {
             WeakReferenceMessenger.Default.Send(new MediaChangedMessage(null));
             WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(null));
         });
@@ -336,7 +329,7 @@ public class TrackingService : IDisposable
         try
         {
             if (!_settingsService.Current.System.Scrobbler.Enabled) return;
-            
+
             lock (_state)
             {
                 if (_manualMapInProgress) return;
@@ -371,8 +364,9 @@ public class TrackingService : IDisposable
             _matchedAnime = null;
         }
         _scrobbleService.CancelScrobble();
-        
-        _uiDispatcher.Post(() => {
+
+        _uiDispatcher.Post(() =>
+        {
             WeakReferenceMessenger.Default.Send(new MediaChangedMessage(media));
             WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(null)); // Clear previous match UI immediately
             WeakReferenceMessenger.Default.Send(new TrackingStatusMessage(UIUtils.GetLoc("scrobbler.status.matching")));
@@ -382,7 +376,7 @@ public class TrackingService : IDisposable
         {
             // Wait for services to be ready (e.g. at app startup)
             await Task.WhenAny(_animeRepo.InitializationTask, Task.Delay(5000));
-            
+
             // Respect user's explicit unlink: skip all mapping attempts.
             if (_mappingService.IsNegativelyMapped(media.OriginalTitle) ||
                 _mappingService.IsNegativelyMapped(media.AnimeTitle))
@@ -398,7 +392,7 @@ public class TrackingService : IDisposable
 
             // Perform Mapping
             int? malId = await _mappingService.GetIdFromTitleAsync(media.OriginalTitle, userList);
-            
+
             // Race: another media event may have arrived while we were mapping.
             ParsedMedia? cur;
             lock (_state) cur = _currentMedia;
@@ -435,7 +429,7 @@ public class TrackingService : IDisposable
                         }
                     }
                 }
-                
+
                 if (matched != null && matched.TotalEpisodes <= 1 && string.IsNullOrWhiteSpace(media.Episode))
                 {
                     media.Episode = "1";
@@ -454,13 +448,13 @@ public class TrackingService : IDisposable
                 if (!isValid) return;
 
                 _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(matched)));
-                
+
                 if (matched != null)
                 {
                     NotifyPlayerMetadata(media, matched);
 
                     UpdateDiscordPresence(media, matched);
-                    
+
                     if (matched.Status != UserAnimeStatus.None)
                         _scrobbleService.StartScrobble(media, matched);
                 }

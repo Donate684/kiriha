@@ -1,6 +1,5 @@
 using System;
 using System.Text.Json.Serialization;
-using Kiriha.Models;
 
 namespace Kiriha.Models.Api;
 

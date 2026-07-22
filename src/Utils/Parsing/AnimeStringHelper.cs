@@ -1,15 +1,9 @@
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Kiriha.Utils.Collections;
 
 namespace Kiriha.Utils.Parsing;
 
@@ -130,13 +124,13 @@ public static class AnimeStringHelper
             else
                 sb.Append(' ');
         }
-        
+
         return SpacesRegex.Replace(sb.ToString(), " ").Trim();
     }
 
     private static string ApplyGroupReplacements(string input, Regex regex, Dictionary<string, string> map)
     {
-        return regex.Replace(input, match => 
+        return regex.Replace(input, match =>
             map.TryGetValue(match.Value.ToLowerInvariant(), out var replacement) ? replacement : match.Value);
     }
 
@@ -146,7 +140,7 @@ public static class AnimeStringHelper
     public static string CleanShikiDescription(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-        
+
         // Handle Shikimori's placeholder for blocked titles
         if (input.Contains("Заблокировано по требованию Роскомнадзора")) return string.Empty;
 

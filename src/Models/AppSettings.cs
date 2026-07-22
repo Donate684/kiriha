@@ -1,9 +1,5 @@
 using System.Collections.Generic;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models.Api;
 
 namespace Kiriha.Models;
@@ -37,7 +33,7 @@ public class AppSettings
         public bool ShowNsfw { get; set; } = false;
         public bool ListShowNsfw { get; set; } = false;
         public bool IsPaneOpen { get; set; } = true;
-        
+
         /// <summary>
         /// App-level UI scale factor (1.0 = 100%).
         /// Applied via LayoutTransformControl on MainWindow root.

@@ -39,7 +39,7 @@ public class CenteredWrapPanel : Panel
         totalHeight += curHeight;
 
         return new Size(
-            double.IsInfinity(availableSize.Width) ? maxWidth : Math.Max(maxWidth, availableSize.Width), 
+            double.IsInfinity(availableSize.Width) ? maxWidth : Math.Max(maxWidth, availableSize.Width),
             totalHeight
         );
     }
@@ -54,7 +54,7 @@ public class CenteredWrapPanel : Panel
             // If there are items, we potentially subtract last item's excess right margin for perfect visual centering
             // but standard DesiredSize is accurate enough for typical margins.
             double visualRowWidth = curWidth;
-            
+
             // Calculate start X point to keep row contents centered
             double x = (finalSize.Width - visualRowWidth) / 2;
 

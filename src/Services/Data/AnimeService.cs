@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -8,21 +7,10 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
 using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
 using Kiriha.Services.AppLifecycle;
-using Kiriha.Services.Data;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.Services.Data;
@@ -60,7 +48,7 @@ public class AnimeService
     // instead of one event per Add. AnimeListViewModel and any other consumer
     // sees this as a regular ObservableCollection<AnimeItem>.
     public Kiriha.Utils.Collections.BulkObservableCollection<AnimeItem> Collection { get; } = new();
-    
+
     public bool IsInitializing => Volatile.Read(ref _initStarted) == 1 && !_initTcs.Task.IsCompleted;
     public bool IsSyncing => Volatile.Read(ref _syncing) == 1;
 
@@ -109,7 +97,7 @@ public class AnimeService
                 "StartupTiming: cached anime loaded count={Count} elapsedMs={ElapsedMs}",
                 cached?.Count ?? 0,
                 stage.ElapsedMilliseconds);
-            
+
             // Single-shot Reset instead of per-item Add: one CollectionChanged event
             // for 2000+ items vs. 2000+ events. Eliminates the ~400 ms UI stall
             // observed on startup when seeding the cached anime list.
@@ -128,7 +116,7 @@ public class AnimeService
                     _idIndex.Clear();
                 }
             });
-            
+
             // Build the recognition cache using background thread
             await Task.Run(() => _recognitionCache.BuildIndex(Collection));
 
@@ -136,7 +124,7 @@ public class AnimeService
                 "StartupTiming: cached anime applied to UI collection count={Count} elapsedMs={ElapsedMs}",
                 Collection.Count,
                 stage.ElapsedMilliseconds);
-            
+
             if (Collection.Count == 0)
             {
                 stage.Restart();
@@ -200,16 +188,16 @@ public class AnimeService
                 return false;
 
             await ProcessSyncResults(apiList, currentItems, status, ct);
-            
+
             status?.Report(UIUtils.GetLoc("sync.saving.to_db"));
             // Snapshot Collection on the UI thread to avoid "Collection was modified" if
             // the UI is iterating concurrently. ObservableCollection is not thread-safe.
             var snapshot = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Anime).ToList());
             await _userAnimeRepo.SyncFromRemoteAsync(snapshot, new[] { MediaKind.Anime });
-            
+
             // Re-build recognition index after sync
             await Task.Run(() => _recognitionCache.BuildIndex(Collection));
-            
+
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
             return true;
         }
@@ -255,11 +243,11 @@ public class AnimeService
                 return false;
 
             await ProcessSyncResults(apiList, currentItems, status, ct);
-            
+
             status?.Report(UIUtils.GetLoc("sync.saving.to_db"));
             var snapshot = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Manga || x.MediaKind == MediaKind.LightNovel).ToList());
             await _userAnimeRepo.SyncFromRemoteAsync(snapshot, new[] { MediaKind.Manga, MediaKind.LightNovel });
-            
+
             // Reusing AnimeListRefreshMessage for now to trigger UI refresh
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
             return true;
@@ -318,17 +306,17 @@ public class AnimeService
     private async Task ProcessSyncResults(List<AnimeItem> apiList, List<AnimeItem> currentItems, IProgress<string>? status, CancellationToken ct)
     {
         var apiMap = apiList.ToDictionary(x => x.Id);
-        
+
         // Snapshot Collection on UI thread — ObservableCollection is not thread-safe and a
         // background ToList() can race with concurrent UI iteration / Add.
-        
+
         var existingMap = currentItems.ToDictionary(x => x.Id);
 
         // 1. Remove items no longer in API
         var toRemove = currentItems.Where(x => !apiMap.ContainsKey(x.Id)).ToList();
         if (toRemove.Any())
         {
-            await _uiDispatcher.InvokeAsync(() => 
+            await _uiDispatcher.InvokeAsync(() =>
             {
                 foreach (var item in toRemove)
                 {
@@ -345,9 +333,9 @@ public class AnimeService
         for (int i = 0; i < total; i++)
         {
             if (ct.IsCancellationRequested) break;
-            
+
             var newItem = apiList[i];
-            
+
             // Check blacklist
             lock (_recentlyDeletedIds)
             {
@@ -379,12 +367,12 @@ public class AnimeService
                 {
                     var currentBatch = uiBatch.ToList();
                     uiBatch.Clear();
-                    await _uiDispatcher.InvokeAsync(() => 
+                    await _uiDispatcher.InvokeAsync(() =>
                     {
                         foreach (var action in currentBatch) action();
                     });
                 }
-                
+
                 status?.Report($"{UIUtils.GetLoc("sync.updating.metadata")}: {i + 1}/{total}");
                 if (i < total - 1)
                 {
@@ -508,9 +496,9 @@ public class AnimeService
         await _syncManager.EnqueueUpdateAsync(item.Id, nextProgress, nextStatus);
 
         item.Progress = nextProgress;
-        if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None) 
+        if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None)
             item.Status = nextStatus.Value;
-        
+
         return true;
     }
 
@@ -519,9 +507,9 @@ public class AnimeService
         UserAnimeStatus? nextStatus = null;
         if (item.Status != UserAnimeStatus.Watching && item.Status != UserAnimeStatus.Completed)
             nextStatus = UserAnimeStatus.Watching;
-        
+
         bool isManga = item.MediaKind != MediaKind.Anime;
-        
+
         // Manga completion
         if (isManga && item.Chapters > 0 && nextProgress >= item.Chapters && item.Status == UserAnimeStatus.Watching)
             nextStatus = UserAnimeStatus.Completed;
@@ -532,12 +520,12 @@ public class AnimeService
         if (isManga)
         {
             item.ChaptersRead = nextProgress;
-            if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None) 
+            if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None)
                 item.Status = nextStatus.Value;
 
             await _userAnimeRepo.UpdateProgressAsync(item, nextProgress, nextStatus);
             await _syncManager.EnqueueFullUpdateAsync(item);
-            
+
             _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, nextStatus == UserAnimeStatus.Completed ? "Completed" : "Read");
             return nextStatus;
         }
@@ -549,7 +537,7 @@ public class AnimeService
                 return nextStatus;
             }
         }
-        
+
         return null;
     }
 
@@ -566,7 +554,7 @@ public class AnimeService
 
                 await _userAnimeRepo.UpdateProgressAsync(item, nextProgress, null);
                 await _syncManager.EnqueueFullUpdateAsync(item);
-                
+
                 _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, "Reverted");
             }
         }

@@ -1,9 +1,5 @@
 using System.Globalization;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 
 namespace Kiriha.Models;
 
@@ -17,7 +13,7 @@ public static class RatingHelper
 {
     public static RatingOption GetRatingOption(string? scoreStr)
     {
-        if (string.IsNullOrEmpty(scoreStr) || scoreStr == "-") 
+        if (string.IsNullOrEmpty(scoreStr) || scoreStr == "-")
             return new RatingOption("-", "");
 
         if (double.TryParse(scoreStr.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double score))

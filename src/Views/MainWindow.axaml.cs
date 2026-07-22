@@ -1,33 +1,13 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Styling;
 using Kiriha.Models;
-using Kiriha.Services.Api;
-using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
-using Kiriha.Services.Tracking;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
-using Microsoft.Extensions.DependencyInjection;
+using Kiriha.Views.Player;
 using Serilog;
 
 namespace Kiriha.Views;
@@ -336,10 +316,10 @@ public partial class MainWindow : KirihaWindowBase
             // Available room in DIPs, with a small margin so the window never
             // sits flush against the taskbar / screen edge.
             const int marginPx = 16;
-            var availWidthDip = Math.Max(1, (area.Width  - marginPx * 2) / scaling);
+            var availWidthDip = Math.Max(1, (area.Width - marginPx * 2) / scaling);
             var availHeightDip = Math.Max(1, (area.Height - marginPx * 2) / scaling);
 
-            var desiredWidth = Bounds.Width  > 0 ? Bounds.Width  : Width;
+            var desiredWidth = Bounds.Width > 0 ? Bounds.Width : Width;
             var desiredHeight = Bounds.Height > 0 ? Bounds.Height : Height;
             if (double.IsNaN(desiredWidth) || desiredWidth <= 0) desiredWidth = DefaultWidth;
             if (double.IsNaN(desiredHeight) || desiredHeight <= 0) desiredHeight = DefaultHeight;
@@ -374,7 +354,7 @@ public partial class MainWindow : KirihaWindowBase
             if (sizeChanged || offHorizontally || offVertically)
             {
                 var centered = new PixelPoint(
-                    area.X + Math.Max(0, (area.Width  - winWidthPx)  / 2),
+                    area.X + Math.Max(0, (area.Width - winWidthPx) / 2),
                     area.Y + Math.Max(0, (area.Height - winHeightPx) / 2));
                 Position = centered;
                 _lastNormalPosition = centered;

@@ -1,21 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
-using Kiriha.Models;
 using Kiriha.Models.Api;
-using Kiriha.Models.Entities;
 using Serilog;
 
 namespace Kiriha.Services.Auth;
@@ -60,7 +51,7 @@ public class MalAuthService
     public async Task<MalTokens?> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
         Log.Information("Refreshing MAL access token...");
-        
+
         var content = new FormUrlEncodedContent(new[]
         {
             new KeyValuePair<string, string>("client_id", ApiKeys.MalClientId),
@@ -81,7 +72,7 @@ public class MalAuthService
                 return tokens;
             }
 
-            Log.Error("Failed to refresh MAL token. Status: {StatusCode}, Body: {Body}", 
+            Log.Error("Failed to refresh MAL token. Status: {StatusCode}, Body: {Body}",
                 response.StatusCode, json.Length > 200 ? json[..200] : json);
             return null;
         }
@@ -105,7 +96,7 @@ public class MalAuthService
 
         var response = await _httpClient.PostAsync(Constants.Api.Mal.TokenUrl, content);
         var json = await response.Content.ReadAsStringAsync();
-        
+
         if (response.IsSuccessStatusCode)
         {
             var tokens = JsonSerializer.Deserialize<MalTokens>(json);

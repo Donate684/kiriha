@@ -1,13 +1,8 @@
 using System;
 using Kiriha.Core;
 using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Services;
-using Kiriha.Services.Api;
 using Kiriha.Services.AppLifecycle;
-using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
 using Kiriha.Services.Data.Repositories;
 using Microsoft.EntityFrameworkCore;

@@ -3,10 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using Avalonia.Data.Converters;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 
 namespace Kiriha.Views.Converters;
 

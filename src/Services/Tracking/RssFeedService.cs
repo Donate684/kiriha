@@ -1,9 +1,3 @@
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,11 +6,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Kiriha.Core;
 using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
 using Kiriha.Services.Data;
@@ -294,8 +284,8 @@ public partial class RssFeedService
         }
 
         Log.Debug("RssFeedService: Checking Nyaa.si RSS feed...");
-        
-        try 
+
+        try
         {
             var doc = await FetchRssAsync(NyaaRssUrl, CancellationToken.None);
             if (doc == null) return;
@@ -358,12 +348,12 @@ public partial class RssFeedService
                 // Match with user list
                 string matchTitle = !string.IsNullOrEmpty(animeTitle) ? animeTitle : title;
                 int? malId = await _mappingService.GetIdFromTitleAsync(matchTitle, activeAnime);
-                
+
                 if (malId != null)
                 {
                     torrent.IsMatched = true;
                 }
-                
+
                 if (existing == null)
                 {
                     newTorrents.Add(torrent);
@@ -372,7 +362,8 @@ public partial class RssFeedService
 
             if (newTorrents.Any())
             {
-                _uiDispatcher.Post(() => {
+                _uiDispatcher.Post(() =>
+                {
                     // Add to the beginning of collection
                     foreach (var t in newTorrents.OrderBy(x => x.PublishDate))
                     {
@@ -381,7 +372,7 @@ public partial class RssFeedService
                             TorrentItems.Insert(0, t);
                         }
                     }
-                    
+
                     // Trim collection
                     while (TorrentItems.Count > 100) TorrentItems.RemoveAt(TorrentItems.Count - 1);
                 });

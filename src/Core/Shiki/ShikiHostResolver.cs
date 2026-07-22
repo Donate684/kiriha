@@ -1,7 +1,3 @@
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -116,7 +112,7 @@ public sealed class ShikiHostResolver
                 _activeOriginalHost = toHost;
                 return true;
             }
-            
+
             if (_forkHosts.Contains(fromHost))
             {
                 _forkHosts.Add(toHost);

@@ -7,12 +7,7 @@ using System.Threading;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models.Entities;
-using Kiriha.Services.Data;
 using Kiriha.Services.Data.Repositories;
 using Serilog;
 
@@ -320,7 +315,7 @@ public class JikanApiService : IDisposable
                 }
             }
         }
-        
+
         Log.Information("Jikan: Parsed {Count} relations for ID {Id}", result.Count, malId);
 
         // Even if empty, we save it so we don't hammer the API for missing relations
@@ -372,9 +367,9 @@ public class JikanApiService : IDisposable
                     var personId = personNode.TryGetProperty("mal_id", out var id) ? id.GetInt32() : 0;
                     var personUrl = personNode.TryGetProperty("url", out var url) ? url.GetString() ?? "" : "";
                     var personName = personNode.TryGetProperty("name", out var name) ? name.GetString() ?? "" : "";
-                    
+
                     string imageUrl = "";
-                    if (personNode.TryGetProperty("images", out var imagesNode) && 
+                    if (personNode.TryGetProperty("images", out var imagesNode) &&
                         imagesNode.TryGetProperty("jpg", out var jpgNode) &&
                         jpgNode.TryGetProperty("image_url", out var imgUrlNode))
                     {
@@ -406,7 +401,7 @@ public class JikanApiService : IDisposable
                 }
             }
         }
-        
+
         Log.Information("Jikan: Parsed {Count} staff for ID {Id}", result.Count, malId);
 
         try { await _staff.ReplaceAsync(malId, result); }

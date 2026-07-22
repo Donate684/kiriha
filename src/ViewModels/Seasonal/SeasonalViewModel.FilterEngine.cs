@@ -2,18 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Entities;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 
 namespace Kiriha.ViewModels.Seasonal;
 

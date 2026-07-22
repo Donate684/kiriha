@@ -4,8 +4,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Kiriha.Views;
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
 
 namespace Kiriha.Services.AppLifecycle;
 

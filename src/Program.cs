@@ -2,11 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
 using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Serilog;
 using Velopack;
 
@@ -65,7 +61,7 @@ sealed class Program
                 if (File.Exists(settingsPath))
                 {
                     var content = File.ReadAllText(settingsPath);
-                    if (content.Contains("\"EnableLogging\": true", StringComparison.OrdinalIgnoreCase) || 
+                    if (content.Contains("\"EnableLogging\": true", StringComparison.OrdinalIgnoreCase) ||
                         content.Contains("\"EnableLogging\":true", StringComparison.OrdinalIgnoreCase))
                     {
                         enableLogging = true;

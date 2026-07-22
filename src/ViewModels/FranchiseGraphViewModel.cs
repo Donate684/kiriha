@@ -1,17 +1,12 @@
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Kiriha.Models.Entities;
-using Kiriha.Services.Api;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
-using Serilog;
 using Kiriha.Core.Dialogs;
 using Kiriha.Models;
+using Kiriha.Models.Entities;
+using Kiriha.Services.Api;
+using Kiriha.Utils.Graphs;
+using Serilog;
 
 namespace Kiriha.ViewModels;
 
@@ -49,7 +44,7 @@ public partial class FranchiseGraphViewModel : ViewModelBase
             {
                 // Assign currentId if the API doesn't do it reliably
                 if (data.CurrentId == 0) data.CurrentId = _baseAnimeId;
-                
+
                 Layout = FranchiseLayoutEngine.CalculateLayout(data);
             }
             else
@@ -72,14 +67,14 @@ public partial class FranchiseGraphViewModel : ViewModelBase
     private async Task NodeClicked(FranchiseGraphVisualNode node)
     {
         if (node == null || node.Node == null) return;
-        
+
         MediaKind kind = node.Node.Kind.ToLowerInvariant() switch
         {
             "manga" or "manhwa" or "manhua" or "one_shot" or "doujin" => MediaKind.Manga,
             "novel" or "light_novel" => MediaKind.LightNovel,
             _ => MediaKind.Anime
         };
-        
+
         var targetAnime = new AnimeItem
         {
             Id = node.Node.Id,
@@ -87,7 +82,7 @@ public partial class FranchiseGraphViewModel : ViewModelBase
             MediaKind = kind,
             MainPictureUrl = node.Node.ImageUrl
         };
-        
+
         await _dialogs.ShowAnimeDetailsAsync(null, targetAnime);
     }
 }

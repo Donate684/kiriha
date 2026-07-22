@@ -1,9 +1,6 @@
-using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.VisualTree;
-using Material.Icons;
 
 namespace Kiriha.Views.Controls;
 
@@ -20,12 +17,12 @@ public partial class TitleBarButtons : UserControl
     {
         base.OnAttachedToVisualTree(e);
         _parentWindow = TopLevel.GetTopLevel(this) as Window;
-        
+
         if (_parentWindow != null)
         {
             _parentWindow.PropertyChanged += OnWindowPropertyChanged;
             UpdateWindowState(_parentWindow.WindowState);
-            
+
             // Hide maximize button if window cannot be resized
             if (!_parentWindow.CanResize)
             {
@@ -77,8 +74,8 @@ public partial class TitleBarButtons : UserControl
     {
         if (_parentWindow != null)
         {
-            _parentWindow.WindowState = _parentWindow.WindowState == WindowState.Maximized 
-                ? WindowState.Normal 
+            _parentWindow.WindowState = _parentWindow.WindowState == WindowState.Maximized
+                ? WindowState.Normal
                 : WindowState.Maximized;
         }
     }

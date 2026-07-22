@@ -1,18 +1,11 @@
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using Kiriha.Models;
+using Kiriha.Utils.Parsing;
 using Serilog;
-using System.IO;
 
 namespace Kiriha.Services.Tracking.Anisthesia.Strategies;
 
@@ -117,7 +110,7 @@ public class HandleEnumerationStrategy
                                         {
                                             path = new string(pathBuffer, 0, (int)pathLen);
                                         }
-                                        
+
                                         if (seenFiles.Add(path))
                                         {
                                             files.Add(path);
@@ -176,7 +169,7 @@ public class HandleEnumerationStrategy
             if (videoExtensions.Contains(ext))
             {
                 string filename = System.IO.Path.GetFileName(file);
-                
+
                 // Use AnitomySharp to parse the filename
                 var elements = Kiriha.Utils.Parsing.AnimeParseCache.Parse(filename);
                 var titleElement = elements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
@@ -212,7 +205,7 @@ public class HandleEnumerationStrategy
 
                 if (subTitleElement != null)
                     episodeTitle = subTitleElement.Value;
-                
+
                 if (otherElement != null)
                     episodeTitle = string.IsNullOrEmpty(episodeTitle) ? otherElement.Value : $"{episodeTitle} {otherElement.Value}";
 

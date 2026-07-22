@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -19,14 +18,14 @@ public class AnimeOfflineItem
     private string _type = string.Empty;
 
     [Column("type")]
-    public string Type 
-    { 
-        get 
+    public string Type
+    {
+        get
         {
             if (string.IsNullOrEmpty(_type)) return "";
             var upper = _type.ToUpperInvariant();
-            return (upper == "TV" || upper == "OVA" || upper == "ONA") 
-                ? upper 
+            return (upper == "TV" || upper == "OVA" || upper == "ONA")
+                ? upper
                 : char.ToUpperInvariant(_type[0]) + _type.Substring(1).ToLowerInvariant();
         }
         set => _type = value;

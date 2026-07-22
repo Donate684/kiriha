@@ -2,9 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Shiki;
-using Kiriha.Services;
 using Kiriha.Services.Data;
 using Kiriha.Services.Data.Repositories;
 using Serilog;
@@ -86,7 +83,7 @@ public class MetadataFetchMaintenanceTask : IMaintenanceTask
                 {
                     // Fetch metadata one by one
                     var fetched = await _shikiMetadata.GetOrFetchMetadataAsync(missing.Id, null, null, missing.MediaKind);
-                    
+
                     // Ensure main poster is downloaded
                     if (!string.IsNullOrEmpty(missing.MainPictureUrl))
                     {

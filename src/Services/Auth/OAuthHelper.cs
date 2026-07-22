@@ -5,10 +5,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Serilog;
 
 namespace Kiriha.Services.Auth;
@@ -25,14 +21,14 @@ public static class OAuthHelper
         Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true });
 
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        
-        try 
+
+        try
         {
             while (!cts.Token.IsCancellationRequested)
             {
                 var context = await listener.GetContextAsync().WaitAsync(cts.Token);
                 var request = context.Request;
-                
+
                 // Ignore favicon and other irrelevant requests
                 if (request.Url?.AbsolutePath == "/favicon.ico")
                 {
@@ -53,7 +49,7 @@ public static class OAuthHelper
                         context.Response.Close();
                         return null;
                     }
-                    
+
                     // Otherwise keep waiting
                     continue;
                 }
@@ -67,10 +63,10 @@ public static class OAuthHelper
                 response.ContentLength64 = buffer.Length;
                 await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
                 await response.OutputStream.FlushAsync();
-                
+
                 // Brief delay to ensure browser receives response
                 await Task.Delay(500);
-                
+
                 listener.Stop();
                 return code;
             }

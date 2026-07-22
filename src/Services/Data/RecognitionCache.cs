@@ -76,9 +76,9 @@ public class RecognitionCache
             return matches;
         return null;
     }
-    
+
     public void Clear() => _cache.Clear();
-    
+
     public void AddMatch(string normalizedTitle, int id, float weight)
     {
         _cache.AddOrUpdate(normalizedTitle,

@@ -1,34 +1,9 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
-using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using Avalonia.Styling;
-using Avalonia.Threading;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
-using Kiriha.Models;
-using Kiriha.Models.Entities;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 
 namespace Kiriha.Views.AnimeList;
 

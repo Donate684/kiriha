@@ -1,9 +1,3 @@
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -56,14 +50,14 @@ public partial class MappingService
         if (string.IsNullOrWhiteSpace(title)) return false;
         string normOriginal = Normalize(title);
         if (_manualMapping.TryGetMapping(normOriginal, out _)) return true;
-        
+
         var parsed = Kiriha.Utils.Parsing.AnimeParseCache.Parse(title);
         var titleElement = parsed.FirstOrDefault(x => x.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
         string cleanTitle = titleElement != null ? titleElement.Value : Path.GetFileNameWithoutExtension(title);
-        
+
         string normClean = Normalize(cleanTitle);
         if (_manualMapping.TryGetMapping(normClean, out _)) return true;
-        
+
         return false;
     }
 
@@ -91,7 +85,7 @@ public partial class MappingService
         if (string.IsNullOrWhiteSpace(title)) return null;
 
         var (cleanTitle, searchTitle, parsedSeason, parsedEpisode) = ParseAnimeTitle(title);
-        
+
         string normalized = cleanTitle.Trim().ToLowerInvariant();
         string normalizedWithSeason = searchTitle.Trim().ToLowerInvariant();
 
@@ -102,7 +96,7 @@ public partial class MappingService
         // 1. Manual Mappings
         string normOriginal = Normalize(title);
         string normClean = Normalize(cleanTitle);
-        
+
         if (_manualMapping.TryGetMapping(normOriginal, out id)) return id;
         if (_manualMapping.TryGetMapping(normClean, out id)) return id;
         if (_manualMapping.TryGetMapping(normalizedWithSeason, out id)) return id;
@@ -120,14 +114,14 @@ public partial class MappingService
                 if (match.Id == 0) continue;
                 var anime = userList.FirstOrDefault(x => x.Id == match.Id);
                 if (anime != null && !IsValidMatch(anime, parsedEpisode)) continue;
-                
+
                 _sessionCache[normalizedWithSeason] = match.Id;
                 return match.Id;
             }
         }
 
         // 3. User List Exact Match
-        var localMatch = userList.FirstOrDefault(x => 
+        var localMatch = userList.FirstOrDefault(x =>
             string.Equals(x.Title, searchTitle, StringComparison.OrdinalIgnoreCase) ||
             string.Equals(x.EnglishTitle, searchTitle, StringComparison.OrdinalIgnoreCase) ||
             string.Equals(x.RussianTitle, searchTitle, StringComparison.OrdinalIgnoreCase));
@@ -138,7 +132,7 @@ public partial class MappingService
         // in the user list. Let SearchOnMalAsync handle these cases instead.
         if (localMatch == null && searchTitle != cleanTitle && parsedSeason <= 1)
         {
-            localMatch = userList.FirstOrDefault(x => 
+            localMatch = userList.FirstOrDefault(x =>
                 string.Equals(x.Title, cleanTitle, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(x.EnglishTitle, cleanTitle, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(x.RussianTitle, cleanTitle, StringComparison.OrdinalIgnoreCase));
@@ -153,19 +147,19 @@ public partial class MappingService
         // 4. User List Normalized Match
         string normTitle = Normalize(cleanTitle);
         string normSearchTitle = Normalize(searchTitle);
-        
-        localMatch = userList.FirstOrDefault(x => 
-            Normalize(x.Title) == normSearchTitle || 
+
+        localMatch = userList.FirstOrDefault(x =>
+            Normalize(x.Title) == normSearchTitle ||
             Normalize(x.EnglishTitle ?? "") == normSearchTitle ||
             Normalize(x.RussianTitle ?? "") == normSearchTitle);
-            
+
         // Same season-aware guard as in step 3: never collapse a "Season 2+"
         // query down to the base title here, otherwise the normalized fallback
         // silently maps "Sousou no Frieren 2nd Season - 01" to the S1 entry.
         if (localMatch == null && normSearchTitle != normTitle && parsedSeason <= 1)
         {
-            localMatch = userList.FirstOrDefault(x => 
-                Normalize(x.Title) == normTitle || 
+            localMatch = userList.FirstOrDefault(x =>
+                Normalize(x.Title) == normTitle ||
                 Normalize(x.EnglishTitle ?? "") == normTitle ||
                 Normalize(x.RussianTitle ?? "") == normTitle);
         }
@@ -193,7 +187,7 @@ public partial class MappingService
     private int ExtractSeason(string title, AnitomySharp.Element? seasonElement)
     {
         if (seasonElement != null && int.TryParse(seasonElement.Value, out int s)) return s;
-        
+
         var match = SeasonRegex().Match(title);
         if (match.Success)
         {
@@ -221,7 +215,7 @@ public partial class MappingService
         }
 
         string cleanTitle = titleElement != null ? titleElement.Value : Path.GetFileNameWithoutExtension(title);
-        
+
         if (episodeElement == null)
         {
             if (subTitleElement != null && !cleanTitle.Contains(subTitleElement.Value, StringComparison.OrdinalIgnoreCase))
@@ -296,21 +290,23 @@ public partial class MappingService
         var queryWords = normQ.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         var bestMalMatch = searchResults.Take(5)
-            .Select(r => {
+            .Select(r =>
+            {
                 float score = 0;
-                
+
                 var titles = new List<string> { r.Title };
                 if (!string.IsNullOrEmpty(r.EnglishTitle)) titles.Add(r.EnglishTitle);
                 if (!string.IsNullOrEmpty(r.JapaneseTitle)) titles.Add(r.JapaneseTitle);
                 if (r.AlternativeTitles != null) titles.AddRange(r.AlternativeTitles);
-                
-                foreach(var t in titles) {
+
+                foreach (var t in titles)
+                {
                     string normT = Normalize(t);
                     var titleWords = normT.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    
+
                     int matchingWords = queryWords.Count(qw => titleWords.Contains(qw));
                     float currentScore = queryWords.Length > 0 ? (matchingWords / (float)queryWords.Length) * 70 : 0;
-                    
+
                     if (normT == normQ) currentScore = 100;
 
                     string[] criticalKeywords = { "movie", "ova", "oad", "special", "ii", "2", "iii", "3", "iv", "4", "v", "5" };
@@ -318,14 +314,14 @@ public partial class MappingService
                     {
                         bool inQuery = queryWords.Contains(word, StringComparer.OrdinalIgnoreCase);
                         bool inTitle = titleWords.Contains(word, StringComparer.OrdinalIgnoreCase);
-                        
+
                         if (inQuery && inTitle) currentScore += 30;
                         else if (inQuery && !inTitle) currentScore -= 15;
                     }
-                    
+
                     if (currentScore > score) score = currentScore;
                 }
-                
+
                 return new { Result = r, Score = score };
             })
             .OrderByDescending(x => x.Score)

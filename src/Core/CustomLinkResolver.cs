@@ -30,19 +30,19 @@ public static class CustomLinkResolver
     {
         if (string.IsNullOrEmpty(template) || anime == null) return template ?? string.Empty;
 
-        var title    = anime.Title ?? string.Empty;
-        var english  = !string.IsNullOrEmpty(anime.EnglishTitle) ? anime.EnglishTitle! : title;
-        var russian  = !string.IsNullOrEmpty(anime.RussianTitle) ? anime.RussianTitle! : title;
+        var title = anime.Title ?? string.Empty;
+        var english = !string.IsNullOrEmpty(anime.EnglishTitle) ? anime.EnglishTitle! : title;
+        var russian = !string.IsNullOrEmpty(anime.RussianTitle) ? anime.RussianTitle! : title;
         var japanese = anime.JapaneseTitle ?? string.Empty;
-        var id       = anime.Id.ToString();
+        var id = anime.Id.ToString();
 
         return template
-            .Replace("{title}",    Uri.EscapeDataString(title))
-            .Replace("{english}",  Uri.EscapeDataString(english))
-            .Replace("{russian}",  Uri.EscapeDataString(russian))
+            .Replace("{title}", Uri.EscapeDataString(title))
+            .Replace("{english}", Uri.EscapeDataString(english))
+            .Replace("{russian}", Uri.EscapeDataString(russian))
             .Replace("{japanese}", Uri.EscapeDataString(japanese))
-            .Replace("{malId}",    id)
-            .Replace("{shikiId}",  id)
-            .Replace("{id}",       id);
+            .Replace("{malId}", id)
+            .Replace("{shikiId}", id)
+            .Replace("{id}", id);
     }
 }

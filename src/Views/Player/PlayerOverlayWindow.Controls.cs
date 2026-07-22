@@ -1,33 +1,10 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using System;
-using System.ComponentModel;
-using System.Collections.Specialized;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Layout;
-using Avalonia.Media;
-using Avalonia.Platform.Storage;
-using Avalonia.Threading;
 using Kiriha.Core.Mpv;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
 using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 
 namespace Kiriha.Views.Player;
 
@@ -40,12 +17,12 @@ public partial class PlayerOverlayWindow
         if (wasHidden)
         {
             _controlsVisible = true;
-            if (_topBar != null) 
+            if (_topBar != null)
             {
                 _topBar.Opacity = 1;
                 _topBar.IsHitTestVisible = true;
             }
-            if (_bottomBar != null) 
+            if (_bottomBar != null)
             {
                 _bottomBar.Opacity = 1;
                 _bottomBar.IsHitTestVisible = true;
@@ -66,12 +43,12 @@ public partial class PlayerOverlayWindow
     {
         _controlsVisible = false;
         _lastControlsKeepAliveUtc = DateTime.MinValue;
-        if (_topBar != null) 
+        if (_topBar != null)
         {
             _topBar.Opacity = 0;
             _topBar.IsHitTestVisible = false;
         }
-        if (_bottomBar != null) 
+        if (_bottomBar != null)
         {
             _bottomBar.Opacity = 0;
             _bottomBar.IsHitTestVisible = false;
@@ -157,7 +134,7 @@ public partial class PlayerOverlayWindow
         Position = clientPos;
 
         var clientSize = _ownerWindow.ClientSize;
-        Width  = clientSize.Width;
+        Width = clientSize.Width;
         Height = clientSize.Height;
     }
 

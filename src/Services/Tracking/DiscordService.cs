@@ -3,13 +3,6 @@ using System.Collections.Generic;
 using DiscordRPC;
 using DiscordRPC.Logging;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
-using Kiriha.Models;
-using Kiriha.Models.Api;
-using Kiriha.Models.Entities;
 using Kiriha.Services.Data;
 using Serilog;
 
@@ -40,7 +33,7 @@ public class DiscordService : IDisposable
                 _client?.Dispose();
                 _client = new DiscordRpcClient(DefaultClientId);
                 _client.Logger = new ConsoleLogger { Level = DiscordRPC.Logging.LogLevel.Warning };
-                
+
                 _client.OnReady += (sender, e) => Log.Information("Discord RPC Ready for {Username}", e.User.Username);
                 _client.OnPresenceUpdate += (sender, e) => Log.Debug("Discord Presence Updated");
 

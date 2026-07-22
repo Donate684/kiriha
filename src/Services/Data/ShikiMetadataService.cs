@@ -1,21 +1,11 @@
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
 using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Api;
@@ -39,7 +29,7 @@ public class ShikiMetadataService : IDisposable
     private readonly SemaphoreSlim _concurrentFetches = new(2, 2);
     private readonly ConcurrentDictionary<int, byte> _activeFetches = new();
     private DateTime _lastRequest = DateTime.MinValue;
-    private readonly TimeSpan _minInterval = TimeSpan.FromMilliseconds(250); 
+    private readonly TimeSpan _minInterval = TimeSpan.FromMilliseconds(250);
 
     public ShikiMetadataService(
         IHttpClientFactory httpClientFactory,
@@ -241,7 +231,7 @@ public class ShikiMetadataService : IDisposable
                 uncached.Add(item);
             }
         }
-        
+
         onProgress?.Invoke(localizedCount);
 
         if (uncached.Count > 0)
@@ -252,22 +242,24 @@ public class ShikiMetadataService : IDisposable
                 int cacheId = GetCacheId(item.Id, item.MediaKind);
                 if (!_activeFetches.TryAdd(cacheId, 0)) continue;
 
-                tasks.Add(Task.Run(async () => 
+                tasks.Add(Task.Run(async () =>
                 {
-                    try {
+                    try
+                    {
                         await _concurrentFetches.WaitAsync(ct);
                         var fetchedMeta = await FetchMetadataFromApiAsync(item.Id, ct, item.MediaKind);
                         if (fetchedMeta != null)
                         {
                             await _metadataRepo.UpsertAsync(fetchedMeta);
-                            
+
                             bool changed = await _uiDispatcher.InvokeAsync(() => ApplyMetadata(item, fetchedMeta));
                             if (changed) await _userAnimeRepo.UpdateMetadataAsync(item);
                             int count = Interlocked.Increment(ref localizedCount);
                             onProgress?.Invoke(count);
                         }
                     }
-                    finally {
+                    finally
+                    {
                         _concurrentFetches.Release();
                         _activeFetches.TryRemove(cacheId, out _);
                     }
@@ -315,7 +307,7 @@ public class ShikiMetadataService : IDisposable
         {
             if (item.RussianTitle != meta.Russian) { item.RussianTitle = meta.Russian; changed = true; }
         }
-        
+
         if (_settingsService.Current.UI.UseRussianDescriptions && !string.IsNullOrEmpty(meta.Description))
         {
             var cleaned = Kiriha.Utils.Parsing.AnimeStringHelper.CleanShikiDescription(meta.Description);

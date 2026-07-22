@@ -6,17 +6,9 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
 using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
 using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
+using Kiriha.Utils.Parsing;
 using Serilog;
 
 namespace Kiriha.Services.Data;
@@ -34,7 +26,8 @@ public class ManualMappingService
     public ManualMappingService(string? mappingFilePath = null)
     {
         _mappingFilePath = mappingFilePath ?? PathHelper.GetMappingFilePath();
-        _saveDebouncer = new Debouncer(TimeSpan.FromMilliseconds(500), async (ct) => {
+        _saveDebouncer = new Debouncer(TimeSpan.FromMilliseconds(500), async (ct) =>
+        {
             if (!ct.IsCancellationRequested) await SaveMappingsAsync();
         });
 
@@ -67,7 +60,7 @@ public class ManualMappingService
         if (string.IsNullOrWhiteSpace(title)) return;
         string normalized = AnimeStringHelper.Normalize(title);
         if (string.IsNullOrEmpty(normalized)) return;
-        
+
         _manualMappings[normalized] = malId;
         _saveDebouncer.Invoke();
         Log.Information("ManualMappingService: Added manual mapping: {Title} ({Normalized}) -> {Id}", title, normalized, malId);

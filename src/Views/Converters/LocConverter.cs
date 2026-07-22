@@ -5,10 +5,6 @@ using Avalonia.Data.Converters;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 
 namespace Kiriha.Views.Converters;
 
@@ -32,26 +28,28 @@ public class LocConverter : IValueConverter
         if (param == "scrobbler_step") return keyStr == "scrobbler";
         if (param == "system_step") return keyStr == "system_settings";
         if (param == "advanced_step") return keyStr == "advanced_localization";
-        if (param == "theme_icon") 
+        if (param == "theme_icon")
         {
             if (value is ThemeType tt)
             {
-                return tt switch { 
-                    ThemeType.Light => "Sun", 
-                    ThemeType.Dark => "Moon", 
-                    _ => "Monitor" 
+                return tt switch
+                {
+                    ThemeType.Light => "Sun",
+                    ThemeType.Dark => "Moon",
+                    _ => "Monitor"
                 };
             }
-            return keyStr?.ToLowerInvariant() switch { 
-                "???????" or "light" => "Sun", 
-                "??????" or "??????" or "dark" => "Moon", 
-                _ => "Monitor" 
+            return keyStr?.ToLowerInvariant() switch
+            {
+                "???????" or "light" => "Sun",
+                "??????" or "??????" or "dark" => "Moon",
+                _ => "Monitor"
             };
         }
         if (param == "language_check") return keyStr == "language";
 
         // Button logic based on IsLastStep (value is bool)
-        if (param == "btn_text") 
+        if (param == "btn_text")
         {
             bool isLast = (bool)(value ?? false);
             return UIUtils.GetLoc(isLast ? "wizard.finish" : "wizard.next");
@@ -70,11 +68,11 @@ public class LocConverter : IValueConverter
             string formatKey = param.Substring(7);
             if (Application.Current != null && Application.Current.Resources.TryGetResource(formatKey, ThemeVariant.Default, out var formatObj) && formatObj is string formatStr)
             {
-                try 
-                { 
+                try
+                {
                     if (value is Kiriha.Models.AnimeItem ai)
                         return string.Format(formatStr, ai.EpisodesAired, ai.TotalEpisodes);
-                    return string.Format(formatStr, value); 
+                    return string.Format(formatStr, value);
                 }
                 catch { return value?.ToString(); }
             }
@@ -145,7 +143,7 @@ public class LocConverter : IValueConverter
             {
                 return translatedExact;
             }
-            
+
             // Case 3: Just capitalize first letter if nothing found
             if (!string.IsNullOrEmpty(s))
             {
@@ -188,7 +186,7 @@ public class LocConverter : IValueConverter
 
             if (char.IsUpper(c) && i > 0 && sb.Length > 0 && sb[sb.Length - 1] != '_')
                 sb.Append('_');
-            
+
             sb.Append(char.ToLowerInvariant(c));
         }
         return sb.ToString();

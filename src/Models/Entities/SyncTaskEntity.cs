@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Kiriha.Models.Entities;
 
 public class SyncTaskEntity

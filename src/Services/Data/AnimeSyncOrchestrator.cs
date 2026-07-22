@@ -5,15 +5,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
+using Kiriha.Core.Infrastructure;
 using Kiriha.Models;
-using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
 using Kiriha.Services.Data.Repositories;
-using Kiriha.Utils;
-using Kiriha.Utils.UI;
 using Serilog;
-using Kiriha.Core.Infrastructure;
 
 namespace Kiriha.Services.Data;
 
@@ -77,13 +74,13 @@ public class AnimeSyncOrchestrator
                 return false;
 
             await ProcessSyncResults(apiList, currentItems, status, ct);
-            
+
             status?.Report(UIUtils.GetLoc("sync.saving.to_db"));
             var snapshot = await _animeRepository.GetSnapshotAsync(new[] { MediaKind.Anime });
             await _userAnimeRepo.SyncFromRemoteAsync(snapshot, new[] { MediaKind.Anime });
-            
+
             await Task.Run(() => _recognitionCache.BuildIndex(_animeRepository.Collection));
-            
+
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
             return true;
         }
@@ -130,11 +127,11 @@ public class AnimeSyncOrchestrator
                 return false;
 
             await ProcessSyncResults(apiList, currentItems, status, ct);
-            
+
             status?.Report(UIUtils.GetLoc("sync.saving.to_db"));
             var snapshot = await _animeRepository.GetSnapshotAsync(kinds);
             await _userAnimeRepo.SyncFromRemoteAsync(snapshot, kinds);
-            
+
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
             return true;
         }
@@ -195,16 +192,16 @@ public class AnimeSyncOrchestrator
         var existingMap = currentItems.ToDictionary(x => x.Id);
 
         var toRemove = currentItems.Where(x => !apiMap.ContainsKey(x.Id)).ToList();
-        
+
         var uiBatch = new List<Action>();
         int total = apiList.Count;
 
         for (int i = 0; i < total; i++)
         {
             if (ct.IsCancellationRequested) break;
-            
+
             var newItem = apiList[i];
-            
+
             if (_animeRepository.IsRecentlyDeleted(newItem.Id)) continue;
 
             if (existingMap.TryGetValue(newItem.Id, out var existing))
@@ -230,7 +227,7 @@ public class AnimeSyncOrchestrator
                     await _animeRepository.ApplySyncBatchAsync(i == 49 || i == total - 1 && uiBatch.Count == total ? toRemove : new List<AnimeItem>(), currentBatch);
                     if (i < total - 1) toRemove.Clear(); // Only pass toRemove once
                 }
-                
+
                 status?.Report($"{UIUtils.GetLoc("sync.updating.metadata")}: {i + 1}/{total}");
                 if (i < total - 1)
                 {
@@ -238,7 +235,7 @@ public class AnimeSyncOrchestrator
                 }
             }
         }
-        
+
         // If total == 0, still remove
         if (total == 0 && toRemove.Any())
         {

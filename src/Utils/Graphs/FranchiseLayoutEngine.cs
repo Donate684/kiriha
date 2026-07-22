@@ -1,9 +1,3 @@
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +13,7 @@ public class FranchiseGraphVisualNode
     public int GridX { get; set; }
     public int GridY { get; set; }
     public bool IsCurrent { get; set; }
-    
+
     // For Avalonia Line binding
     public Avalonia.Point CenterPoint => new Avalonia.Point(X + 100, Y + 45);
 }
@@ -129,11 +123,11 @@ public static class FranchiseLayoutEngine
 
         // 2. Assign GridX to avoid overlaps within the same GridY layer
         var layers = visualNodes.Values.GroupBy(n => n.GridY).OrderBy(g => g.Key);
-        
+
         foreach (var layer in layers)
         {
             var nodesInLayer = layer.OrderByDescending(n => n.Node.Weight).ThenBy(n => n.Node.Date).ToList();
-            
+
             // Try to place the most "main" node at GridX = 0
             // Find a node that has prequel/sequel connections, or just take the heaviest
             var mainNode = nodesInLayer.FirstOrDefault(n => n.IsCurrent) ?? nodesInLayer.First();
@@ -163,7 +157,7 @@ public static class FranchiseLayoutEngine
         // 3. Convert Grid coordinates to Canvas coordinates
         double minX = visualNodes.Values.Min(n => n.GridX) * cellWidth;
         double minY = visualNodes.Values.Min(n => n.GridY) * cellHeight;
-        
+
         // Offset so all coordinates are >= 0 with some padding
         double offsetX = -minX + 40;
         double offsetY = -minY + 40;
@@ -190,12 +184,12 @@ public static class FranchiseLayoutEngine
     {
         // Shikimori relations: sequel, prequel, side_story, spin_off, alternative_setting, alternative_version, full_story, summary, parent_story
         int delta = 0;
-        
+
         if (relation == "sequel" || relation == "full_story")
             delta = 1;
         else if (relation == "prequel" || relation == "parent_story")
             delta = -1;
-            
+
         return isSourceToTarget ? delta : -delta;
     }
 }

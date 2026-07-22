@@ -1,20 +1,7 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Collections;
@@ -22,23 +9,13 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Kiriha.Views.Converters;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Entities;
 using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
 using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.ViewModels.AnimeList;
@@ -181,7 +158,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
 
         _filterNsfw = _settingsService.Current.UI.ListShowNsfw;
         _sortBy = _settingsService.Current.UI.ListSortBy;
-        IsFilterActive = _filterNsfw; 
+        IsFilterActive = _filterNsfw;
 
         _filterRefreshDebouncer = new Kiriha.Utils.Async.Debouncer(
             TimeSpan.FromMilliseconds(180),
@@ -214,7 +191,8 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
         _airingTicker = new DispatcherTimer(TimeSpan.FromMinutes(1), DispatcherPriority.Background, OnAiringTick);
         _airingTicker.Start();
 
-        WeakReferenceMessenger.Default.Register<AnimeListRefreshMessage>(this, (r, m) => {
+        WeakReferenceMessenger.Default.Register<AnimeListRefreshMessage>(this, (r, m) =>
+        {
             Dispatcher.UIThread.Post(() => ((AnimeListViewModel)r).RefreshAfterDetailsEdit());
         });
 
@@ -368,13 +346,13 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
             bool success = SelectedMediaKind == MediaKind.Manga || SelectedMediaKind == MediaKind.LightNovel
                 ? await _syncOrchestrator.SyncMangaWithTrackersAsync()
                 : await _syncOrchestrator.SyncWithTrackersAsync();
-            
+
             if (success)
             {
                 RebuildListProjection();
                 await UpdateCountsAsync();
                 await ApplyCurrentFiltersAsync();
-                
+
                 await _airingInfoService.SyncOngoingEpisodesAsync(force: true);
                 await _rssService.CheckFeedsAsync();
             }
@@ -390,7 +368,7 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    public async Task Filter(string statusString) 
+    public async Task Filter(string statusString)
     {
         if (Enum.TryParse<UserAnimeStatus>(statusString, true, out var parsed))
         {
@@ -460,11 +438,11 @@ public partial class AnimeListViewModel : ViewModelBase, IDisposable
     {
         var oldStatus = item.Status;
         var oldRewatching = item.IsRewatching;
-        
+
         await _progressService.SmartIncrementProgressAsync(item, nextProgress);
-        
+
         await UpdateCountsAsync();
-        
+
         // Only re-filter if the status changed (item needs to move to another tab)
         if (item.Status != oldStatus || item.IsRewatching != oldRewatching)
         {

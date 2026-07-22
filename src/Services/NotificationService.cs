@@ -1,14 +1,8 @@
 using System;
 using System.Collections.Concurrent;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using Avalonia.Platform;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;

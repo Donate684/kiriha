@@ -1,37 +1,11 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Styling;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
 using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Services.Data;
-using Kiriha.Services.Tracking;
 
 namespace Kiriha.ViewModels.Settings;
 
@@ -67,7 +41,7 @@ public partial class SettingsViewModel
     partial void OnUiScaleChanged(double value)
     {
         _settingsService.Update(settings => settings.UI.UiScale = value, SettingsSection.UI);
-        
+
         if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
         {
             foreach (var window in desktop.Windows)

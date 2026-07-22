@@ -1,7 +1,3 @@
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,10 +10,10 @@ namespace Kiriha.Services.Data;
 public class LocalizationService
 {
     private string _currentLanguage = "en";
-    private readonly string[] _namespaces = 
-    { 
-        "common", "navigation", "anime", "genres", "settings", 
-        "scrobbler", "filters", "history", "wizard", "sync", 
+    private readonly string[] _namespaces =
+    {
+        "common", "navigation", "anime", "genres", "settings",
+        "scrobbler", "filters", "history", "wizard", "sync",
         "updates", "auth", "search", "torrents", "notifications", "crash",
         "about"
     };
@@ -46,7 +42,7 @@ public class LocalizationService
                     Application.Current.Resources[$"l.{kvp.Key}"] = kvp.Value;
                 }
             }
-            
+
             Log.Information("Language loaded: {Lang} ({Count} keys)", langCode, resources.Count);
         }
         catch (Exception ex)
@@ -76,7 +72,7 @@ public class LocalizationService
             using var stream = Avalonia.Platform.AssetLoader.Open(uri);
             using var reader = new StreamReader(stream);
             var json = reader.ReadToEnd();
-            
+
             using var doc = JsonDocument.Parse(json);
             FlattenJson(doc.RootElement, ns, result);
         }

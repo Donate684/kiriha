@@ -1,7 +1,3 @@
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 namespace Kiriha.Core.Player;
 
 public static class InternalPlayerBridge

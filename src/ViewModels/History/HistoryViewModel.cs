@@ -1,13 +1,3 @@
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,24 +6,11 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Core.Dialogs;
 using Kiriha.Models;
-using Kiriha.Models.Api;
-using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
-using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
-using Kiriha.Services.Tracking;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
 using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 
 namespace Kiriha.ViewModels.History;
 
@@ -131,15 +108,15 @@ public partial class HistoryViewModel : ViewModelBase
     }
 
     // ─── Radio-button friendly flags (also safe for ToggleButton: can't uncheck) ───
-    public bool IsPeriodAll   { get => SelectedPeriod == 0; set { if (value) SelectedPeriod = 0; else OnPropertyChanged(nameof(IsPeriodAll)); } }
+    public bool IsPeriodAll { get => SelectedPeriod == 0; set { if (value) SelectedPeriod = 0; else OnPropertyChanged(nameof(IsPeriodAll)); } }
     public bool IsPeriodToday { get => SelectedPeriod == 1; set { if (value) SelectedPeriod = 1; else OnPropertyChanged(nameof(IsPeriodToday)); } }
-    public bool IsPeriodWeek  { get => SelectedPeriod == 2; set { if (value) SelectedPeriod = 2; else OnPropertyChanged(nameof(IsPeriodWeek)); } }
+    public bool IsPeriodWeek { get => SelectedPeriod == 2; set { if (value) SelectedPeriod = 2; else OnPropertyChanged(nameof(IsPeriodWeek)); } }
     public bool IsPeriodMonth { get => SelectedPeriod == 3; set { if (value) SelectedPeriod = 3; else OnPropertyChanged(nameof(IsPeriodMonth)); } }
 
-    public bool IsActionAll      { get => SelectedAction == 0; set { if (value) SelectedAction = 0; } }
-    public bool IsActionWatched  { get => SelectedAction == 1; set { if (value) SelectedAction = 1; } }
-    public bool IsActionCompleted{ get => SelectedAction == 6; set { if (value) SelectedAction = 6; } }
-    public bool IsActionDropped  { get => SelectedAction == 7; set { if (value) SelectedAction = 7; } }
+    public bool IsActionAll { get => SelectedAction == 0; set { if (value) SelectedAction = 0; } }
+    public bool IsActionWatched { get => SelectedAction == 1; set { if (value) SelectedAction = 1; } }
+    public bool IsActionCompleted { get => SelectedAction == 6; set { if (value) SelectedAction = 6; } }
+    public bool IsActionDropped { get => SelectedAction == 7; set { if (value) SelectedAction = 7; } }
     public bool IsActionScoreSet { get => SelectedAction == 5; set { if (value) SelectedAction = 5; } }
 
     private void NotifyPeriodFlags()
@@ -290,7 +267,7 @@ public partial class HistoryViewModel : ViewModelBase
         var now = DateTime.Now.Date;
         if (date == now) return UIUtils.GetLoc("common.time.today");
         if (date == now.AddDays(-1)) return UIUtils.GetLoc("common.time.yesterday");
-        
+
         var culture = _settings.Current.UI.LanguageCode == Constants.Languages.Ru ? new System.Globalization.CultureInfo("ru-RU") : new System.Globalization.CultureInfo("en-US");
         return date.ToString("d MMMM", culture);
     }

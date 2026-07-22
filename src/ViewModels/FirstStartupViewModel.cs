@@ -1,21 +1,11 @@
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kiriha.Models;
 using Kiriha.Services.Data;
+using Kiriha.ViewModels.Settings;
 
 namespace Kiriha.ViewModels;
 
@@ -38,7 +28,7 @@ public partial class FirstStartupViewModel : ViewModelBase
     public SettingsViewModel SettingsVm => _settingsViewModel;
 
     public FirstStartupViewModel(
-        SettingsService settingsService, 
+        SettingsService settingsService,
         LocalizationService localizationService,
         SettingsViewModel settingsViewModel)
     {
@@ -46,8 +36,9 @@ public partial class FirstStartupViewModel : ViewModelBase
         _localizationService = localizationService;
         _settingsViewModel = settingsViewModel;
 
-        _settingsViewModel.PropertyChanged += (s, e) => {
-            if (e.PropertyName == nameof(SettingsViewModel.EnableScrobbler) || 
+        _settingsViewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.EnableScrobbler) ||
                 e.PropertyName == nameof(SettingsViewModel.EnabledPlayersCount))
             {
                 NextStepCommand.NotifyCanExecuteChanged();

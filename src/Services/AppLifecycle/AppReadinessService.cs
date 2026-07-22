@@ -2,11 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
 using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
 using Microsoft.Extensions.DependencyInjection;
@@ -66,7 +62,7 @@ public sealed class AppReadinessService
             var animeRepo = _serviceProvider.GetRequiredService<AnimeRepository>();
             await animeRepo.InitializeAsync();
             await animeRepo.InitializationTask;
-            
+
             if (animeRepo.Collection.Count == 0)
             {
                 var orchestrator = _serviceProvider.GetRequiredService<AnimeSyncOrchestrator>();

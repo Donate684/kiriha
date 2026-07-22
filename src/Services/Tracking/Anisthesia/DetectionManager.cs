@@ -4,15 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking.Anisthesia.Strategies;
-using Serilog;
 
 namespace Kiriha.Services.Tracking.Anisthesia;
 
@@ -50,9 +44,9 @@ public class DetectionManager
                 try
                 {
                     string procName = proc.ProcessName;
-                    
-                    var matchingPlayers = _players.Where(p => 
-                        p.Executables.Any(exe => 
+
+                    var matchingPlayers = _players.Where(p =>
+                        p.Executables.Any(exe =>
                             exe.Equals(procName, StringComparison.OrdinalIgnoreCase) ||
                             (exe.StartsWith("^") && GetCachedRegex(exe).IsMatch(procName))
                         )).ToList();
@@ -111,14 +105,14 @@ public class DetectionManager
 
         var running = new HashSet<string>();
         var processes = Process.GetProcesses();
-        
+
         try
         {
             var procNames = processes.Select(p => p.ProcessName).ToList();
 
             foreach (var player in _players)
             {
-                if (player.Executables.Any(exe => 
+                if (player.Executables.Any(exe =>
                     procNames.Any(pn => pn.Equals(exe, StringComparison.OrdinalIgnoreCase)) ||
                     (exe.StartsWith("^") && procNames.Any(pn => GetCachedRegex(exe).IsMatch(pn)))))
                 {
@@ -136,9 +130,9 @@ public class DetectionManager
     private bool IsJunk(string title, AnisthesiaPlayer player)
     {
         if (string.IsNullOrWhiteSpace(title)) return true;
-        
+
         string t = title.Trim().ToLowerInvariant();
-        
+
         // 1. Ignore if title is exactly the player name
         if (t == player.Name.ToLowerInvariant()) return true;
 

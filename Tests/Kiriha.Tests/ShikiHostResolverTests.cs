@@ -1,7 +1,3 @@
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 
 namespace Kiriha.Tests;
@@ -37,7 +33,7 @@ public sealed class ShikiHostResolverTests
 
         Assert.True(resolver.Remember("shikimori.net", "shikimori.rip"));
         Assert.Equal("shikimori.rip", resolver.ActiveForkHost);
-        
+
         Assert.True(resolver.Remember("shikimori.one", "shikimori.io"));
         Assert.Equal("shikimori.io", resolver.ActiveOriginalHost);
     }
@@ -60,12 +56,12 @@ public sealed class ShikiHostResolverTests
     public void ProbeOrder_SkipsTheFailedHost()
     {
         var resolver = new ShikiHostResolver();
-        
+
         var forkOrder = resolver.ProbeOrder("shikimori.net").ToArray();
         Assert.DoesNotContain("shikimori.net", forkOrder);
         Assert.Contains("shikimori.rip", forkOrder);
         Assert.Contains("shikimori.fi", forkOrder);
-        
+
         var originalOrder = resolver.ProbeOrder("shikimori.one").ToArray();
         Assert.DoesNotContain("shikimori.one", originalOrder);
         Assert.Contains("shikimori.io", originalOrder);

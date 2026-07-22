@@ -7,7 +7,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
-using Kiriha.Services.Data;
 using Serilog;
 
 namespace Kiriha.ViewModels;
@@ -34,7 +33,7 @@ public partial class AmbiguousMatchViewModel : ViewModelBase
     {
         _fileName = fileName;
         _malApi = malApi;
-        
+
         foreach (var c in candidates) Candidates.Add(c);
         SelectedAnime = Candidates.FirstOrDefault();
     }
@@ -49,7 +48,7 @@ public partial class AmbiguousMatchViewModel : ViewModelBase
         {
             var results = await _malApi.SearchAnimeAsync(SearchQuery);
             Candidates.Clear();
-            
+
             foreach (var r in results)
             {
                 Candidates.Add(new AnimeOfflineItem
@@ -63,7 +62,7 @@ public partial class AmbiguousMatchViewModel : ViewModelBase
                     TotalEpisodes = r.TotalEpisodes
                 });
             }
-            
+
             SelectedAnime = Candidates.FirstOrDefault();
         }
         catch (Exception ex)

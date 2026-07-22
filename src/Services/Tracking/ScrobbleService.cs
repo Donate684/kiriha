@@ -1,9 +1,3 @@
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using System;
 using System.Linq;
 using System.Threading;
@@ -129,7 +123,7 @@ public class ScrobbleService : IScrobbleService, IDisposable
             while (true)
             {
                 ct.ThrowIfCancellationRequested();
-                
+
                 bool isPlaying;
                 lock (_stateLock)
                 {
@@ -169,7 +163,7 @@ public class ScrobbleService : IScrobbleService, IDisposable
 
             await _progressService.UpdateProgressAsync(match, targetEp, nextStatus);
             _historyService.AddEntry(match.Id, match.Title, match.RussianTitle, targetEp, nextStatus == UserAnimeStatus.Completed ? "Completed" : "Scrobbled");
-            
+
             CountdownUpdated?.Invoke(this, Kiriha.Core.UIUtils.GetLoc("scrobbler.status.updated"));
         }
         catch (OperationCanceledException) { }

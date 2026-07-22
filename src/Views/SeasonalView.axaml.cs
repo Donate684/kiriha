@@ -2,24 +2,8 @@ using System;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
 using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
-using Microsoft.Extensions.DependencyInjection;
-using CommunityToolkit.Mvvm.Messaging;
 
 namespace Kiriha.Views;
 
@@ -274,7 +258,7 @@ public partial class SeasonalView : UserControl
     {
         try
         {
-            if (sender is MenuItem menuItem && 
+            if (sender is MenuItem menuItem &&
                 menuItem.Tag is string statusStr && Enum.TryParse<Models.Entities.UserAnimeStatus>(statusStr, out var status) &&
                 menuItem.DataContext is Models.AnimeItem item &&
                 DataContext is SeasonalViewModel vm)

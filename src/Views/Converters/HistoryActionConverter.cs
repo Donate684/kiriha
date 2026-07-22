@@ -1,13 +1,7 @@
 using System;
 using System.Globalization;
-using Avalonia;
 using Avalonia.Data.Converters;
-using Avalonia.Styling;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 
 namespace Kiriha.Views.Converters;
 

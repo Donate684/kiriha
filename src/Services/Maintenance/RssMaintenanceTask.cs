@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Kiriha.Services;
 using Kiriha.Services.Tracking;
 using Serilog;
 

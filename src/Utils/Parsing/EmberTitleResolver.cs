@@ -11,11 +11,11 @@ public static class EmberTitleResolver
             using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             var buffer = new byte[65536]; // Read first 64KB
             int bytesRead = fs.Read(buffer, 0, buffer.Length);
-            
+
             // Search for "EMBER" (69, 77, 66, 69, 82)
             for (int i = 0; i < bytesRead - 4; i++)
             {
-                if (buffer[i] == 'E' && buffer[i+1] == 'M' && buffer[i+2] == 'B' && buffer[i+3] == 'E' && buffer[i+4] == 'R')
+                if (buffer[i] == 'E' && buffer[i + 1] == 'M' && buffer[i + 2] == 'B' && buffer[i + 3] == 'E' && buffer[i + 4] == 'R')
                     return true;
             }
             return false;

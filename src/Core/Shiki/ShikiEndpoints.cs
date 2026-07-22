@@ -1,7 +1,3 @@
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Entities;
 
@@ -22,12 +18,12 @@ public static class ShikiEndpoints
     public static ShikiHost Host(ShikiMirror mirror) => mirror switch
     {
         ShikiMirror.Net => Constants.Api.Shiki.Net,
-        _              => Constants.Api.Shiki.One,
+        _ => Constants.Api.Shiki.One,
     };
 
-    public static string BaseUrl(ShikiMirror mirror)    => Host(mirror).BaseUrl;
-    public static string TokenUrl(ShikiMirror mirror)   => Host(mirror).TokenUrl;
-    public static string AuthUrl(ShikiMirror mirror)    => Host(mirror).AuthUrl;
+    public static string BaseUrl(ShikiMirror mirror) => Host(mirror).BaseUrl;
+    public static string TokenUrl(ShikiMirror mirror) => Host(mirror).TokenUrl;
+    public static string AuthUrl(ShikiMirror mirror) => Host(mirror).AuthUrl;
     public static string WebsiteUrl(ShikiMirror mirror, MediaKind mediaKind = MediaKind.Anime)
     {
         var host = Host(mirror);
@@ -37,7 +33,7 @@ public static class ShikiEndpoints
     public static string ClientId(ShikiMirror mirror) => mirror switch
     {
         ShikiMirror.Net => ApiKeys.ShikiNetClientId,
-        _              => ApiKeys.ShikiClientId,
+        _ => ApiKeys.ShikiClientId,
     };
 
     /// <summary>
@@ -48,7 +44,7 @@ public static class ShikiEndpoints
     public static string ClientSecret(ShikiMirror mirror) => mirror switch
     {
         ShikiMirror.Net => ApiKeys.ShikiNetClientSecret,
-        _              => ApiKeys.ShikiClientSecret,
+        _ => ApiKeys.ShikiClientSecret,
     };
 
     /// <summary>True only when the OAuth pipeline is fully configured for this mirror.</summary>

@@ -1,19 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Kiriha.Core.Infrastructure;
 using Kiriha.Models;
+using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
-using Kiriha.Services;
+using Kiriha.Services.Api;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
-using Kiriha.Services.Api;
-using Kiriha.Models.Api;
-using Kiriha.Utils.Parsing;
 using Moq;
-using Xunit;
 
 namespace Kiriha.Tests;
 
@@ -34,12 +26,12 @@ public class TrackingServiceTests : IDisposable
     {
         _tempSettingsPath = Path.GetTempFileName();
         _tempMappingPath = Path.GetTempFileName();
-        
+
         _settingsService = new SettingsService(_tempSettingsPath);
         _settingsService.Update(s => s.System.Scrobbler.Enabled = true, save: false);
 
         _mockScrobbleService = new Mock<IScrobbleService>();
-        
+
         _mockUiDispatcher = new Mock<IUiDispatcher>();
         _mockUiDispatcher.Setup(x => x.Post(It.IsAny<Action>())).Callback<Action>(a => a());
         _mockUiDispatcher.Setup(x => x.InvokeAsync(It.IsAny<Func<List<AnimeItem>>>()))
@@ -96,7 +88,7 @@ public class TrackingServiceTests : IDisposable
         // Assert
         _mockScrobbleService.Verify(x => x.StartScrobble(It.Is<ParsedMedia>(m => m.AnimeTitle == "Test Anime"), match), Times.Once);
         _mockDiscordService.Verify(x => x.UpdatePresence(
-            It.IsAny<string>(), state.Episode, It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), 
+            It.IsAny<string>(), state.Episode, It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<string>(), true), Times.Once);
     }
 

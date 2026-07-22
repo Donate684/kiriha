@@ -1,30 +1,11 @@
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Core.Mpv;
-using Kiriha.Models;
-using Kiriha.Services.Data;
 using Serilog;
 
 namespace Kiriha.ViewModels.Player;
@@ -35,7 +16,7 @@ public partial class PlayerViewModel
     private void TogglePlayPause()
     {
         if (!_playback.HasPlayer) return;
-        
+
         if (IsPlaying)
             _playback.Pause();
         else
@@ -196,28 +177,28 @@ public partial class PlayerViewModel
     {
         try { _updateTracksCts?.Cancel(); } catch (Exception ex) { Log.Debug(ex, "Error canceling tracks CTS"); }
         try { _updateTracksCts?.Dispose(); } catch (Exception ex) { Log.Debug(ex, "Error disposing tracks CTS"); }
-        
+
         try { _updateNavigationCts?.Cancel(); } catch (Exception ex) { Log.Debug(ex, "Error canceling navigation CTS"); }
         try { _updateNavigationCts?.Dispose(); } catch (Exception ex) { Log.Debug(ex, "Error disposing navigation CTS"); }
-        
+
         try { _timelinePreview.Dispose(); } catch (Exception ex) { Log.Debug(ex, "Error disposing timeline preview"); }
-        
+
         if (_timer != null)
         {
             _timer.Tick -= OnTimerTick;
             try { _timer.Stop(); } catch (Exception ex) { Log.Debug(ex, "Error stopping timer"); }
             _timer = null;
         }
-        
+
         try { Overlay.Dispose(); } catch (Exception ex) { Log.Debug(ex, "Error disposing overlay"); }
-        
+
         _playback.FileLoaded -= OnPlayerFileLoaded;
         _playback.PlaybackEnded -= OnPlayerPlaybackEnded;
         _playback.PlaybackStateChanged -= OnPlayerPlaybackStateChanged;
         _playback.TracksChanged -= OnPlayerTracksChanged;
-        
+
         try { _statePublisher.PublishClosed(); } catch (Exception ex) { Log.Debug(ex, "Error publishing closed state"); }
-        
+
         try { _playback.Detach(); } catch (Exception ex) { Log.Debug(ex, "Error detaching playback"); }
         try { _statePublisher.Dispose(); } catch (Exception ex) { Log.Debug(ex, "Error disposing state publisher"); }
     }

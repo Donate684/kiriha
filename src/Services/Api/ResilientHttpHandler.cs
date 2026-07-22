@@ -14,10 +14,10 @@ namespace Kiriha.Services.Api;
 public class ResilientHttpHandler : DelegatingHandler
 {
     private const int MaxRetries = 3;
-    private static readonly TimeSpan[] Delays = { 
-        TimeSpan.FromSeconds(1), 
-        TimeSpan.FromSeconds(2), 
-        TimeSpan.FromSeconds(4) 
+    private static readonly TimeSpan[] Delays = {
+        TimeSpan.FromSeconds(1),
+        TimeSpan.FromSeconds(2),
+        TimeSpan.FromSeconds(4)
     };
 
     public ResilientHttpHandler() : base() { }
@@ -102,10 +102,10 @@ public class ResilientHttpHandler : DelegatingHandler
     }
 
     private static bool IsTransient(HttpStatusCode statusCode) =>
-        statusCode is HttpStatusCode.TooManyRequests 
-            or HttpStatusCode.InternalServerError 
-            or HttpStatusCode.BadGateway 
-            or HttpStatusCode.ServiceUnavailable 
+        statusCode is HttpStatusCode.TooManyRequests
+            or HttpStatusCode.InternalServerError
+            or HttpStatusCode.BadGateway
+            or HttpStatusCode.ServiceUnavailable
             or HttpStatusCode.GatewayTimeout;
 
     private static TimeSpan? GetRetryAfter(HttpResponseMessage response)
@@ -124,7 +124,7 @@ public class ResilientHttpHandler : DelegatingHandler
             Version = original.Version,
             VersionPolicy = original.VersionPolicy
         };
-        
+
         if (original.Content != null)
         {
             var contentBytes = await original.Content.ReadAsByteArrayAsync(cancellationToken);

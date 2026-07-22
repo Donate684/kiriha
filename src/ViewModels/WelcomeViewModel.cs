@@ -1,19 +1,8 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
 using System.ComponentModel;
-using Kiriha.Services.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Kiriha.Services.Data;
+using Kiriha.ViewModels.AnimeList;
 
 namespace Kiriha.ViewModels;
 

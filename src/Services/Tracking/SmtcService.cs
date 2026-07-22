@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Kiriha.Models;
 using Kiriha.Services.Data;
 using Serilog;
 using Windows.Media.Control;

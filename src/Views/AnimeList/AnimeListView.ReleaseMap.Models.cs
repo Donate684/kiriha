@@ -1,8 +1,5 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
 using System;
 using Kiriha.Models;
-using Kiriha.Models.Entities;
 namespace Kiriha.Views.AnimeList;
 
 public partial class AnimeListView

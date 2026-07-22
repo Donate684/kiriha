@@ -1,5 +1,3 @@
-using System;
-
 namespace Kiriha.Models.Entities;
 
 /// <summary>
@@ -25,7 +23,7 @@ public static class StatusMapper
     public static UserAnimeStatus FromDbString(string? dbStatus)
     {
         if (string.IsNullOrEmpty(dbStatus)) return UserAnimeStatus.None;
-        
+
         // Also handling possible old mal-format directly leaked into DB just in case
         return dbStatus.ToLowerInvariant() switch
         {

@@ -1,9 +1,3 @@
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,11 +32,11 @@ public class Debouncer : IDisposable
         lock (_lock)
         {
             if (_isDisposed) return;
-            
+
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
-            
+
             var token = _cts.Token;
             ExecuteAsync(token).SafeFireAndForget("Debouncer.Invoke");
         }
@@ -104,7 +98,7 @@ public class Debouncer<T> : IDisposable
         lock (_lock)
         {
             if (_isDisposed) return;
-            
+
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = new CancellationTokenSource();

@@ -2,10 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Serilog;
 using Velopack;
 using Velopack.Sources;
@@ -28,7 +24,7 @@ public class UpdateService
     {
         // GitHubSource is used to check for updates from a GitHub repository
         _updateManager = new UpdateManager(new GithubSource(Constants.Links.GitHubRepo, null, false));
-        Log.Information("UpdateService initialized. Installed: {IsInstalled}, Current Version: {Version}", 
+        Log.Information("UpdateService initialized. Installed: {IsInstalled}, Current Version: {Version}",
             _updateManager.IsInstalled, _updateManager.CurrentVersion);
     }
 
@@ -50,18 +46,18 @@ public class UpdateService
                 return false;
             }
 
-            Log.Information("UpdateService: Checking GitHub ({RepoUrl}) for updates. Current version: {CurrentVersion}...", 
+            Log.Information("UpdateService: Checking GitHub ({RepoUrl}) for updates. Current version: {CurrentVersion}...",
                 Constants.Links.GitHubRepo, _updateManager.CurrentVersion);
-            
+
             _updateInfo = await _updateManager.CheckForUpdatesAsync().WaitAsync(ct);
-            
+
             if (_updateInfo != null)
             {
-                Log.Information("UpdateService: Check complete. NEW UPDATE FOUND: {Version}. Remote version is newer than {CurrentVersion}.", 
+                Log.Information("UpdateService: Check complete. NEW UPDATE FOUND: {Version}. Remote version is newer than {CurrentVersion}.",
                     NewVersion, _updateManager.CurrentVersion);
                 return true;
             }
-            
+
             Log.Information("UpdateService: Check complete. No updates found. You are already on the latest version ({Version}).", _updateManager.CurrentVersion);
             return false;
         }
@@ -100,7 +96,7 @@ public class UpdateService
         {
             Log.Information("Starting download of update {Version}...", NewVersion);
             await _updateManager.DownloadUpdatesAsync(_updateInfo, progressCallback, ct);
-            
+
             Log.Information("Update {Version} downloaded successfully and is ready to be applied.", NewVersion);
             return true;
         }
@@ -124,7 +120,7 @@ public class UpdateService
     public void RestartAndApply()
     {
         if (_updateInfo == null) return;
-        
+
         Log.Information("Restarting application to apply updates...");
         _updateManager.ApplyUpdatesAndRestart(_updateInfo);
     }

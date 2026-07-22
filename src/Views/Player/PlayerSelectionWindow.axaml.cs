@@ -1,9 +1,5 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
 using Avalonia.Controls;
-using Kiriha.Services;
 using Kiriha.Services.Data;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Kiriha.Views.Player;
 

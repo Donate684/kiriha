@@ -1,13 +1,10 @@
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Kiriha.Core.Platform;
 using Serilog;
 
 namespace Kiriha.Core.Infrastructure;

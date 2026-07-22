@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using AsyncImageLoader;
-using AsyncImageLoader.Loaders;
 using Avalonia.Media.Imaging;
 using Serilog;
 

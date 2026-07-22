@@ -1,27 +1,13 @@
 using System;
-using System.Linq;
 using System.IO.Pipes;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Kiriha.Core;
 using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
 using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Services.Data;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
 using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
-using Kiriha.Views;
 using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -103,7 +89,7 @@ public class InstanceServer : BackgroundService
     private void HandleArguments(string[] args)
     {
         int playerArgIndex = Array.FindIndex(args, arg => arg.Equals("--player", StringComparison.OrdinalIgnoreCase));
-        
+
         if (playerArgIndex >= 0)
         {
             string videoUrl = string.Empty;
@@ -112,7 +98,8 @@ public class InstanceServer : BackgroundService
                 videoUrl = args[playerArgIndex + 1];
             }
 
-            _uiDispatcher.Post(() => {
+            _uiDispatcher.Post(() =>
+            {
                 var metadataResolver = _serviceProvider.GetRequiredService<IPlayerMediaMetadataResolver>();
                 var settingsService = _serviceProvider.GetService<SettingsService>();
                 if (settingsService?.Current.Player.SingleWindow == true
@@ -135,7 +122,8 @@ public class InstanceServer : BackgroundService
         }
         else
         {
-            _uiDispatcher.Post(() => {
+            _uiDispatcher.Post(() =>
+            {
                 if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
                 {
                     if (desktop.MainWindow != null)

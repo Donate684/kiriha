@@ -1,6 +1,3 @@
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 namespace Kiriha.Core;
 
@@ -28,16 +25,16 @@ public static class Constants
         public static class Shiki
         {
             public static readonly ShikiHost One = new(
-                BaseUrl:    "https://shikimori.one/api/",
-                TokenUrl:   "https://shikimori.one/oauth/token",
-                AuthUrl:    "https://shikimori.one/oauth/authorize",
+                BaseUrl: "https://shikimori.one/api/",
+                TokenUrl: "https://shikimori.one/oauth/token",
+                AuthUrl: "https://shikimori.one/oauth/authorize",
                 WebsiteUrl: "https://shikimori.one/animes/",
                 MangaWebsiteUrl: "https://shikimori.one/mangas/");
 
             public static readonly ShikiHost Net = new(
-                BaseUrl:    "https://shikimori.net/api/",
-                TokenUrl:   "https://shikimori.net/oauth/token",
-                AuthUrl:    "https://shikimori.net/oauth/authorize",
+                BaseUrl: "https://shikimori.net/api/",
+                TokenUrl: "https://shikimori.net/oauth/token",
+                AuthUrl: "https://shikimori.net/oauth/authorize",
                 WebsiteUrl: "https://shikimori.net/animes/",
                 MangaWebsiteUrl: "https://shikimori.net/mangas/");
         }

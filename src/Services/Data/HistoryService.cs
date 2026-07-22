@@ -5,8 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Models;
-using Kiriha.Models.Api;
-using Kiriha.Models.Entities;
 using Kiriha.Services.Data.Repositories;
 using Serilog;
 

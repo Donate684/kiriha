@@ -1,7 +1,3 @@
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using System;
 using System.IO;
 
@@ -14,14 +10,14 @@ public static class PathHelper
 
     public static bool IsPortable => Directory.Exists(PortableDataDir);
 
-    private static string BasePath => IsPortable 
-        ? PortableDataDir 
+    private static string BasePath => IsPortable
+        ? PortableDataDir
         : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Constants.System.AppName);
 
     public static string GetDbPath() => Path.Combine(BasePath, Constants.System.FileNames.Database);
-    
+
     public static string GetLogsPath() => Path.Combine(BasePath, Constants.System.FileNames.LogsDir);
-    
+
     public static string GetImageCachePath() => Path.Combine(BasePath, Constants.System.FileNames.CacheDir);
 
     public static string GetMappingFilePath() => Path.Combine(BasePath, Constants.System.FileNames.Mappings);

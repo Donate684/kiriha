@@ -62,8 +62,8 @@ public sealed class AnimeCollectionProjection : IDisposable
 
     public int Count(UserAnimeStatus status, MediaKind kind)
     {
-        return _counts.TryGetValue(status, out var countsByKind) && countsByKind.TryGetValue(kind, out var count) 
-            ? count 
+        return _counts.TryGetValue(status, out var countsByKind) && countsByKind.TryGetValue(kind, out var count)
+            ? count
             : 0;
     }
 

@@ -1,13 +1,3 @@
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -15,33 +5,23 @@ using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
+using Kiriha.Core.Dialogs;
 using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
-using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
 using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using Serilog;
-using Kiriha.Core.Dialogs;
 
 namespace Kiriha.ViewModels.AnimeDetails;
 
 public partial class RelationItemVm : ObservableObject
 {
     public Models.Entities.AnimeRelation Relation { get; }
-    
+
     [ObservableProperty]
     private string? _imageUrl;
 
@@ -73,7 +53,7 @@ public partial class StaffWorkVm : ObservableObject
 public partial class StaffPlusItemVm : ObservableObject
 {
     public Models.Entities.AnimeStaff Staff { get; }
-    
+
     [ObservableProperty]
     private string _role = string.Empty;
 
@@ -101,7 +81,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
     public System.Collections.ObjectModel.ObservableCollection<AnimeOfflineItem> _relatedAnime = new();
 
     public System.Collections.ObjectModel.ObservableCollection<RelationItemVm> Relations { get; } = new();
-    
+
     public System.Collections.ObjectModel.ObservableCollection<StaffPlusItemVm> StaffPlus { get; } = new();
 
     /// <summary>
@@ -145,17 +125,17 @@ public partial class AnimeDetailsViewModel : ViewModelBase
                 return _allAlternativeTitles;
 
             var list = new System.Collections.Generic.List<string>();
-            if (!string.IsNullOrEmpty(Anime.EnglishTitle) && Anime.EnglishTitle != Anime.Title) 
+            if (!string.IsNullOrEmpty(Anime.EnglishTitle) && Anime.EnglishTitle != Anime.Title)
                 list.Add(Anime.EnglishTitle);
-            if (!string.IsNullOrEmpty(Anime.JapaneseTitle) && Anime.JapaneseTitle != Anime.Title) 
+            if (!string.IsNullOrEmpty(Anime.JapaneseTitle) && Anime.JapaneseTitle != Anime.Title)
                 list.Add(Anime.JapaneseTitle);
-            
+
             foreach (var syn in Anime.AlternativeTitles)
             {
                 if (syn != Anime.Title && !list.Contains(syn))
                     list.Add(syn);
             }
-            
+
             return _allAlternativeTitles = list;
         }
     }
@@ -171,21 +151,21 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         UserAnimeStatus.PlanToWatch
     };
 
-    public System.Collections.Generic.IEnumerable<RatingOption> AvailableScores => new[] 
-    { 
-        RatingHelper.GetRatingOption("-"), 
-        RatingHelper.GetRatingOption("10"), 
-        RatingHelper.GetRatingOption("9"), 
-        RatingHelper.GetRatingOption("8"), 
-        RatingHelper.GetRatingOption("7"), 
-        RatingHelper.GetRatingOption("6"), 
-        RatingHelper.GetRatingOption("5"), 
-        RatingHelper.GetRatingOption("4"), 
-        RatingHelper.GetRatingOption("3"), 
-        RatingHelper.GetRatingOption("2"), 
-        RatingHelper.GetRatingOption("1") 
+    public System.Collections.Generic.IEnumerable<RatingOption> AvailableScores => new[]
+    {
+        RatingHelper.GetRatingOption("-"),
+        RatingHelper.GetRatingOption("10"),
+        RatingHelper.GetRatingOption("9"),
+        RatingHelper.GetRatingOption("8"),
+        RatingHelper.GetRatingOption("7"),
+        RatingHelper.GetRatingOption("6"),
+        RatingHelper.GetRatingOption("5"),
+        RatingHelper.GetRatingOption("4"),
+        RatingHelper.GetRatingOption("3"),
+        RatingHelper.GetRatingOption("2"),
+        RatingHelper.GetRatingOption("1")
     };
-    
+
     private string? _combinedAltTitles;
 
     public string CombinedAltTitles
@@ -200,7 +180,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
             if (!string.IsNullOrEmpty(Anime.EnglishTitle)) list.Add(Anime.EnglishTitle);
             if (!string.IsNullOrEmpty(Anime.JapaneseTitle)) list.Add(Anime.JapaneseTitle);
             list.AddRange(Anime.AlternativeTitles);
-            
+
             return _combinedAltTitles = string.Join(", ", list.Distinct());
         }
     }
@@ -231,11 +211,12 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         _settingsService = settingsService;
         _historyService = historyService;
         _dialogs = dialogs;
-        
-        Anime.PropertyChanged += (s, e) => {
+
+        Anime.PropertyChanged += (s, e) =>
+        {
             if (e.PropertyName == nameof(Anime.Status))
                 OnPropertyChanged(nameof(IsInList));
-            
+
             OnPropertyChanged(nameof(HasChanges));
             SaveCommand.NotifyCanExecuteChanged();
         };
@@ -290,7 +271,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 Relations.Clear();
-                foreach (var r in relations) 
+                foreach (var r in relations)
                 {
                     var vm = new RelationItemVm(r);
                     Relations.Add(vm);
@@ -370,7 +351,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
                         foreach (var w in validWorks)
                         {
                             string scoreDisplay = w.Score > 0 ? w.Work.Anime!.Score! : "-";
-                            
+
                             var localAnime = _animeRepo.Collection.FirstOrDefault(a => a.Id == w.Work.Anime!.Id);
                             Avalonia.Media.IBrush highlight = Avalonia.Media.Brushes.Transparent;
                             if (localAnime != null)
@@ -381,10 +362,10 @@ public partial class AnimeDetailsViewModel : ViewModelBase
                                     highlight = Avalonia.Media.SolidColorBrush.Parse("#33F44336");
                             }
 
-                            vm.BestWorks.Add(new StaffWorkVm 
-                            { 
+                            vm.BestWorks.Add(new StaffWorkVm
+                            {
                                 Title = string.IsNullOrEmpty(w.Work.Anime!.Russian) ? (w.Work.Anime!.Name ?? "Unknown") : w.Work.Anime.Russian,
-                                Url = "https://shikimori.one" + w.Work.Anime.Url, 
+                                Url = "https://shikimori.one" + w.Work.Anime.Url,
                                 Score = scoreDisplay,
                                 HighlightColor = highlight
                             });
@@ -501,10 +482,10 @@ public partial class AnimeDetailsViewModel : ViewModelBase
 
     private async Task LoadFullDetailsAsync()
     {
-        var full = Anime.IsManga 
+        var full = Anime.IsManga
             ? await _malApiService.GetMangaDetailsAsync(Anime.Id)
             : await _malApiService.GetAnimeDetailsAsync(Anime.Id);
-            
+
         if (full != null)
         {
             // Sync metadata and user list properties to our CLONED object
@@ -516,31 +497,31 @@ public partial class AnimeDetailsViewModel : ViewModelBase
             Anime.IsRewatching = full.IsRewatching;
             Anime.DateStarted = full.DateStarted;
             Anime.DateCompleted = full.DateCompleted;
-            
+
             // Metadata - overwrite only if we don't have better data or if specifically needed
             if (!string.IsNullOrEmpty(full.Synopsis)) Anime.Synopsis = full.Synopsis;
-            
+
             if (full.Genres.Count > 0)
             {
                 Anime.Genres.Clear();
-                foreach(var g in full.Genres) Anime.Genres.Add(g);
+                foreach (var g in full.Genres) Anime.Genres.Add(g);
             }
 
             if (full.Studios.Count > 0)
             {
                 Anime.Studios.Clear();
-                foreach(var s in full.Studios) Anime.Studios.Add(s);
+                foreach (var s in full.Studios) Anime.Studios.Add(s);
             }
 
             if (full.AlternativeTitles.Count > 0)
             {
-                foreach(var t in full.AlternativeTitles) 
+                foreach (var t in full.AlternativeTitles)
                 {
                     if (!Anime.AlternativeTitles.Contains(t))
                         Anime.AlternativeTitles.Add(t);
                 }
             }
-            
+
             Anime.EnglishTitle = full.EnglishTitle;
             Anime.JapaneseTitle = full.JapaneseTitle;
             Anime.StatusDetailed = full.StatusDetailed;
@@ -550,10 +531,10 @@ public partial class AnimeDetailsViewModel : ViewModelBase
             Anime.AiringDate = full.AiringDate;
             Anime.StartSeason = full.StartSeason;
             Anime.StartYear = full.StartYear;
-            
+
             if (!string.IsNullOrEmpty(full.MainPictureUrl)) Anime.MainPictureUrl = full.MainPictureUrl;
             if (!string.IsNullOrEmpty(full.LocalPosterPath)) Anime.LocalPosterPath = full.LocalPosterPath;
-            
+
             // Re-trigger Season display evaluation
             Anime.Season = full.Season;
 
@@ -652,11 +633,11 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         get
         {
             if (_originalAnime == null || Anime == null) return false;
-            
+
             string currentScore = Anime.Score ?? "";
             if (currentScore != "-" && currentScore.Contains(" "))
                 currentScore = currentScore.Split(' ')[0];
-                
+
             string origScore = _originalAnime.Score ?? "";
             if (origScore != "-" && origScore.Contains(" "))
                 origScore = origScore.Split(' ')[0];
@@ -732,7 +713,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
             // Notify UI to refresh lists
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
         }
-        
+
         // Optimistically close window
         if (window is Avalonia.Controls.Window w) w.Close(true);
     }
@@ -748,10 +729,10 @@ public partial class AnimeDetailsViewModel : ViewModelBase
 
         _isRemoving = true;
         await _animeProgressService.RemoveAnimeAsync(_originalAnime.Id);
-        
+
         // Notify UI to refresh lists
         WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
-        
+
         if (window is Avalonia.Controls.Window w) w.Close(true);
     }
 
@@ -804,7 +785,7 @@ public partial class AnimeDetailsViewModel : ViewModelBase
         {
             DataContext = vm
         };
-        
+
         // Show as a non-modal window or modal, depending on preference. Non-modal is better so user can keep it open.
         window.Show();
     }

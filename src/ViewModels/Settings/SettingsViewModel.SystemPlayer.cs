@@ -1,37 +1,13 @@
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
-using Kiriha.Models;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
+using Kiriha.ViewModels.Player;
 using Kiriha.Views;
 using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
 
 namespace Kiriha.ViewModels.Settings;
 
@@ -91,7 +67,7 @@ public partial class SettingsViewModel
     {
         public string Name { get; }
         public Kiriha.Services.Tracking.Anisthesia.PlayerType Type { get; }
-        
+
         [ObservableProperty]
         private bool _isEnabled;
 

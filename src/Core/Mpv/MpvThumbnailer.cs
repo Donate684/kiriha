@@ -224,7 +224,7 @@ public sealed class MpvThumbnailer : IDisposable
 
             var seconds = (bucket * CacheStepSeconds).ToString("0.###", CultureInfo.InvariantCulture);
             Check(LibMpvNative.mpv_command_string(handle, "seek", seconds, "absolute+keyframes"), "seek thumbnailer");
-            
+
             if (cancellationToken.WaitHandle.WaitOne(45))
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -286,7 +286,7 @@ public sealed class MpvThumbnailer : IDisposable
                     loaded = true;
                     break;
                 }
-                
+
                 if (mpvEvent.EventId == LibMpvNative.MPV_EVENT_END_FILE)
                 {
                     var endFile = Marshal.PtrToStructure<MpvEventEndFile>(mpvEvent.Data);
@@ -333,7 +333,7 @@ public sealed class MpvThumbnailer : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             if (File.Exists(path) && new FileInfo(path).Length > 0)
                 return true;
-            
+
             if (cancellationToken.WaitHandle.WaitOne(25))
                 cancellationToken.ThrowIfCancellationRequested();
         }

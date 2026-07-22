@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Kiriha.Models;
@@ -48,7 +47,7 @@ public class AppDbContext : DbContext
             entity.ToTable("user_anime");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedNever();
-            
+
             entity.Property(e => e.MediaKind)
                   .HasConversion<string>()
                   .HasDefaultValue(MediaKind.Anime);
@@ -70,7 +69,7 @@ public class AppDbContext : DbContext
             entity.Ignore(e => e.ProgressDisplay);
             entity.Ignore(e => e.Season);
             entity.Ignore(e => e.AiringBadgeText);
-            
+
             entity.HasIndex(e => e.RussianTitle).HasDatabaseName("idx_user_anime_russian_title");
         });
 

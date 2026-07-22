@@ -54,7 +54,7 @@ public class MpvPlayer : IDisposable
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "input-default-bindings", "no"), "disable default input bindings");
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "input-vo-keyboard", "no"), "disable mpv keyboard input");
         ConfigureVideoPipeline(options ?? MpvOptions.Default);
-        
+
         // Ensure mpv does not quit automatically on playback end or error
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "idle", "yes"), "enable idle");
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "keep-open", "yes"), "enable keep-open");
@@ -795,19 +795,19 @@ public class MpvPlayer : IDisposable
         {
             case LibMpvNative.MPV_EVENT_FILE_LOADED:
                 InvalidateRuntimeVideoInfo();
-                
-                bool isPaused = Read(handle => 
+
+                bool isPaused = Read(handle =>
                 {
                     LibMpvNative.mpv_get_property_int(handle, "pause", LibMpvNative.MPV_FORMAT_FLAG, out int paused);
                     return paused != 0;
                 }, true);
-                
+
                 bool pauseChanged = _propertyCache.TryUpdatePause(isPaused);
                 bool loadedChanged = _propertyCache.TryUpdateLoaded(true);
-                
+
                 if (pauseChanged || loadedChanged)
                     PublishPlaybackState();
-                    
+
                 FileLoaded?.Invoke(this, EventArgs.Empty);
                 break;
 
@@ -959,7 +959,7 @@ public class MpvPlayer : IDisposable
 public class ChapterInfo
 {
     public string Title { get; set; } = string.Empty;
-    public double Time  { get; set; }
+    public double Time { get; set; }
 }
 
 public class TrackInfo
@@ -969,7 +969,7 @@ public class TrackInfo
     public string? Title { get; set; }
     public string? Lang { get; set; }
     public bool Selected { get; set; }
-    
+
     public string DisplayName
     {
         get

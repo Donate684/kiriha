@@ -2,10 +2,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
-using Kiriha.Services;
 using Kiriha.Services.Data;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Kiriha.Views;
 
@@ -55,13 +52,13 @@ public partial class AnimeDetailsWindow : KirihaWindowBase
 
         // 1. Shrink to fit the work area (40 px margin on every side).
         const int marginPx = 40;
-        var maxWDip = Math.Max(200, (workArea.Width  - marginPx * 2) / scale);
+        var maxWDip = Math.Max(200, (workArea.Width - marginPx * 2) / scale);
         var maxHDip = Math.Max(150, (workArea.Height - marginPx * 2) / scale);
-        if (Width  > maxWDip) Width  = maxWDip;
+        if (Width > maxWDip) Width = maxWDip;
         if (Height > maxHDip) Height = maxHDip;
 
         // 2. Compute the actual window footprint in physical pixels.
-        var winWPx = (int)Math.Ceiling(Width  * scale);
+        var winWPx = (int)Math.Ceiling(Width * scale);
         var winHPx = (int)Math.Ceiling(Height * scale);
 
         // 3. Centre on owner when we can (so the user keeps the spatial link
@@ -70,20 +67,20 @@ public partial class AnimeDetailsWindow : KirihaWindowBase
         int x, y;
         if (Owner is Window owner && owner.IsVisible)
         {
-            var ownerWPx = (int)(owner.Bounds.Width  * scale);
+            var ownerWPx = (int)(owner.Bounds.Width * scale);
             var ownerHPx = (int)(owner.Bounds.Height * scale);
             x = owner.Position.X + (ownerWPx - winWPx) / 2;
             y = owner.Position.Y + (ownerHPx - winHPx) / 2;
         }
         else
         {
-            x = workArea.X + (workArea.Width  - winWPx) / 2;
+            x = workArea.X + (workArea.Width - winWPx) / 2;
             y = workArea.Y + (workArea.Height - winHPx) / 2;
         }
 
         // 4. Clamp inside the work area so we never end up pinned to y=0 just
         //    because the owner is shorter than this dialog.
-        x = Math.Clamp(x, workArea.X, workArea.X + Math.Max(0, workArea.Width  - winWPx));
+        x = Math.Clamp(x, workArea.X, workArea.X + Math.Max(0, workArea.Width - winWPx));
         y = Math.Clamp(y, workArea.Y, workArea.Y + Math.Max(0, workArea.Height - winHPx));
 
         Position = new PixelPoint(x, y);

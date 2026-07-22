@@ -1,19 +1,7 @@
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
 using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 
 namespace Kiriha.Services.Tracking.Anisthesia.Strategies;
@@ -43,7 +31,7 @@ public class WindowTitleStrategy
                     if (match.Groups[i].Success && !string.IsNullOrEmpty(match.Groups[i].Value))
                     {
                         string extracted = match.Groups[i].Value;
-                        
+
                         // Further parse with Anitomy to get episode
                         var elements = Kiriha.Utils.Parsing.AnimeParseCache.Parse(extracted);
                         var titleElement = elements.FirstOrDefault(e => e.Category == AnitomySharp.Element.ElementCategory.ElementAnimeTitle);
@@ -61,17 +49,18 @@ public class WindowTitleStrategy
                         if (otherElement != null)
                             episodeTitle = string.IsNullOrEmpty(episodeTitle) ? otherElement.Value : $"{episodeTitle} {otherElement.Value}";
 
-                        return new ParsedMedia { 
-                            OriginalTitle = extracted, 
-                            AnimeTitle = animeTitle, 
+                        return new ParsedMedia
+                        {
+                            OriginalTitle = extracted,
+                            AnimeTitle = animeTitle,
                             EpisodeTitle = episodeTitle,
                             Episode = episode ?? string.Empty,
                             Season = season ?? string.Empty,
-                            IsPlaying = true 
+                            IsPlaying = true
                         };
                     }
                 }
-                
+
                 // If there were capturing groups defined in regex, but none matched, 
                 // it means the "idle" part of the regex matched (e.g. "^MPC-BE.*")
                 // In this case we return null because nothing is actually playing.

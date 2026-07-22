@@ -1,19 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
@@ -27,7 +20,7 @@ public class MalApiService : ITrackerService, IDisposable
     // Resolved once from Constants — no parallel const that can drift from the URL
     // wired into the IHttpClientFactory "MalClient" registration.
     private static readonly string MalBaseUrl = Constants.Api.Mal.BaseUrl;
-    
+
     private static readonly string ListStatusFields = "num_episodes_watched,score,status,num_times_rewatched,is_rewatching,notes,start_date,finish_date";
     private static readonly string AnimeFields = $"list_status{{{ListStatusFields}}},my_list_status{{{ListStatusFields}}},main_picture,synopsis,mean,rank,popularity,num_episodes,start_season,genres,studios,alternative_titles,status,start_date,nsfw,rating,media_type,broadcast,external_links";
 
@@ -96,7 +89,7 @@ public class MalApiService : ITrackerService, IDisposable
 
                 using var stream = await response.Content.ReadAsStreamAsync(ct);
                 using var json = await JsonDocument.ParseAsync(stream, default, ct);
-                
+
                 var root = json.RootElement;
                 if (root.TryGetProperty("data", out var data))
                 {
@@ -163,7 +156,7 @@ public class MalApiService : ITrackerService, IDisposable
     public async Task<SyncOutcome> SaveFullListStatusAsync(AnimeItem item, CancellationToken ct = default)
     {
         bool isManga = item.MediaKind != MediaKind.Anime;
-        
+
         var values = new List<KeyValuePair<string, string>>
         {
             new(isManga ? "num_chapters_read" : "num_watched_episodes", isManga ? item.ChaptersRead.ToString() : item.Progress.ToString()),
@@ -171,12 +164,12 @@ public class MalApiService : ITrackerService, IDisposable
             new("num_times_rewatched", item.RewatchCount.ToString()),
             new("is_rewatching", item.IsRewatching.ToString().ToLower())
         };
-        
+
         if (isManga)
         {
             values.Add(new("num_volumes_read", item.VolumesRead.ToString()));
         }
-        
+
         if (int.TryParse(item.Score, out int s)) values.Add(new("score", s.ToString()));
         if (!string.IsNullOrEmpty(item.Notes)) values.Add(new("notes", item.Notes));
         if (item.DateStarted.HasValue) values.Add(new("start_date", item.DateStarted.Value.ToString("yyyy-MM-dd")));
@@ -223,7 +216,7 @@ public class MalApiService : ITrackerService, IDisposable
         {
             var bytes = await GetWithCacheAsync($"anime/{animeId}?fields={AnimeFields}&nsfw=true", ct);
             if (bytes == null) return null;
-            
+
             using var json = JsonDocument.Parse(bytes);
             return MalMapper.MapJsonToAnimeItem(json.RootElement);
         }
@@ -251,7 +244,7 @@ public class MalApiService : ITrackerService, IDisposable
 
                 using var stream = await response.Content.ReadAsStreamAsync(ct);
                 using var json = await JsonDocument.ParseAsync(stream, default, ct);
-                
+
                 var root = json.RootElement;
                 if (root.TryGetProperty("data", out var data))
                 {
@@ -311,7 +304,7 @@ public class MalApiService : ITrackerService, IDisposable
         {
             var bytes = await GetWithCacheAsync($"manga/{mangaId}?fields={MangaFields}&nsfw=true", ct);
             if (bytes == null) return null;
-            
+
             using var json = JsonDocument.Parse(bytes);
             return MalMapper.MapJsonToAnimeItem(json.RootElement);
         }
@@ -319,10 +312,10 @@ public class MalApiService : ITrackerService, IDisposable
         catch (Exception ex) { Log.Warning(ex, "MalApiService: GetMangaDetailsAsync failed for {Id}", mangaId); return null; }
     }
 
-    public Task<List<EpisodeRelease>> GetEpisodeListAsync(int malId, CancellationToken ct = default) => 
+    public Task<List<EpisodeRelease>> GetEpisodeListAsync(int malId, CancellationToken ct = default) =>
         _jikanApi.GetEpisodeListAsync(malId, ct);
 
-    public Task<int?> GetLatestEpisodeFromForumAsync(int malId, CancellationToken ct = default) => 
+    public Task<int?> GetLatestEpisodeFromForumAsync(int malId, CancellationToken ct = default) =>
         _jikanApi.GetLatestEpisodeFromForumAsync(malId, ct);
 
     private Task<SyncOutcome> SendPatchAsync(string url, List<KeyValuePair<string, string>> values, CancellationToken ct)
@@ -469,11 +462,11 @@ public class MalApiService : ITrackerService, IDisposable
         var fullUrl = url.StartsWith("http") ? url : MalBaseUrl + url.TrimStart('/');
         var request = new HttpRequestMessage(HttpMethod.Get, fullUrl);
         request.Headers.Add("User-Agent", AppInfo.UserAgent);
-        
+
         var token = await EnsureValidTokenAsync(ct);
-        if (!string.IsNullOrEmpty(token)) 
+        if (!string.IsNullOrEmpty(token))
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        else 
+        else
             request.Headers.Add("X-MAL-CLIENT-ID", ApiKeys.MalClientId);
 
         await ThrottleAsync(ct);

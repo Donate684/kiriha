@@ -1,5 +1,3 @@
-using System;
-
 namespace Kiriha.Models.Entities;
 
 public class AnimeStaff

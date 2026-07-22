@@ -1,7 +1,6 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Microsoft.Extensions.DependencyInjection;
 using Kiriha.Services.Data;
 
 namespace Kiriha.Views;
@@ -13,7 +12,7 @@ public class KirihaWindowBase : Window
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
-        
+
         if (SettingsService != null)
         {
             ApplyUiScale(SettingsService.Current.UI.UiScale);

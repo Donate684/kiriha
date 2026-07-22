@@ -9,7 +9,7 @@ public class RatingConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is not string scoreStr || string.IsNullOrWhiteSpace(scoreStr)) 
+        if (value is not string scoreStr || string.IsNullOrWhiteSpace(scoreStr))
             return RatingHelper.GetRatingOption("-");
 
         return RatingHelper.GetRatingOption(scoreStr);

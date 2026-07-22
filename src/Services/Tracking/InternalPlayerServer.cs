@@ -3,11 +3,7 @@ using System.IO.Pipes;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
 using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models.Api;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -46,7 +42,7 @@ public class InternalPlayerServer : BackgroundService
                 Log.Information("InternalPlayerServer: Player connected.");
 
                 using var reader = new System.IO.StreamReader(pipeServer);
-                
+
                 while (pipeServer.IsConnected && !stoppingToken.IsCancellationRequested)
                 {
                     var line = await reader.ReadLineAsync(stoppingToken);

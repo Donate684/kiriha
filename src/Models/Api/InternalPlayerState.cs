@@ -1,5 +1,3 @@
-using System;
-
 namespace Kiriha.Models.Api;
 
 public class InternalPlayerState

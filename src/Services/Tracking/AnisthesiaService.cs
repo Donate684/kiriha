@@ -1,23 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking.Anisthesia;
-using Serilog;
-
 using Microsoft.Extensions.Hosting;
+using Serilog;
 
 namespace Kiriha.Services.Tracking;
 
@@ -48,7 +39,7 @@ public class AnisthesiaService : IHostedService, IDisposable
         _settingsService = settingsService;
         _smtcService = smtcService;
         _backgroundTasks = backgroundTasks;
-        
+
         // Load players from resources
         try
         {
@@ -103,9 +94,9 @@ public class AnisthesiaService : IHostedService, IDisposable
     private async Task PollingLoopAsync(CancellationToken ct)
     {
         Log.Information("Anisthesia Polling Service started.");
-        
+
         await _smtcService.StartAsync();
-        
+
         ParsedMedia? lastDetected = null;
 
         while (!ct.IsCancellationRequested)
@@ -114,7 +105,7 @@ public class AnisthesiaService : IHostedService, IDisposable
             {
                 // Update running players set
                 var running = _detectionManager.GetRunningPlayerNames();
-                
+
                 if (!running.SetEquals(_runningPlayerNames))
                 {
                     _runningPlayerNames = running;
@@ -122,7 +113,7 @@ public class AnisthesiaService : IHostedService, IDisposable
                 }
 
                 var detected = await _detectionManager.DetectAsync();
-                
+
                 if (detected != null)
                 {
                     var timeline = _smtcService.GetTimeline(detected.ProcessName);
@@ -159,9 +150,9 @@ public class AnisthesiaService : IHostedService, IDisposable
                     }
 
                     // Update only if title or episode or playing state changed
-                    if (lastDetected == null || 
-                        lastDetected.AnimeTitle != detected.AnimeTitle || 
-                        lastDetected.Episode != detected.Episode || 
+                    if (lastDetected == null ||
+                        lastDetected.AnimeTitle != detected.AnimeTitle ||
+                        lastDetected.Episode != detected.Episode ||
                         lastDetected.IsPlaying != detected.IsPlaying)
                     {
                         lastDetected = detected;
@@ -198,7 +189,7 @@ public class AnisthesiaService : IHostedService, IDisposable
             }
         }
         catch (ObjectDisposedException) { }
-        
+
         _disposeCts.Dispose();
 
         MediaDetected = null;

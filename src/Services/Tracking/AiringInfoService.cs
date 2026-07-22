@@ -4,19 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Core;
 using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
 using Kiriha.Services.Data;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.Services.Tracking;
@@ -90,7 +81,7 @@ public class AiringInfoService
     {
         if (_syncOrchestrator.IsSyncing) return;
         if (anime.Status != UserAnimeStatus.Watching) return;
-        
+
         var status = anime.StatusDetailed?.ToLowerInvariant();
         bool isTrackableStatus = status == "currently_airing" || status == "currently airing";
 
@@ -126,7 +117,8 @@ public class AiringInfoService
         // Snapshot on UI thread - ObservableCollection is not thread-safe.
         var toSync = await _uiDispatcher.InvokeAsync(() =>
             _animeRepo.Collection
-                .Where(x => {
+                .Where(x =>
+                {
                     var s = x.StatusDetailed?.ToLowerInvariant();
                     return (s == "currently_airing" || s == "currently airing" || x.NextEpisodeAt.HasValue) &&
                            x.Status == UserAnimeStatus.Watching &&

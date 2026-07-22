@@ -1,7 +1,3 @@
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -14,12 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Models;
 using Kiriha.Models.Api;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
 using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.Services.Data;

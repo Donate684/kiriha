@@ -1,13 +1,3 @@
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,23 +8,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
 using Kiriha.Services.Api;
-using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
-using Kiriha.Services.Tracking;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
 using Kiriha.Utils.Collections;
-using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.ViewModels.Search;
@@ -48,9 +26,9 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
     private readonly AnimeRepository _animeRepo;
     private readonly SyncManager _syncManager;
     private readonly Kiriha.Core.Dialogs.IDialogService _dialogService;
-    
+
     public Kiriha.Core.Dialogs.IDialogService DialogService => _dialogService;
-    
+
     [ObservableProperty] private string _searchQuery = string.Empty;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _hideInLists;
@@ -84,7 +62,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
     private bool _isDisposed;
     private readonly Kiriha.Utils.Async.Debouncer _searchDebouncer;
 
-    public SearchViewModel(MalApiService apiService, ShikiMetadataService shikiMetadataService, 
+    public SearchViewModel(MalApiService apiService, ShikiMetadataService shikiMetadataService,
         SettingsService settingsService, LoadQueueService queueService,
         AnimeRepository animeRepo, SyncManager syncManager, Kiriha.Core.Dialogs.IDialogService dialogService)
     {
@@ -139,7 +117,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
 
         var newCts = new CancellationTokenSource();
         var oldCts = Interlocked.Exchange(ref _searchCts, newCts);
-        
+
         if (oldCts != null)
         {
             try { oldCts.Cancel(); } catch (ObjectDisposedException) { }
@@ -172,14 +150,14 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
                 if (AdultFilter == AdultFilterMode.Hide)
                 {
                     // Strict safe mode: hide Rx rating and Hentai genre
-                    filtered = filtered.Where(x => 
+                    filtered = filtered.Where(x =>
                         !string.Equals(x.Rating, "rx", StringComparison.OrdinalIgnoreCase) &&
                         !x.Genres.Any(g => string.Equals(g, "Hentai", StringComparison.OrdinalIgnoreCase)));
                 }
                 else if (AdultFilter == AdultFilterMode.Only)
                 {
                     // Adult only: show only Rx rating or Hentai genre
-                    filtered = filtered.Where(x => 
+                    filtered = filtered.Where(x =>
                         string.Equals(x.Rating, "rx", StringComparison.OrdinalIgnoreCase) ||
                         x.Genres.Any(g => string.Equals(g, "Hentai", StringComparison.OrdinalIgnoreCase)));
                 }
@@ -198,11 +176,11 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
         {
             Log.Error(ex, "Search failed");
         }
-        finally 
-        { 
+        finally
+        {
             if (!ct.IsCancellationRequested)
             {
-                IsLoading = false; 
+                IsLoading = false;
             }
         }
     }
@@ -221,7 +199,7 @@ public partial class SearchViewModel : ViewModelBase, IDisposable
             item.Status = status;
             await _animeRepo.AddOrUpdateAnimeAsync(item);
             await _syncManager.EnqueueUpdateAsync(item.Id, 0, status);
-            
+
             // Notify UI
             WeakReferenceMessenger.Default.Send(new AnimeListRefreshMessage());
         }

@@ -8,16 +8,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Media.Imaging;
-using Kiriha.Core;
 using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.Models.Api;
-using Kiriha.Models.Entities;
 using Kiriha.Services.AppLifecycle;
 using Serilog;
 
@@ -40,8 +33,8 @@ public class ImageCacheService : IDisposable
     // for the full rationale and why each caller still gets its own Bitmap.
     private readonly BitmapMemoryCache _memCache = new(
         encodedBudgetBytes: 32L * 1024 * 1024,
-        pixelBudgetBytes:   16L * 1024 * 1024);
-    
+        pixelBudgetBytes: 16L * 1024 * 1024);
+
     public ImageCacheService(
         IHttpClientFactory httpClientFactory,
         IBackgroundTaskSupervisor backgroundTasks,
@@ -153,7 +146,7 @@ public class ImageCacheService : IDisposable
     public Task<string> GetLocalPathOrDownload(string url, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(url)) return Task.FromResult(string.Empty);
-        
+
         var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var addedTask = _activeDownloads.GetOrAdd(url, tcs.Task);
 
@@ -196,7 +189,7 @@ public class ImageCacheService : IDisposable
     {
         string fileName = GetHashString(url) + Path.GetExtension(url.Split('?')[0]);
         if (string.IsNullOrEmpty(Path.GetExtension(fileName))) fileName += ".jpg";
-        
+
         string localPath = Path.Combine(CacheRoot, fileName);
         string tmpPath = localPath + ".tmp";
 
@@ -234,7 +227,7 @@ public class ImageCacheService : IDisposable
                         using var client = _httpClientFactory.CreateClient("ImageClient");
                         var bytes = await client.GetByteArrayAsync(url, cts.Token);
                         await File.WriteAllBytesAsync(tmpPath, bytes, cts.Token);
-                        
+
                         File.Move(tmpPath, localPath, true);
                         return localPath;
                     }
@@ -263,7 +256,7 @@ public class ImageCacheService : IDisposable
                 await Task.Delay(1000 * (i + 1), ct); // Exponential-ish backoff
             }
         }
-        
+
         return string.Empty;
     }
 
@@ -307,7 +300,7 @@ public class ImageCacheService : IDisposable
             });
 
             if (deletedCount > 0)
-                Log.Information("ImageCacheService: Cleaned {Count} unreferenced old images, reclaimed {Space:N2} MB", 
+                Log.Information("ImageCacheService: Cleaned {Count} unreferenced old images, reclaimed {Space:N2} MB",
                     deletedCount, reclaimedSpace / 1024.0 / 1024.0);
         }
         catch (Exception ex)
@@ -364,7 +357,7 @@ public class ImageCacheService : IDisposable
     public async Task CacheBatchAsync(IEnumerable<AnimeItem> items, Action<int, int>? onProgress = null, CancellationToken ct = default)
     {
         var toDownload = items.Where(NeedsPosterDownload).ToList();
-        
+
         if (toDownload.Count == 0) return;
 
         int count = 0;

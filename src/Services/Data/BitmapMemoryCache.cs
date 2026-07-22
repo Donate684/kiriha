@@ -1,7 +1,3 @@
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -38,10 +34,10 @@ public sealed class BitmapMemoryCache
     private readonly ByteSizedLru<PixelKey, PixelEntry> _pixels;
 
     public BitmapMemoryCache(long encodedBudgetBytes = 32L * 1024 * 1024,
-                              long pixelBudgetBytes  = 16L * 1024 * 1024)
+                              long pixelBudgetBytes = 16L * 1024 * 1024)
     {
         _encoded = new ByteSizedLru<string, byte[]>(encodedBudgetBytes, b => b.Length);
-        _pixels  = new ByteSizedLru<PixelKey, PixelEntry>(pixelBudgetBytes, p => p.Pixels.Length);
+        _pixels = new ByteSizedLru<PixelKey, PixelEntry>(pixelBudgetBytes, p => p.Pixels.Length);
     }
 
     /// <summary>
@@ -100,9 +96,9 @@ public sealed class BitmapMemoryCache
         var size = bmp.PixelSize;
         if (size.Width <= 0 || size.Height <= 0) return;
 
-        int bpp    = (fmt.BitsPerPixel + 7) / 8;
+        int bpp = (fmt.BitsPerPixel + 7) / 8;
         int stride = size.Width * bpp;
-        int total  = stride * size.Height;
+        int total = stride * size.Height;
         if (total <= 0) return;
 
         var buffer = new byte[total];

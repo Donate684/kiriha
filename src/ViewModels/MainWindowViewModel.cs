@@ -1,35 +1,21 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core.Navigation;
 using Kiriha.Models;
-using Kiriha.Models.Api;
-using Kiriha.Models.Entities;
-using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
 using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
+using Kiriha.ViewModels.Analytics;
+using Kiriha.ViewModels.AnimeList;
+using Kiriha.ViewModels.History;
+using Kiriha.ViewModels.Search;
+using Kiriha.ViewModels.Seasonal;
+using Kiriha.ViewModels.Settings;
+using Kiriha.ViewModels.Torrents;
 
 namespace Kiriha.ViewModels;
 
@@ -58,11 +44,11 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     private TorrentsViewModel? _torrentsViewModel;
     private SeasonalViewModel? _seasonalViewModel;
     private AnalyticsViewModel? _analyticsViewModel;
-    
+
     // IViewModelFactory delivers a fresh transient instance on each navigation —
     // see DI registrations: WelcomeViewModel and SearchViewModel are AddTransient.
     private readonly IViewModelFactory _viewModelFactory;
-    
+
     private readonly Kiriha.Services.Data.SettingsService _settingsService;
 
     [ObservableProperty]
@@ -77,7 +63,7 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
 
         // Load saved sidebar state
         IsPaneOpen = _settingsService.Current.UI.IsPaneOpen;
-        
+
         // Register for navigation messages
         WeakReferenceMessenger.Default.Register(this);
 
@@ -168,14 +154,14 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
 
     partial void OnSelectedNavigationIndexChanged(int value)
     {
-        if (IsNavigationBlocked) 
+        if (IsNavigationBlocked)
         {
             // Revert selection if blocked
             return;
         }
 
         if (value >= 0) IsSettingsSelected = false;
-        
+
         switch (value)
         {
             case 0: NavigateAnalytics(); break;
@@ -252,7 +238,7 @@ public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigationM
     {
         var animeList = EnsureAnimeListViewModel();
         var seasonal = EnsureSeasonalViewModel();
-        
+
         var itemsSnapshot = animeList.AnimeItems.ToArray();
         var userStore = await Task.Run(() => itemsSnapshot
             .GroupBy(x => x.Id)

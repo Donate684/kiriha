@@ -1,27 +1,7 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Core.Mpv;
 using Kiriha.Models;
 using Kiriha.Services;
@@ -90,7 +70,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _animeTitleEn = string.Empty;
     [ObservableProperty] private string _episodeTitle = string.Empty;
     [ObservableProperty] private string _rawEpisodeText = string.Empty;
-    
+
     [ObservableProperty] private bool _isPlaying = true;
     [ObservableProperty] private double _currentTime = 0;
     [ObservableProperty] private double _duration = 0;
@@ -102,7 +82,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _playbackErrorMessage = string.Empty;
     [ObservableProperty] private bool _canOpenPreviousMedia;
     [ObservableProperty] private bool _canOpenNextMedia;
-    
+
     [ObservableProperty] private double _volume = 100;
     [ObservableProperty] private bool _isMuted = false;
     [ObservableProperty] private bool _normalizeAudio = false;
@@ -203,7 +183,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _timelinePreview = new PlayerTimelinePreviewController(Overlay);
         ApplyPlayerSettings();
         ApplyMetadata(metadata ?? metadataResolver?.Resolve(videoUrl) ?? PlayerMediaMetadata.FromVideoPath(videoUrl));
-        
+
         VideoUrl = videoUrl; // Sets VideoUrl and triggers OnVideoUrlChanged if needed, but since it's constructor, we already set the fields above.
         _isInitializing = false;
     }

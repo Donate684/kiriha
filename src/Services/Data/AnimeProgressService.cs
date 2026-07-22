@@ -1,10 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using Kiriha.Models;
 using Kiriha.Models.Entities;
+using Kiriha.Services.Api;
 using Kiriha.Services.Data.Repositories;
 using Serilog;
-using Kiriha.Models;
-using Kiriha.Services.Api;
 
 namespace Kiriha.Services.Data;
 
@@ -55,9 +55,9 @@ public class AnimeProgressService
         await _syncManager.EnqueueUpdateAsync(item.Id, nextProgress, nextStatus);
 
         item.Progress = nextProgress;
-        if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None) 
+        if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None)
             item.Status = nextStatus.Value;
-        
+
         return true;
     }
 
@@ -66,9 +66,9 @@ public class AnimeProgressService
         UserAnimeStatus? nextStatus = null;
         if (item.Status != UserAnimeStatus.Watching && item.Status != UserAnimeStatus.Completed)
             nextStatus = UserAnimeStatus.Watching;
-        
+
         bool isManga = item.MediaKind != MediaKind.Anime;
-        
+
         // Manga completion
         if (isManga && item.Chapters > 0 && nextProgress >= item.Chapters && item.Status == UserAnimeStatus.Watching)
             nextStatus = UserAnimeStatus.Completed;
@@ -79,12 +79,12 @@ public class AnimeProgressService
         if (isManga)
         {
             item.ChaptersRead = nextProgress;
-            if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None) 
+            if (nextStatus.HasValue && nextStatus != UserAnimeStatus.None)
                 item.Status = nextStatus.Value;
 
             await _userAnimeRepo.UpdateProgressAsync(item, nextProgress, nextStatus);
             await _syncManager.EnqueueFullUpdateAsync(item);
-            
+
             _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, nextStatus == UserAnimeStatus.Completed ? "Completed" : "Read");
             return nextStatus;
         }
@@ -96,7 +96,7 @@ public class AnimeProgressService
                 return nextStatus;
             }
         }
-        
+
         return null;
     }
 
@@ -113,7 +113,7 @@ public class AnimeProgressService
 
                 await _userAnimeRepo.UpdateProgressAsync(item, nextProgress, null);
                 await _syncManager.EnqueueFullUpdateAsync(item);
-                
+
                 _historyService.AddEntry(item.Id, item.Title, item.RussianTitle, nextProgress, "Reverted");
             }
         }

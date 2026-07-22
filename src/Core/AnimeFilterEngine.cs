@@ -45,7 +45,8 @@ public static class AnimeFilterEngine
     {
         return sortBy switch
         {
-            "Score" => query.OrderByDescending(x => {
+            "Score" => query.OrderByDescending(x =>
+            {
                 if (isSeasonal)
                 {
                     // Strictly community mean score for seasons

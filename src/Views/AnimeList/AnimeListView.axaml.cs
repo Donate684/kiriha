@@ -1,34 +1,11 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Media;
-using Avalonia.Styling;
 using Avalonia.Threading;
-using CommunityToolkit.Mvvm.Messaging;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
 using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Kiriha.Views.AnimeList;
 
@@ -82,7 +59,7 @@ public partial class AnimeListView : UserControl
 
         if (DataContext is not AnimeListViewModel vm) return;
         var settings = vm.SettingsService;
-        
+
         // Ensure ItemsRepeater uses the Poster First template
         if (_gridRepeater != null && this.TryFindResource("CardTemplatePosterFirst", this.ActualThemeVariant, out var resource) && resource is IDataTemplate dt)
         {

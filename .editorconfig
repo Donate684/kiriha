@@ -106,3 +106,6 @@ dotnet_diagnostic.IDE0008.severity = none
 # CA1416: platform compatibility (Windows-only build target).
 # Project pins net10.0-windows, so all CA1416 noise is by design.
 dotnet_diagnostic.CA1416.severity = none
+
+# IDE0005: Remove unnecessary using directives.
+dotnet_diagnostic.IDE0005.severity = warning

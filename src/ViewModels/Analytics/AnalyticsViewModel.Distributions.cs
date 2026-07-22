@@ -1,26 +1,10 @@
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
-using CommunityToolkit.Mvvm.Input;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.Models.Entities;
 
 namespace Kiriha.ViewModels.Analytics;
 
@@ -120,10 +104,10 @@ public partial class AnalyticsViewModel
     private static string GetScoreAccent(int score) => score switch
     {
         10 or 9 => "#FF2E9D62",
-        8 or 7  => "#FF2D7DD2",
-        6 or 5  => "#FFD17A22",
-        4 or 3  => "#FFD1495B",
-        _       => "#FFE53935"
+        8 or 7 => "#FF2D7DD2",
+        6 or 5 => "#FFD17A22",
+        4 or 3 => "#FFD1495B",
+        _ => "#FFE53935"
     };
 
     private static void AddTopDistribution(ObservableCollection<AnalyticsBar> target, IEnumerable<string> values, int take)

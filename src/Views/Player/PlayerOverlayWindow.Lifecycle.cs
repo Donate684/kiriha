@@ -1,33 +1,12 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using System;
-using System.ComponentModel;
 using System.Collections.Specialized;
-using System.Linq;
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
-using Avalonia.Interactivity;
-using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Platform.Storage;
-using Avalonia.Threading;
-using Kiriha.Core.Mpv;
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
 using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 
 namespace Kiriha.Views.Player;
 
@@ -114,7 +93,7 @@ public partial class PlayerOverlayWindow
                 ? "\uE923"
                 : "\uE922";
         }
-        
+
         // Remove rounded corners from the actual window by changing decorations and client area hint
         if (_ownerWindow != null)
         {
@@ -210,20 +189,20 @@ public partial class PlayerOverlayWindow
                 // Two small triangles flanking the 4px timeline track.
                 var marker = new Path
                 {
-                    Data              = s_chapterMarkerGeometry,
-                    Opacity           = 0.90,
+                    Data = s_chapterMarkerGeometry,
+                    Opacity = 0.90,
                     HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                    VerticalAlignment   = Avalonia.Layout.VerticalAlignment.Center
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
                 };
 
                 // Wrap in a border to provide a larger hit-test area for easier clicking
                 hitArea = new Border
                 {
                     Background = Brushes.Transparent, // Transparent but hit-testable
-                    Cursor     = new Cursor(StandardCursorType.Hand),
-                    Width      = 32, // Match the new 32px height of the Slider
-                    Height     = 32,
-                    Child      = marker
+                    Cursor = new Cursor(StandardCursorType.Hand),
+                    Width = 32, // Match the new 32px height of the Slider
+                    Height = 32,
+                    Child = marker
                 };
 
                 hitArea.PointerPressed += OnChapterMarkerPointerPressed;
@@ -238,12 +217,12 @@ public partial class PlayerOverlayWindow
             }
 
             double ratio = Math.Clamp(chapter.Time / duration, 0.0, 1.0);
-            double x     = ratio * trackWidth;
+            double x = ratio * trackWidth;
 
             // Center the 32x32 hit area on the track
             Canvas.SetLeft(hitArea, x - 16.0);
-            Canvas.SetTop(hitArea,  centerY - 16.0);
-            
+            Canvas.SetTop(hitArea, centerY - 16.0);
+
             childIndex++;
         }
 

@@ -3,11 +3,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
 using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Serilog;
 
 namespace Kiriha.Services;
@@ -86,7 +82,7 @@ public sealed class PlayerCommandServer : IDisposable
             _currentPipe?.Dispose();
             _currentPipe = null;
         }
-        
+
         try
         {
             if (_loopTask?.Wait(500) != false)

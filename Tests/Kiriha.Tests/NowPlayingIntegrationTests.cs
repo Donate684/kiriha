@@ -1,16 +1,9 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Xunit;
-using Xunit.Abstractions;
-using Kiriha.Services;
+using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;
 using Kiriha.Services.Data.Repositories;
-using Kiriha.Services.AppLifecycle;
-using Kiriha.Core.Platform;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit.Abstractions;
 
 namespace Kiriha.Tests;
 
@@ -37,13 +30,13 @@ public sealed class NowPlayingIntegrationTests
         var userRepo = provider.GetRequiredService<IUserAnimeRepository>();
 
         var userList = await userRepo.GetAllAsync();
-        
+
         // TrackingService operates on the OriginalTitle (which for local players is typically the filename)
         string originalTitle = Path.GetFileNameWithoutExtension(mkvPath);
 
         // Mimic TrackingService's MatchMediaAsync logic
         int? malId = await mappingService.GetIdFromTitleAsync(originalTitle, userList);
-        
+
         if (!malId.HasValue)
         {
             malId = await mappingService.SearchOnMalAsync(originalTitle);
@@ -105,7 +98,7 @@ public sealed class NowPlayingIntegrationTests
                 .UseSqlite($"Data Source={_dbPath}")
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                 .Options;
-            
+
             return new AppDbContext(options);
         }
     }

@@ -1,42 +1,17 @@
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
 using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.Models.Api;
-using Kiriha.Models.Entities;
 using Kiriha.Services;
-using Kiriha.Services.Api;
 using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
-using Kiriha.Views;
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
-using Serilog;
+using Kiriha.ViewModels.AnimeList;
+using Kiriha.ViewModels.Seasonal;
 
 namespace Kiriha.ViewModels.Settings;
 
@@ -67,11 +42,11 @@ public partial class SettingsViewModel : ViewModelBase
     public bool CanLoginShikiOne => IsLoggedIn && !IsShikiNetConnected;
     public bool CanLoginShikiNet => IsLoggedIn && !IsShikiOneConnected;
 
-    public List<ThemeOption> AvailableThemes => new() 
-    { 
-        new ThemeOption(UIUtils.GetLoc("settings.theme.default"), ThemeType.System), 
-        new ThemeOption(UIUtils.GetLoc("settings.theme.light"), ThemeType.Light), 
-        new ThemeOption(UIUtils.GetLoc("settings.theme.dark"), ThemeType.Dark) 
+    public List<ThemeOption> AvailableThemes => new()
+    {
+        new ThemeOption(UIUtils.GetLoc("settings.theme.default"), ThemeType.System),
+        new ThemeOption(UIUtils.GetLoc("settings.theme.light"), ThemeType.Light),
+        new ThemeOption(UIUtils.GetLoc("settings.theme.dark"), ThemeType.Dark)
     };
 
     [ObservableProperty]
@@ -93,7 +68,7 @@ public partial class SettingsViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(ShikiLoginOneCommand))]
     [NotifyCanExecuteChangedFor(nameof(ShikiLoginNetCommand))]
     private bool _isShikiLoggedIn;
-    
+
     [ObservableProperty]
     private bool _useRussianTitles;
 
@@ -297,7 +272,7 @@ public partial class SettingsViewModel : ViewModelBase
         _selectedLanguage = AvailableLanguages.FirstOrDefault(x => x.Code == _settingsService.Current.UI.LanguageCode) ?? AvailableLanguages[0];
         _selectedTheme = AvailableThemes.FirstOrDefault(x => x.Value == _settingsService.Current.UI.Theme) ?? AvailableThemes[0];
 
-        
+
         IsLoggedIn = _settingsService.Current.Api.Mal != null;
         IsShikiLoggedIn = _settingsService.Current.Api.Shiki != null;
         UseRussianTitles = _settingsService.Current.UI.UseRussianTitles;

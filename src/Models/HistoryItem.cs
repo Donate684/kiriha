@@ -11,7 +11,7 @@ public class HistoryItem
     public string? RussianTitle { get; set; }
     public int Episode { get; set; }
     public DateTime Timestamp { get; set; }
-    
+
     // Optional: for differentiation
     public int ActionType { get; set; } = 1; // 1: Watched, etc.
     public string Detail { get; set; } = string.Empty;

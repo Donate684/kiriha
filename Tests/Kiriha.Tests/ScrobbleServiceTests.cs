@@ -1,16 +1,10 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Kiriha.Models;
 using Kiriha.Models.Entities;
 using Kiriha.Services;
 using Kiriha.Services.AppLifecycle;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
-using Kiriha.Utils.Parsing;
 using Moq;
-using Xunit;
 
 namespace Kiriha.Tests;
 
@@ -28,7 +22,7 @@ public class ScrobbleServiceTests : IDisposable
     {
         _tempSettingsPath = Path.GetTempFileName();
         _settingsService = new SettingsService(_tempSettingsPath);
-        
+
         // Setup initial settings
         _settingsService.Update(s =>
         {
@@ -151,7 +145,7 @@ public class ScrobbleServiceTests : IDisposable
             });
 
         _scrobbleService.StartScrobble(media, match);
-        
+
         Assert.NotNull(taskToken);
         Assert.False(taskToken.Value.IsCancellationRequested);
 

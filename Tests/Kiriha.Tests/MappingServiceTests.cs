@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using Kiriha.Models;
 using Kiriha.Services.Data;
-using Xunit;
 
 namespace Kiriha.Tests;
 

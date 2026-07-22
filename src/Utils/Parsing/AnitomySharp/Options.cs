@@ -11,24 +11,24 @@
 namespace AnitomySharp
 {
 
-  /// <summary>
-  /// AnitomySharp search configuration options
-  /// </summary>
-  public class Options
-  {
-    public string AllowedDelimiters { get; }
-    public bool ParseEpisodeNumber { get; }
-    public bool ParseEpisodeTitle { get; }
-    public bool ParseFileExtension { get; }
-    public bool ParseReleaseGroup { get; }
-
-    public Options(string delimiters = " _.&+,|", bool episode = true, bool title = true, bool extension = true, bool group = true)
+    /// <summary>
+    /// AnitomySharp search configuration options
+    /// </summary>
+    public class Options
     {
-      AllowedDelimiters = delimiters;
-      ParseEpisodeNumber = episode;
-      ParseEpisodeTitle = title;
-      ParseFileExtension = extension;
-      ParseReleaseGroup = group;
+        public string AllowedDelimiters { get; }
+        public bool ParseEpisodeNumber { get; }
+        public bool ParseEpisodeTitle { get; }
+        public bool ParseFileExtension { get; }
+        public bool ParseReleaseGroup { get; }
+
+        public Options(string delimiters = " _.&+,|", bool episode = true, bool title = true, bool extension = true, bool group = true)
+        {
+            AllowedDelimiters = delimiters;
+            ParseEpisodeNumber = episode;
+            ParseEpisodeTitle = title;
+            ParseFileExtension = extension;
+            ParseReleaseGroup = group;
+        }
     }
-  }
 }

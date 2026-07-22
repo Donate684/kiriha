@@ -122,9 +122,9 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
 
         var shouldUpdateStatus = status.HasValue && status.Value != UserAnimeStatus.None;
         var isManga = item.MediaKind != MediaKind.Anime;
-        
+
         int affected;
-        
+
         if (isManga)
         {
             affected = shouldUpdateStatus
@@ -227,7 +227,7 @@ public sealed class UserAnimeRepository : IUserAnimeRepository
             {
                 query = query.Where(x => syncKinds.Contains(x.MediaKind));
             }
-            
+
             var localCount = await query.CountAsync();
             if (localCount > 10)
             {

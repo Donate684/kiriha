@@ -1,34 +1,22 @@
-using Kiriha.Views.Player;
-using Kiriha.Views.AnimeList;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
-using Kiriha.Models.Messages;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
 using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 using Kiriha.Models;
-using Kiriha.Models.Api;
 using Kiriha.Models.Entities;
+using Kiriha.Models.Messages;
 using Kiriha.Services.Api;
-using Kiriha.Services.Auth;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
-using Kiriha.Utils;
-using Kiriha.Utils.Parsing;
-using Kiriha.Utils.Collections;
 using Kiriha.Utils.Async;
-using Kiriha.Utils.Graphs;
-using Kiriha.Utils.UI;
 using Serilog;
 
 namespace Kiriha.ViewModels;
@@ -54,7 +42,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
     private readonly Services.Api.MalApiService _malApi;
 
     [ObservableProperty] private ParsedMedia? _currentMedia;
-    [ObservableProperty] 
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotInList))]
     [NotifyPropertyChangedFor(nameof(AllAlternativeTitles))]
     [NotifyPropertyChangedFor(nameof(HasAlternativeTitles))]
@@ -85,7 +73,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
     [ObservableProperty] private bool _isManuallyMapped;
 
     public bool IsNotInList => MatchedAnime != null && MatchedAnime.Status == UserAnimeStatus.None;
-    
+
     public System.Collections.Generic.IEnumerable<string> AllAlternativeTitles
     {
         get
@@ -93,11 +81,11 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
             var list = new System.Collections.Generic.List<string>();
             if (MatchedAnime == null) return list;
 
-            if (!string.IsNullOrEmpty(MatchedAnime.EnglishTitle) && MatchedAnime.EnglishTitle != MatchedAnime.Title) 
+            if (!string.IsNullOrEmpty(MatchedAnime.EnglishTitle) && MatchedAnime.EnglishTitle != MatchedAnime.Title)
                 list.Add(MatchedAnime.EnglishTitle);
-            if (!string.IsNullOrEmpty(MatchedAnime.JapaneseTitle) && MatchedAnime.JapaneseTitle != MatchedAnime.Title) 
+            if (!string.IsNullOrEmpty(MatchedAnime.JapaneseTitle) && MatchedAnime.JapaneseTitle != MatchedAnime.Title)
                 list.Add(MatchedAnime.JapaneseTitle);
-            
+
             foreach (var syn in MatchedAnime.AlternativeTitles)
             {
                 if (syn != MatchedAnime.Title && !list.Contains(syn))
@@ -108,8 +96,8 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
     }
 
     public bool HasAlternativeTitles => AllAlternativeTitles.Any();
-    
-    [ObservableProperty] 
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayStatus))]
     private bool _isMediaDetected;
 
@@ -117,17 +105,17 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
     [NotifyPropertyChangedFor(nameof(DisplayStatus))]
     private bool _isPaused;
 
-    [ObservableProperty] 
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayStatus))]
     private string _countdownStatus = string.Empty;
 
-    [ObservableProperty] 
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayStatus))]
     private string _trackingStatus = string.Empty;
 
-    public string DisplayStatus => !IsMediaDetected ? UIUtils.GetLoc("scrobbler.status.ready") : 
+    public string DisplayStatus => !IsMediaDetected ? UIUtils.GetLoc("scrobbler.status.ready") :
                                    (!string.IsNullOrEmpty(TrackingStatus) ? TrackingStatus :
-                                   (IsPaused ? UIUtils.GetLoc("scrobbler.status.paused") : 
+                                   (IsPaused ? UIUtils.GetLoc("scrobbler.status.paused") :
                                    (string.IsNullOrEmpty(CountdownStatus) ? UIUtils.GetLoc("scrobbler.status.active") : CountdownStatus)));
 
     public SettingsService Settings => _settingsService;
@@ -148,9 +136,9 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
     private readonly CancellationTokenSource _disposeCts = new();
 
     public NowPlayingViewModel(
-        TrackingService trackingService, 
-        SettingsService settingsService, 
-        MappingService mappingService, 
+        TrackingService trackingService,
+        SettingsService settingsService,
+        MappingService mappingService,
         AnimeRepository animeRepo,
         AnimeProgressService progressService,
         SyncManager syncManager,
@@ -165,7 +153,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
         _syncManager = syncManager;
         _shikiMetadataService = shikiMetadataService;
         _malApi = malApi;
-        
+
         WeakReferenceMessenger.Default.RegisterAll(this);
 
         // Sync initial state if any
@@ -280,7 +268,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
     private async Task ManualMatch()
     {
         if (CurrentMedia == null) return;
-        
+
         SearchQuery = CurrentMedia.AnimeTitle;
         await SearchSuggestions();
     }

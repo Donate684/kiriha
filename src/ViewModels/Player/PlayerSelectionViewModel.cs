@@ -4,11 +4,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Services.Data;
 using Kiriha.Services.Tracking;
 using Kiriha.Services.Tracking.Anisthesia;
@@ -41,7 +36,7 @@ public partial class PlayerSelectionViewModel : ViewModelBase, IDisposable
             // If the list IS empty, it means nothing is selected.
             bool isEnabled = !listWasEmpty && allowed.Contains(p.Name);
             bool isRunning = running.Contains(p.Name);
-                
+
             var item = new PlayerSelectionItem(p.Name, p.Type, isEnabled, isRunning);
             _allPlayers.Add(item);
         }
@@ -52,7 +47,8 @@ public partial class PlayerSelectionViewModel : ViewModelBase, IDisposable
 
     private void OnRunningPlayersChanged(object? sender, HashSet<string> running)
     {
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
             foreach (var p in _allPlayers)
             {
                 p.IsRunning = running.Contains(p.Name);
@@ -69,8 +65,8 @@ public partial class PlayerSelectionViewModel : ViewModelBase, IDisposable
         VideoPlayers.Clear();
         WebBrowsers.Clear();
 
-        var filtered = string.IsNullOrWhiteSpace(SearchText) 
-            ? _allPlayers 
+        var filtered = string.IsNullOrWhiteSpace(SearchText)
+            ? _allPlayers
             : _allPlayers.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         foreach (var p in filtered)
@@ -115,7 +111,7 @@ public partial class PlayerSelectionViewModel : ViewModelBase, IDisposable
     {
         public string Name { get; }
         public PlayerType Type { get; }
-        
+
         [ObservableProperty] private bool _isEnabled;
         [ObservableProperty] private bool _isRunning;
 

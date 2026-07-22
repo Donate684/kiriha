@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Microsoft.Win32;
 using Serilog;
 
@@ -48,7 +47,7 @@ public class SystemIntegrationService
         {
             var exePath = Environment.ProcessPath ?? string.Empty;
             if (string.IsNullOrEmpty(exePath)) return;
-            
+
             var commandStr = $"\"{exePath}\" --player \"%1\"";
 
             // App Paths
@@ -94,14 +93,14 @@ public class SystemIntegrationService
                 // Extension
                 var extKey = @"Software\Classes\" + ext;
                 RegAdd(Registry.CurrentUser, extKey + @"\OpenWithProgIds", progId, string.Empty);
-                
+
                 RegAdd(Registry.CurrentUser, supportedTypesKey, ext, string.Empty);
                 RegAdd(Registry.CurrentUser, fileAssocKey, ext, progId);
             }
 
             // RegisteredApplications
             RegAdd(Registry.CurrentUser, RegisteredApplicationsKey, KirihaAppName, @"Software\Clients\Media\Kiriha\Capabilities");
-            
+
             Log.Information("System integration registered successfully in HKCU.");
         }
         catch (Exception ex)
@@ -129,7 +128,7 @@ public class SystemIntegrationService
             }
 
             DeleteValueSafe(Registry.CurrentUser, RegisteredApplicationsKey, KirihaAppName);
-            
+
             Log.Information("System integration unregistered successfully from HKCU.");
         }
         catch (Exception ex)

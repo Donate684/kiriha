@@ -1,29 +1,10 @@
-using Kiriha.ViewModels;
-using Kiriha.ViewModels.Analytics;
-using Kiriha.ViewModels.AnimeDetails;
-using Kiriha.ViewModels.AnimeList;
-using Kiriha.ViewModels.History;
-using Kiriha.ViewModels.Player;
-using Kiriha.ViewModels.Seasonal;
-using Kiriha.ViewModels.Settings;
-using Kiriha.ViewModels.Torrents;
-using Kiriha.ViewModels.Search;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
-using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Core.Mpv;
-using Kiriha.Models;
 using Kiriha.Services.Data;
 
 namespace Kiriha.ViewModels.Player;
@@ -46,7 +27,7 @@ public partial class PlayerViewModel
         ApplySubtitleStyleOverride();
         _timelinePreview.Initialize();
         _timelinePreview.WarmUp(VideoUrl);
-        
+
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _timer.Tick += OnTimerTick;
         _timer.Start();
@@ -153,7 +134,7 @@ public partial class PlayerViewModel
             return;
 
         var (tracks, chapters) = result.Value;
-        
+
         var audioTracks = tracks.Where(t => t.Type == "audio").ToList();
         var subTracks = tracks.Where(t => t.Type == "sub").ToList();
 
@@ -258,7 +239,7 @@ public partial class PlayerViewModel
     partial void OnIsMutedChanged(bool value)
     {
         if (!_playback.HasPlayer) return;
-        
+
         if (value)
         {
             _previousVolume = Volume;

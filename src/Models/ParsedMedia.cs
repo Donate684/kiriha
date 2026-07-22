@@ -18,7 +18,7 @@ public class ParsedMedia
     /// </summary>
     public uint Pid { get; set; }
     public bool IsPlaying { get; set; } = true;
-    
+
     // Additional properties expected by UI/ViewModels
     public string VideoResolution { get; set; } = string.Empty;
     public string Source { get; set; } = string.Empty;

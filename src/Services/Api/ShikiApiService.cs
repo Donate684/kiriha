@@ -7,9 +7,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Api;
@@ -111,7 +108,7 @@ public class ShikiApiService : ITrackerService
     {
         var tokens = _settingsService.Current.Api.Shiki;
         if (tokens == null) return SyncOutcome.PermanentFailure;
-        
+
         if (tokens.UserId == null)
         {
             var userId = await GetCurrentUserIdAsync(ct);
@@ -132,7 +129,7 @@ public class ShikiApiService : ITrackerService
             ["target_id"] = item.Id,
             ["target_type"] = isManga ? "Manga" : "Anime"
         };
-        
+
         if (isManga)
         {
             userRate["chapters"] = item.ChaptersRead;
@@ -172,7 +169,7 @@ public class ShikiApiService : ITrackerService
     public async Task<SyncOutcome> UpdateMangaProgressAsync(int mangaId, int chapters, int? volumes = null, UserAnimeStatus? status = null, int? score = null, CancellationToken ct = default)
     {
         if (_settingsService.Current.Api.Shiki == null) return SyncOutcome.PermanentFailure;
-        
+
         if (_settingsService.Current.Api.Shiki.UserId == null)
         {
             var userId = await GetCurrentUserIdAsync(ct);
@@ -196,7 +193,7 @@ public class ShikiApiService : ITrackerService
             ["target_type"] = "Manga",
             ["chapters"] = chapters
         };
-        
+
         if (volumes.HasValue) userRate["volumes"] = volumes.Value;
 
         var shikiStatus = StatusMapper.ToShiki(status);

@@ -2,9 +2,6 @@ using System;
 using System.Net;
 using System.Net.Http;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
 using Kiriha.Core.Shiki;
 using Kiriha.Services;
 using Kiriha.Services.Api;
@@ -114,10 +111,10 @@ internal static class TrackingServicesRegistration
         services.AddSingleton<SyncManager>();
         services.AddSingleton<InternalPlayerServer>();
         services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService>(sp => sp.GetRequiredService<InternalPlayerServer>());
-        
+
         services.AddSingleton<InstanceServer>();
         services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService>(sp => sp.GetRequiredService<InstanceServer>());
-        
+
         // Same instance, second registration: lets the app lifecycle resolve every
         // IHostedService and Start/Stop them uniformly without naming each service.
         services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService>(sp => sp.GetRequiredService<SyncManager>());
@@ -132,7 +129,7 @@ internal static class TrackingServicesRegistration
         services.AddSingleton<Kiriha.Services.Maintenance.IMaintenanceTask, Kiriha.Services.Maintenance.UpdateMaintenanceTask>();
         services.AddSingleton<Kiriha.Services.Maintenance.IMaintenanceTask, Kiriha.Services.Maintenance.DatabaseMaintenanceTask>();
         services.AddSingleton<Kiriha.Services.Maintenance.IMaintenanceTask, Kiriha.Services.Maintenance.MetadataFetchMaintenanceTask>();
-        
+
         services.AddSingleton<MaintenanceService>();
 
         return services;

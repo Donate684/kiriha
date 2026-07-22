@@ -3,14 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.Messaging;
 using Kiriha.Core;
-using Kiriha.Core.Infrastructure;
-using Kiriha.Core.Platform;
-using Kiriha.Core.Player;
-using Kiriha.Core.Shiki;
 using Kiriha.Models;
 using Kiriha.Models.Entities;
 using Kiriha.Services.AppLifecycle;
@@ -96,7 +90,7 @@ public class SyncManager : IHostedService
     {
         if (_isStopped) return;
         _isStopped = true;
-        
+
         _cts.Cancel();
         if (_loopTask != null)
         {
@@ -116,7 +110,7 @@ public class SyncManager : IHostedService
             await _dbInit.InitializationTask;
             ct.ThrowIfCancellationRequested();
             var pendingTasks = await _syncTaskRepo.GetPendingAsync();
-            
+
             // Deduplicate: take the LATEST task of each type per AnimeId to avoid redundant work.
             // If a 'Remove' task exists, it supersedes all prior tasks for that AnimeId.
             var deduplicated = pendingTasks
@@ -176,7 +170,7 @@ public class SyncManager : IHostedService
                     Log.Error(ex, "Failed to parse sync task {Id}", entity.Id);
                 }
             }
-            
+
             // Remove the tasks we skipped via deduplication
             var skippedIds = pendingTasks.Select(x => x.Id).Except(deduplicated.Select(x => x.Id)).ToList();
             if (skippedIds.Count > 0)
@@ -227,7 +221,7 @@ public class SyncManager : IHostedService
         };
         var entity = MapToEntity(task);
         task.Id = await _syncTaskRepo.AddAsync(entity);
-        
+
         _latestTaskIds[animeId] = (task.Id, task.Type);
         try
         {
@@ -304,7 +298,7 @@ public class SyncManager : IHostedService
                     {
                         var (success, didExecute) = await ExecuteTaskAsync(task, ct);
                         executed = didExecute;
-                        
+
                         if (success)
                         {
                             await _syncTaskRepo.RemoveAsync(task.Id);
@@ -316,11 +310,11 @@ public class SyncManager : IHostedService
                             if (task.RetryCount < MaxRetries)
                             {
                                 int delayMin = (int)Math.Pow(2, task.RetryCount); // 2, 4, 8, 16 min...
-                                Log.Warning("Task {TaskId} failed (attempt {Attempt}/{Max}), will retry in {Delay} min.", 
+                                Log.Warning("Task {TaskId} failed (attempt {Attempt}/{Max}), will retry in {Delay} min.",
                                     task.Id, task.RetryCount, MaxRetries, delayMin);
 
                                 await _syncTaskRepo.UpdateAsync(MapToEntity(task));
-                                
+
                                 // Fire and forget a delayed re-enqueue to not block the main queue
                                 _ = _backgroundTasks.Run("SyncManager.DelayedRetry", async retryCt =>
                                 {
@@ -341,7 +335,7 @@ public class SyncManager : IHostedService
                     {
                         Log.Error(ex, "Error processing sync task {Id}", task.Id);
                     }
-                    
+
                     if (executed)
                     {
                         await Task.Delay(DelayBetweenRequestsMs, ct);
@@ -366,14 +360,14 @@ public class SyncManager : IHostedService
             // Optimization: If a newer FULL update is pending, we can skip this task.
             // BUT: If this is a FullUpdate and the latest is just a Progress update, we SHOULD NOT skip,
             // because the FullUpdate might contain data (notes/dates) that Progress update doesn't have.
-            
+
             // We only skip if the newer task is of the same or "broader" type.
             // In our case, FullUpdate is the broadest. Remove must always run - it's the
             // user-facing intent and skipping it would silently keep the entry on the tracker.
             if (task.Type != SyncTaskType.FullUpdate && task.Type != SyncTaskType.Remove)
             {
                 Log.Information("SyncManager: Skipping outdated task {TaskId} for Anime {AnimeId} because newer task {LatestId} is pending.", task.Id, task.AnimeId, latest.Id);
-                return (true, false); 
+                return (true, false);
             }
         }
 
