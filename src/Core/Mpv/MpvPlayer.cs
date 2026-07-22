@@ -22,17 +22,21 @@ public class MpvPlayer : IDisposable
     private const string SpeedCommandKey = "speed";
 
     private readonly object _gate = new();
-    private readonly ReaderWriterLockSlim _renderGate = new();
     private readonly MpvPropertyCache _propertyCache = new(FormatRuntimeVideoInfo(null, null, null, null, null));
     private readonly MpvCommandQueue _commandQueue;
     private readonly MpvEventLoop _eventLoop;
     private IntPtr _mpvHandle;
-    private IntPtr _renderContext;
-    private MpvRenderUpdateCallback? _renderUpdateCallback;
-    private GCHandle _renderUpdateHandle;
     private bool _disposed;
-    private string _screenshotDirectory = GetDefaultScreenshotDirectory();
-    private string _screenshotFormat = "png";
+
+    internal object Gate => _gate;
+    internal bool IsDisposed => _disposed;
+    internal IntPtr MpvHandle => _mpvHandle;
+
+    public MpvPlaybackController PlaybackController { get; }
+    public MpvTrackManager TrackManager { get; }
+    public MpvScreenshotManager ScreenshotManager { get; }
+    public MpvVideoPipelineConfigurator VideoPipelineConfigurator { get; }
+    public MpvOpenGlRenderer OpenGlRenderer { get; }
 
     public event EventHandler? FileLoaded;
     public event EventHandler<MpvPlaybackEndedEventArgs>? PlaybackEnded;
@@ -49,11 +53,17 @@ public class MpvPlayer : IDisposable
         if (_mpvHandle == IntPtr.Zero)
             throw new Exception("Failed to create mpv instance. Ensure mpv-2.dll is in the output mpv/ folder.");
 
+        PlaybackController = new MpvPlaybackController(this);
+        TrackManager = new MpvTrackManager(this);
+        ScreenshotManager = new MpvScreenshotManager(this);
+        VideoPipelineConfigurator = new MpvVideoPipelineConfigurator(this);
+        OpenGlRenderer = new MpvOpenGlRenderer(this);
+
         // Configure mpv for host-driven rendering.
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "osc", "no"), "disable osc");
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "input-default-bindings", "no"), "disable default input bindings");
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "input-vo-keyboard", "no"), "disable mpv keyboard input");
-        ConfigureVideoPipeline(options ?? MpvOptions.Default);
+        VideoPipelineConfigurator.ConfigureVideoPipeline(_mpvHandle, options ?? MpvOptions.Default);
 
         // Ensure mpv does not quit automatically on playback end or error
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "idle", "yes"), "enable idle");
@@ -63,7 +73,7 @@ public class MpvPlayer : IDisposable
         // while Kiriha mostly needs enough buffer for smooth anime playback.
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "demuxer-max-bytes", "64MiB"), "limit demuxer cache");
         Check(LibMpvNative.mpv_set_option_string(_mpvHandle, "demuxer-max-back-bytes", "16MiB"), "limit back buffer");
-        ConfigureScreenshots(_mpvHandle);
+        ScreenshotManager.ConfigureScreenshots(_mpvHandle);
 
         int res = LibMpvNative.mpv_initialize(_mpvHandle);
         if (res < 0)
@@ -77,180 +87,29 @@ public class MpvPlayer : IDisposable
         _eventLoop.Start();
     }
 
-    public void CreateOpenGlRenderContext(MpvOpenGlGetProcAddressCallback getProcAddress)
-    {
-        lock (_gate)
-        {
-            if (_disposed || _mpvHandle == IntPtr.Zero || _renderContext != IntPtr.Zero)
-                return;
+    internal void InvokeRenderUpdateRequested() => RenderUpdateRequested?.Invoke();
 
-            var getProcAddressPtr = Marshal.GetFunctionPointerForDelegate(getProcAddress);
-            var apiTypePtr = Marshal.StringToCoTaskMemUTF8(LibMpvNative.MPV_RENDER_API_TYPE_OPENGL);
-            var initParamsPtr = IntPtr.Zero;
-            var parametersPtr = IntPtr.Zero;
+    public void CreateOpenGlRenderContext(MpvOpenGlGetProcAddressCallback getProcAddress) => OpenGlRenderer.CreateOpenGlRenderContext(getProcAddress);
 
-            try
-            {
-                var initParams = new MpvOpenGlInitParams(getProcAddressPtr, IntPtr.Zero);
-                initParamsPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MpvOpenGlInitParams>());
-                Marshal.StructureToPtr(initParams, initParamsPtr, false);
+    public void RenderOpenGl(int framebuffer, int width, int height) => OpenGlRenderer.RenderOpenGl(framebuffer, width, height);
 
-                var parameters = new[]
-                {
-                    new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_API_TYPE, apiTypePtr),
-                    new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, initParamsPtr),
-                    new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_INVALID, IntPtr.Zero)
-                };
+    public void Load(string url) => PlaybackController.Load(url);
 
-                parametersPtr = AllocateRenderParams(parameters);
-                Check(LibMpvNative.mpv_render_context_create(out _renderContext, _mpvHandle, parametersPtr), "create OpenGL render context");
+    public void AddSubtitle(string path) => TrackManager.AddSubtitle(path);
 
-                _renderUpdateCallback = OnRenderUpdate;
-                _renderUpdateHandle = GCHandle.Alloc(this);
-                try
-                {
-                    LibMpvNative.mpv_render_context_set_update_callback(
-                        _renderContext,
-                        _renderUpdateCallback,
-                        GCHandle.ToIntPtr(_renderUpdateHandle));
-                }
-                catch
-                {
-                    _renderUpdateHandle.Free();
-                    throw;
-                }
-            }
-            finally
-            {
-                if (parametersPtr != IntPtr.Zero)
-                    Marshal.FreeHGlobal(parametersPtr);
-                if (initParamsPtr != IntPtr.Zero)
-                    Marshal.FreeHGlobal(initParamsPtr);
-                Marshal.FreeCoTaskMem(apiTypePtr);
-            }
-        }
-    }
+    public void Play() => PlaybackController.Play();
 
-    public void RenderOpenGl(int framebuffer, int width, int height)
-    {
-        _renderGate.EnterReadLock();
-        try
-        {
-            IntPtr renderContext;
-            lock (_gate)
-            {
-                renderContext = _renderContext;
-            }
+    public void Pause() => PlaybackController.Pause();
 
-            if (renderContext == IntPtr.Zero || width <= 0 || height <= 0)
-                return;
+    public void Seek(double timeInSeconds) => PlaybackController.Seek(timeInSeconds);
 
-            var updateFlags = LibMpvNative.mpv_render_context_update(renderContext);
-            if ((updateFlags & LibMpvNative.MPV_RENDER_UPDATE_FRAME) == 0)
-                return;
+    public void SetVolume(double volume) => PlaybackController.SetVolume(volume);
 
-            var fboPtr = IntPtr.Zero;
-            var flipPtr = IntPtr.Zero;
-            var parametersPtr = IntPtr.Zero;
+    public void SetSpeed(double speed) => PlaybackController.SetSpeed(speed);
 
-            try
-            {
-                const int glRgba8 = 0x8058;
-                var fbo = new MpvOpenGlFbo(framebuffer, width, height, glRgba8);
-                fboPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MpvOpenGlFbo>());
-                Marshal.StructureToPtr(fbo, fboPtr, false);
+    public void SetAudioNormalization(bool enabled) => PlaybackController.SetAudioNormalization(enabled);
 
-                flipPtr = Marshal.AllocHGlobal(sizeof(int));
-                Marshal.WriteInt32(flipPtr, 1);
-
-                var parameters = new[]
-                {
-                    new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_OPENGL_FBO, fboPtr),
-                    new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_FLIP_Y, flipPtr),
-                    new MpvRenderParam(LibMpvNative.MPV_RENDER_PARAM_INVALID, IntPtr.Zero)
-                };
-
-                parametersPtr = AllocateRenderParams(parameters);
-                Check(LibMpvNative.mpv_render_context_render(renderContext, parametersPtr), "render OpenGL frame");
-                LibMpvNative.mpv_render_context_report_swap(renderContext);
-            }
-            finally
-            {
-                if (parametersPtr != IntPtr.Zero)
-                    Marshal.FreeHGlobal(parametersPtr);
-                if (flipPtr != IntPtr.Zero)
-                    Marshal.FreeHGlobal(flipPtr);
-                if (fboPtr != IntPtr.Zero)
-                    Marshal.FreeHGlobal(fboPtr);
-            }
-        }
-        finally
-        {
-            _renderGate.ExitReadLock();
-        }
-    }
-
-    public void Load(string url)
-    {
-        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "loadfile", url), "load file"));
-    }
-
-    public void AddSubtitle(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path)) return;
-        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "sub-add", path), "add subtitle"));
-    }
-
-    public void Play()
-    {
-        Enqueue(handle => Check(LibMpvNative.mpv_set_property_string(handle, "pause", "no"), "play"));
-    }
-
-    public void Pause()
-    {
-        Enqueue(handle => Check(LibMpvNative.mpv_set_property_string(handle, "pause", "yes"), "pause"));
-    }
-
-    public void Seek(double timeInSeconds)
-    {
-        Enqueue(handle => Check(
-            LibMpvNative.mpv_command_string(handle, "seek", timeInSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture), "absolute"),
-            "seek"), SeekCommandKey);
-    }
-
-    public void SetVolume(double volume)
-    {
-        Enqueue(handle =>
-        {
-            double vol = Math.Max(0, Math.Min(100, volume));
-            Check(LibMpvNative.mpv_set_property(handle, "volume", LibMpvNative.MPV_FORMAT_DOUBLE, ref vol), "set volume");
-        }, VolumeCommandKey);
-    }
-
-    public void SetSpeed(double speed)
-    {
-        Enqueue(handle =>
-        {
-            double spd = Math.Max(0.1, Math.Min(4.0, speed));
-            Check(LibMpvNative.mpv_set_property(handle, "speed", LibMpvNative.MPV_FORMAT_DOUBLE, ref spd), "set speed");
-        }, SpeedCommandKey);
-    }
-
-    public void SetAudioNormalization(bool enabled)
-    {
-        Enqueue(handle => Check(
-            LibMpvNative.mpv_set_property_string(handle, "af", enabled ? AudioNormalizationFilter : string.Empty),
-            enabled ? "enable audio normalization" : "disable audio normalization"));
-    }
-
-    public void SetTrackLanguagePreferences(string audioLanguages, string subtitleLanguages)
-    {
-        Enqueue(handle =>
-        {
-            SetMpvOption(handle, "alang", audioLanguages, "set preferred audio languages");
-            SetMpvOption(handle, "slang", subtitleLanguages, "set preferred subtitle languages");
-        });
-    }
+    public void SetTrackLanguagePreferences(string audioLanguages, string subtitleLanguages) => TrackManager.SetTrackLanguagePreferences(audioLanguages, subtitleLanguages);
 
     public void SetVideoProcessingOptions(
         string scale,
@@ -261,16 +120,7 @@ public class MpvPlayer : IDisposable
         int debandIterations,
         int debandThreshold)
     {
-        Enqueue(handle =>
-        {
-            SetMpvOption(handle, "scale", scale, "set video scale filter");
-            SetMpvOption(handle, "cscale", chromaScale, "set chroma scale filter");
-            SetMpvOption(handle, "dither-depth", ditherDepth, "set dither depth");
-            SetMpvOption(handle, "correct-downscaling", correctDownscaling ? "yes" : "no", "set correct downscaling");
-            SetMpvOption(handle, "deband", deband ? "yes" : "no", "set debanding");
-            SetMpvOption(handle, "deband-iterations", Math.Clamp(debandIterations, 0, 16).ToString(System.Globalization.CultureInfo.InvariantCulture), "set deband iterations");
-            SetMpvOption(handle, "deband-threshold", Math.Clamp(debandThreshold, 0, 4096).ToString(System.Globalization.CultureInfo.InvariantCulture), "set deband threshold");
-        });
+        VideoPipelineConfigurator.SetVideoProcessingOptions(scale, chromaScale, ditherDepth, correctDownscaling, deband, debandIterations, debandThreshold);
     }
 
     public void SetSubtitleStyleOverride(
@@ -287,25 +137,7 @@ public class MpvPlayer : IDisposable
         int marginY,
         bool scaleByWindow)
     {
-        Enqueue(handle =>
-        {
-            Check(LibMpvNative.mpv_set_property_string(handle, "sub-ass-override", enabled ? "force" : "yes"), "set subtitle override");
-
-            if (!enabled)
-                return;
-
-            SetMpvOption(handle, "sub-font", font, "set subtitle font");
-            SetMpvOption(handle, "sub-font-size", FormatDouble(fontSize), "set subtitle font size");
-            SetMpvOption(handle, "sub-color", color, "set subtitle color");
-            SetMpvOption(handle, "sub-border-color", borderColor, "set subtitle border color");
-            SetMpvOption(handle, "sub-shadow-color", shadowColor, "set subtitle shadow color");
-            SetMpvOption(handle, "sub-border-size", FormatDouble(borderSize), "set subtitle border size");
-            SetMpvOption(handle, "sub-shadow-offset", FormatDouble(shadowOffset), "set subtitle shadow offset");
-            SetMpvOption(handle, "sub-align-y", alignY, "set subtitle vertical alignment");
-            SetMpvOption(handle, "sub-align-x", alignX, "set subtitle horizontal alignment");
-            SetMpvOption(handle, "sub-margin-y", Math.Max(0, marginY).ToString(System.Globalization.CultureInfo.InvariantCulture), "set subtitle margin");
-            SetMpvOption(handle, "sub-scale-by-window", scaleByWindow ? "yes" : "no", "set subtitle scaling");
-        });
+        TrackManager.SetSubtitleStyleOverride(enabled, font, fontSize, color, borderColor, shadowColor, borderSize, shadowOffset, alignY, alignX, marginY, scaleByWindow);
     }
 
     public void SetOptionString(string name, string value)
@@ -345,52 +177,19 @@ public class MpvPlayer : IDisposable
         return _propertyCache.IsPaused;
     }
 
-    public void CycleSubtitle()
-    {
-        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "cycle", "sid"), "cycle subtitles"));
-    }
+    public void CycleSubtitle() => TrackManager.CycleSubtitle();
 
-    public void AdjustSubtitlePosition(double delta)
-    {
-        Enqueue(handle => Check(
-            LibMpvNative.mpv_command_string(handle, "add", "sub-pos", FormatDouble(delta)),
-            "adjust subtitle position"));
-    }
+    public void AdjustSubtitlePosition(double delta) => TrackManager.AdjustSubtitlePosition(delta);
 
-    public void CycleAudio()
-    {
-        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "cycle", "aid"), "cycle audio"));
-    }
+    public void CycleAudio() => TrackManager.CycleAudio();
 
-    public void ReloadSubtitles()
-    {
-        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "sub-reload"), "reload subtitles"));
-    }
+    public void ReloadSubtitles() => TrackManager.ReloadSubtitles();
 
-    public void FrameStep()
-    {
-        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "frame-step"), "frame step"));
-    }
+    public void FrameStep() => PlaybackController.FrameStep();
 
-    public void FrameBackStep()
-    {
-        Enqueue(handle => Check(LibMpvNative.mpv_command_string(handle, "frame-back-step"), "frame back step"));
-    }
+    public void FrameBackStep() => PlaybackController.FrameBackStep();
 
-    public void TakeScreenshot(bool includeSubtitles, string resolutionMode)
-    {
-        var flag = string.Equals(resolutionMode, "window", StringComparison.OrdinalIgnoreCase)
-            ? "window"
-            : includeSubtitles ? "subtitles" : "video";
-
-        Enqueue(handle =>
-        {
-            Directory.CreateDirectory(_screenshotDirectory);
-            var filename = $"Kiriha-{DateTime.Now:yyyyMMdd-HHmmss-fff}.{_screenshotFormat}";
-            var path = Path.Combine(_screenshotDirectory, filename);
-            Check(LibMpvNative.mpv_command_string(handle, "screenshot-to-file", path, flag), "take screenshot");
-        });
-    }
+    public void TakeScreenshot(bool includeSubtitles, string resolutionMode) => ScreenshotManager.TakeScreenshot(includeSubtitles, resolutionMode);
 
     public void SetScreenshotOptions(
         string directory,
@@ -399,13 +198,7 @@ public class MpvPlayer : IDisposable
         int quality,
         bool highBitDepth)
     {
-        Enqueue(handle => ConfigureScreenshots(
-            handle,
-            directory,
-            format,
-            pngCompression,
-            quality,
-            highBitDepth));
+        ScreenshotManager.SetScreenshotOptions(directory, format, pngCompression, quality, highBitDepth);
     }
 
     public string? GetPropertyString(string name)
@@ -443,14 +236,7 @@ public class MpvPlayer : IDisposable
         return ReadNodeProperty("chapter-list", ParseChapters, new List<ChapterInfo>());
     }
 
-    public void SetTrack(string type, string id)
-    {
-        Enqueue(handle =>
-        {
-            string prop = type == "sub" ? "sid" : type == "audio" ? "aid" : "vid";
-            Check(LibMpvNative.mpv_set_property_string(handle, prop, id), $"set {prop}");
-        });
-    }
+    public void SetTrack(string type, string id) => TrackManager.SetTrack(type, id);
 
     public void Dispose()
     {
@@ -466,7 +252,7 @@ public class MpvPlayer : IDisposable
             _mpvHandle = IntPtr.Zero;
         }
 
-        FreeRenderContext();
+        OpenGlRenderer.Dispose();
 
         Task.Run(() =>
         {
@@ -480,49 +266,19 @@ public class MpvPlayer : IDisposable
             }
             finally
             {
-                _renderGate.Dispose();
+                // Removed _renderGate from MpvPlayer since it moved to OpenGlRenderer
             }
         });
     }
 
-    public void FreeRenderContext()
-    {
-        _renderGate.EnterWriteLock();
-        try
-        {
-            IntPtr renderContext;
-            lock (_gate)
-            {
-                renderContext = _renderContext;
-                _renderContext = IntPtr.Zero;
-            }
+    public void FreeRenderContext() => OpenGlRenderer.Dispose();
 
-            if (renderContext != IntPtr.Zero)
-            {
-                LibMpvNative.mpv_render_context_set_update_callback(renderContext, null!, IntPtr.Zero);
-                LibMpvNative.mpv_render_context_free(renderContext);
-            }
-
-            lock (_renderUpdateLock)
-            {
-                if (_renderUpdateHandle.IsAllocated)
-                    _renderUpdateHandle.Free();
-
-                _renderUpdateCallback = null;
-            }
-        }
-        finally
-        {
-            _renderGate.ExitWriteLock();
-        }
-    }
-
-    private void Enqueue(Action<IntPtr> action, string? coalescingKey = null)
+    internal void Enqueue(Action<IntPtr> action, string? coalescingKey = null)
     {
         _commandQueue.Enqueue(action, coalescingKey);
     }
 
-    private T Read<T>(Func<IntPtr, T> read, T defaultValue)
+    internal T Read<T>(Func<IntPtr, T> read, T defaultValue)
     {
         IntPtr handle;
         lock (_gate)
@@ -534,7 +290,7 @@ public class MpvPlayer : IDisposable
         return read(handle);
     }
 
-    private T ReadNodeProperty<T>(string name, Func<MpvNode, T> parse, T defaultValue)
+    internal T ReadNodeProperty<T>(string name, Func<MpvNode, T> parse, T defaultValue)
     {
         return Read(handle =>
         {
@@ -558,13 +314,13 @@ public class MpvPlayer : IDisposable
         }, defaultValue);
     }
 
-    private static void Check(int result, string action)
+    internal static void Check(int result, string action)
     {
         if (result < 0)
             throw new InvalidOperationException($"mpv failed to {action}: {LibMpvNative.GetErrorString(result)}");
     }
 
-    private static string? GetPropertyString(IntPtr handle, string name)
+    internal static string? GetPropertyString(IntPtr handle, string name)
     {
         IntPtr ptr = LibMpvNative.mpv_get_property_string(handle, name);
         if (ptr == IntPtr.Zero)
@@ -580,7 +336,7 @@ public class MpvPlayer : IDisposable
         }
     }
 
-    private double ReadDoubleProperty(string name, double defaultValue)
+    internal double ReadDoubleProperty(string name, double defaultValue)
     {
         return Read(handle =>
         {
@@ -589,7 +345,7 @@ public class MpvPlayer : IDisposable
         }, defaultValue);
     }
 
-    private void InvalidateRuntimeVideoInfo()
+    internal void InvalidateRuntimeVideoInfo()
     {
         _propertyCache.InvalidateRuntimeVideoInfo();
     }
@@ -606,56 +362,14 @@ public class MpvPlayer : IDisposable
         return $"hwdec: {ValueOrDash(hwdec)}, interop: {ValueOrDash(interop)}, vo: {ValueOrDash(vo)}, context: {ValueOrDash(gpuContext)}, decoder: {ValueOrDash(decoder)}";
     }
 
-    private void ConfigureVideoPipeline(MpvOptions options)
+    internal static void SetMpvOption(IntPtr handle, string name, string value, string action)
     {
-        SetOptionalStringOption("hwdec", options.Hwdec, "set hardware decoder");
-        SetOptionalStringOption("vo", "libmpv", "set video output");
-        SetOptionalStringOption("gpu-api", options.GpuApi, "set GPU API");
-        SetOptionalStringOption("gpu-context", options.GpuContext, "set GPU context");
+        Check(LibMpvNative.mpv_set_property_string(handle, name, value), action);
     }
 
-    private void SetOptionalStringOption(string name, string? value, string action)
+    internal static string FormatDouble(double value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return;
-
-        Check(LibMpvNative.mpv_set_option_string(_mpvHandle, name, value.Trim()), action);
-    }
-
-    private static IntPtr AllocateRenderParams(IReadOnlyList<MpvRenderParam> parameters)
-    {
-        var size = Marshal.SizeOf<MpvRenderParam>();
-        var ptr = Marshal.AllocHGlobal(size * parameters.Count);
-        for (int i = 0; i < parameters.Count; i++)
-            Marshal.StructureToPtr(parameters[i], IntPtr.Add(ptr, i * size), false);
-        return ptr;
-    }
-    // This lock is static because it's used within a native callback (OnRenderUpdate) 
-    // that lacks an instance context. If multiple MpvPlayer instances are created, 
-    // they will compete for this shared lock.
-    private static readonly object _renderUpdateLock = new();
-
-    private static void OnRenderUpdate(IntPtr context)
-    {
-        if (context == IntPtr.Zero)
-            return;
-
-        MpvPlayer? player = null;
-        lock (_renderUpdateLock)
-        {
-            try
-            {
-                var handle = GCHandle.FromIntPtr(context);
-                if (handle.IsAllocated)
-                    player = handle.Target as MpvPlayer;
-            }
-            catch (InvalidOperationException)
-            {
-                // Handle was freed concurrently
-            }
-        }
-
-        player?.RenderUpdateRequested?.Invoke();
+        return value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private static List<TrackInfo> ParseTracks(MpvNode root)
@@ -846,59 +560,7 @@ public class MpvPlayer : IDisposable
         LibMpvNative.mpv_unobserve_property(handle, TrackListPropertyId);
     }
 
-    private void ConfigureScreenshots(
-        IntPtr handle,
-        string? directory = null,
-        string format = "png",
-        int pngCompression = 4,
-        int quality = 95,
-        bool highBitDepth = false)
-    {
-        var screenshotDir = string.IsNullOrWhiteSpace(directory)
-            ? GetDefaultScreenshotDirectory()
-            : directory;
-        var screenshotFormat = NormalizeScreenshotFormat(format);
 
-        Directory.CreateDirectory(screenshotDir);
-        _screenshotDirectory = screenshotDir;
-        _screenshotFormat = screenshotFormat;
-        Check(LibMpvNative.mpv_set_option_string(handle, "screenshot-directory", screenshotDir), "set screenshot directory");
-        Check(LibMpvNative.mpv_set_option_string(handle, "screenshot-template", "Kiriha-%F-%P"), "set screenshot template");
-        Check(LibMpvNative.mpv_set_option_string(handle, "screenshot-format", screenshotFormat), "set screenshot format");
-        Check(LibMpvNative.mpv_set_option_string(handle, "screenshot-png-compression", Math.Clamp(pngCompression, 0, 9).ToString(System.Globalization.CultureInfo.InvariantCulture)), "set screenshot png compression");
-        Check(LibMpvNative.mpv_set_option_string(handle, "screenshot-jpeg-quality", Math.Clamp(quality, 0, 100).ToString(System.Globalization.CultureInfo.InvariantCulture)), "set screenshot jpeg quality");
-        Check(LibMpvNative.mpv_set_option_string(handle, "screenshot-webp-quality", Math.Clamp(quality, 0, 100).ToString(System.Globalization.CultureInfo.InvariantCulture)), "set screenshot webp quality");
-        Check(LibMpvNative.mpv_set_option_string(handle, "screenshot-high-bit-depth", highBitDepth ? "yes" : "no"), "set screenshot bit depth");
-    }
-
-    private static void SetMpvOption(IntPtr handle, string name, string value, string action)
-    {
-        Check(LibMpvNative.mpv_set_property_string(handle, name, value), action);
-    }
-
-    private static string FormatDouble(double value)
-    {
-        return value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    private static string GetDefaultScreenshotDirectory()
-    {
-        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-        if (string.IsNullOrWhiteSpace(desktop))
-            desktop = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-
-        return desktop;
-    }
-
-    private static string NormalizeScreenshotFormat(string? format)
-    {
-        return string.Equals(format, "jpg", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(format, "jpeg", StringComparison.OrdinalIgnoreCase)
-            ? "jpg"
-            : string.Equals(format, "webp", StringComparison.OrdinalIgnoreCase)
-                ? "webp"
-                : "png";
-    }
 
     private void HandlePropertyChange(MpvEvent mpvEvent)
     {

@@ -226,33 +226,3 @@ public class AppSettings
         public ShikiMirror ShikiMirror { get; set; } = ShikiMirror.One;
     }
 }
-
-public enum ShikiMirror
-{
-    One = 0,   // shikimori.one (the canonical site)
-    Net = 1    // shikimori.net (a.k.a. shiki.rip - independent OAuth realm)
-}
-
-public enum PlayerMouseAction
-{
-    None = 0,
-    TogglePlayPause = 1,
-    ToggleFullscreen = 2,
-    ShowControls = 3,
-    OpenSettings = 4,
-    SeekBackward10 = 5,
-    SeekForward10 = 6,
-    CycleAudio = 7,
-    CycleSubtitle = 8
-}
-
-public enum PlayerWheelAction
-{
-    None = 0,
-    VolumeUp = 1,
-    VolumeDown = 2,
-    SeekForward = 3,
-    SeekBackward = 4,
-    SpeedUp = 5,
-    SpeedDown = 6
-}
