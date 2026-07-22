@@ -227,7 +227,8 @@ public class ShikiApiService : ITrackerService
     {
         var bytes = await _httpCache.SendAsync(
             requestFactory: _ => Task.FromResult(new HttpRequestMessage(HttpMethod.Get, ShikiBaseUrl + $"animes/{animeId}/franchise")),
-            ct: ct);
+            ct: ct,
+            localTtl: TimeSpan.FromDays(30));
 
         if (bytes == null) return null;
 
@@ -251,7 +252,8 @@ public class ShikiApiService : ITrackerService
 
         var bytes = await _httpCache.SendAsync(
             requestFactory: _ => Task.FromResult(new HttpRequestMessage(HttpMethod.Get, ShikiBaseUrl + $"people/{personId}")),
-            ct: ct);
+            ct: ct,
+            localTtl: TimeSpan.FromDays(30));
 
         if (bytes == null) return null;
 

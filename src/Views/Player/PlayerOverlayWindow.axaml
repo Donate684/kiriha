@@ -368,7 +368,8 @@
                                 VerticalAlignment="Center">
 
                         <!-- Playback speed -->
-                        <Button Classes="icon-btn"
+                        <Button Name="SpeedButton"
+                                Classes="icon-btn"
                                 IsVisible="{Binding ShowSpeedButton}"
                                 ToolTip.Tip="Скорость">
                             <Button.Flyout>

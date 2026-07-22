@@ -90,9 +90,10 @@ public sealed class HttpConditionalCache
     public async Task<byte[]?> SendAsync(
         Func<CancellationToken, Task<HttpRequestMessage>> requestFactory,
         Func<CancellationToken, Task>? throttle = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        TimeSpan? localTtl = null)
     {
-        var result = await SendForResultAsync(requestFactory, throttle, ct);
+        var result = await SendForResultAsync(requestFactory, throttle, ct, localTtl);
         return result.Body;
     }
 
@@ -104,7 +105,8 @@ public sealed class HttpConditionalCache
     public async Task<HttpCacheResult> SendForResultAsync(
         Func<CancellationToken, Task<HttpRequestMessage>> requestFactory,
         Func<CancellationToken, Task>? throttle = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        TimeSpan? localTtl = null)
     {
         using var request = await requestFactory(ct);
         var fullUrl = request.RequestUri?.ToString() ?? string.Empty;
@@ -116,6 +118,12 @@ public sealed class HttpConditionalCache
 
         if (cached != null)
         {
+            if (localTtl.HasValue && DateTime.UtcNow - cached.CreatedAt < localTtl.Value)
+            {
+                Log.Debug("{Tag}: local TTL hit, serving cache for {Url}", _logTag, fullUrl);
+                return new HttpCacheResult(cached.Body, null, FromCache: true);
+            }
+
             // Both validators are independent — sending both lets the server
             // pick whichever it currently honours.
             if (!string.IsNullOrEmpty(cached.ETag))

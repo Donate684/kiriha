@@ -56,6 +56,29 @@ public partial class PlayerOverlayWindow
         Cursor = s_noneCursor;
     }
 
+    private bool IsPointerOverUI()
+    {
+        if (_topBar?.IsPointerOver == true || _bottomBar?.IsPointerOver == true)
+            return true;
+
+        if (IsSettingsOverlayVisible())
+            return true;
+
+        if (this.FindControl<Button>("SpeedButton")?.Flyout?.IsOpen == true)
+            return true;
+
+        if (this.FindControl<Button>("SubtitleButton")?.Flyout?.IsOpen == true)
+            return true;
+
+        if (this.FindControl<Button>("AudioButton")?.Flyout?.IsOpen == true)
+            return true;
+
+        if (this.FindControl<Button>("SettingsButton")?.Flyout?.IsOpen == true)
+            return true;
+
+        return false;
+    }
+
     private void OnHideTimerTick(object? sender, EventArgs e)
     {
         _hideTimer.Stop();
@@ -67,6 +90,10 @@ public partial class PlayerOverlayWindow
             // Do not hide controls if paused and video is loaded
             return;
         }
+
+        if (IsPointerOverUI())
+            return;
+
         HideControls();
     }
 
@@ -77,12 +104,9 @@ public partial class PlayerOverlayWindow
 
     private void OnGridPointerExited(object? sender, PointerEventArgs e)
     {
-        // When mouse leaves the window, hide controls immediately if playing
-        if (DataContext is PlayerViewModel vm && vm.AutoHideControls && (vm.IsPlaying || string.IsNullOrEmpty(vm.VideoUrl)))
-        {
-            _hideTimer.Stop();
-            HideControls();
-        }
+        // When the pointer leaves the grid (e.g., moving outside the window or into a flyout popup), 
+        // we do not hide the controls instantly. We rely on the hide timer to expire and hide them 
+        // naturally via timeout, ensuring that hovering over flyouts doesn't dismiss the UI.
     }
 
     private void OnTimelinePointerMoved(object? sender, PointerEventArgs e)

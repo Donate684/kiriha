@@ -214,7 +214,7 @@ public class MalApiService : ITrackerService, IDisposable
     {
         try
         {
-            var bytes = await GetWithCacheAsync($"anime/{animeId}?fields={AnimeFields}&nsfw=true", ct);
+            var bytes = await GetWithCacheAsync($"anime/{animeId}?fields={AnimeFields}&nsfw=true", ct, localTtl: TimeSpan.FromDays(30));
             if (bytes == null) return null;
 
             using var json = JsonDocument.Parse(bytes);
@@ -302,7 +302,7 @@ public class MalApiService : ITrackerService, IDisposable
     {
         try
         {
-            var bytes = await GetWithCacheAsync($"manga/{mangaId}?fields={MangaFields}&nsfw=true", ct);
+            var bytes = await GetWithCacheAsync($"manga/{mangaId}?fields={MangaFields}&nsfw=true", ct, localTtl: TimeSpan.FromDays(30));
             if (bytes == null) return null;
 
             using var json = JsonDocument.Parse(bytes);
@@ -496,7 +496,7 @@ public class MalApiService : ITrackerService, IDisposable
     /// embedded user-specific fields like <c>my_list_status</c> are overridden
     /// at the ViewModel layer from the synced user store).
     /// </summary>
-    private Task<byte[]?> GetWithCacheAsync(string url, CancellationToken ct = default)
+    private Task<byte[]?> GetWithCacheAsync(string url, CancellationToken ct = default, TimeSpan? localTtl = null)
     {
         var fullUrl = url.StartsWith("http") ? url : MalBaseUrl + url.TrimStart('/');
 
@@ -515,7 +515,8 @@ public class MalApiService : ITrackerService, IDisposable
                 return request;
             },
             throttle: InteractiveThrottleAsync,
-            ct: ct);
+            ct: ct,
+            localTtl: localTtl);
     }
 
     public void Dispose()
