@@ -16,9 +16,7 @@ namespace Kiriha.Services.Data;
 
 public class AnimeSyncOrchestrator
 {
-    private const int MinimumStatusGuardCount = 10;
-    private const int MinimumStatusDropCount = 5;
-    private const double MaximumAllowedStatusDropRatio = 0.30;
+
 
     private readonly AnimeRepository _animeRepository;
     private readonly IUserAnimeRepository _userAnimeRepo;
@@ -165,14 +163,14 @@ public class AnimeSyncOrchestrator
         })
         {
             var local = CountStatus(currentItems, trackedStatus);
-            if (local < MinimumStatusGuardCount) continue;
+            if (local < SyncSafetyConstants.MinimumStatusGuardCount) continue;
 
             var incoming = CountStatus(apiList, trackedStatus);
             var dropped = local - incoming;
-            if (dropped < MinimumStatusDropCount) continue;
+            if (dropped < SyncSafetyConstants.MinimumStatusDropCount) continue;
 
             var incomingRatio = (double)incoming / local;
-            if (incomingRatio < MaximumAllowedStatusDropRatio)
+            if (incomingRatio < SyncSafetyConstants.MaximumAllowedStatusDropRatio)
             {
                 Log.Warning(
                     "SyncWithTrackers: aborting because {Status} count dropped suspiciously from {Local} to {Incoming}. Likely a partial or stale tracker snapshot.",

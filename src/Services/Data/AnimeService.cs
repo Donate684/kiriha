@@ -17,10 +17,7 @@ namespace Kiriha.Services.Data;
 
 public partial class AnimeService
 {
-    private const int MinimumStatusGuardCount = 10;
-    private const int MinimumStatusDropCount = 5;
-    private const double MaximumAllowedStatusDropRatio = 0.30;
-    private const double MaxAllowedTotalDropRatio = 0.70;
+
 
     private readonly Repositories.IUserAnimeRepository _userAnimeRepo;
     private readonly Repositories.ISyncTaskRepository _syncTaskRepo;

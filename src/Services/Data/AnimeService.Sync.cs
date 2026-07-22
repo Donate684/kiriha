@@ -39,7 +39,7 @@ public partial class AnimeService
             // non-trivial. The user can always do a full re-sync after restart if this triggers.
             var currentItems = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Anime).ToList());
             var localCount = currentItems.Count;
-            if (localCount >= 50 && apiList.Count < localCount * MaxAllowedTotalDropRatio)
+            if (localCount >= 50 && apiList.Count < localCount * SyncSafetyConstants.MaxAllowedTotalDropRatio)
             {
                 Log.Warning("SyncWithTrackers: aborting - incoming list ({Incoming}) is much smaller than local cache ({Local}). Likely a partial fetch.",
                     apiList.Count, localCount);
@@ -94,7 +94,7 @@ public partial class AnimeService
 
             var currentItems = await _uiDispatcher.InvokeAsync(() => Collection.Where(x => x.MediaKind == MediaKind.Manga || x.MediaKind == MediaKind.LightNovel).ToList());
             var localCount = currentItems.Count;
-            if (localCount >= 50 && apiList.Count < localCount * MaxAllowedTotalDropRatio)
+            if (localCount >= 50 && apiList.Count < localCount * SyncSafetyConstants.MaxAllowedTotalDropRatio)
             {
                 Log.Warning("SyncMangaWithTrackers: aborting - incoming list ({Incoming}) is much smaller than local cache ({Local}). Likely a partial fetch.",
                     apiList.Count, localCount);
@@ -144,14 +144,14 @@ public partial class AnimeService
         })
         {
             var local = CountStatus(currentItems, trackedStatus);
-            if (local < MinimumStatusGuardCount) continue;
+            if (local < SyncSafetyConstants.MinimumStatusGuardCount) continue;
 
             var incoming = CountStatus(apiList, trackedStatus);
             var dropped = local - incoming;
-            if (dropped < MinimumStatusDropCount) continue;
+            if (dropped < SyncSafetyConstants.MinimumStatusDropCount) continue;
 
             var incomingRatio = (double)incoming / local;
-            if (incomingRatio < MaximumAllowedStatusDropRatio)
+            if (incomingRatio < SyncSafetyConstants.MaximumAllowedStatusDropRatio)
             {
                 Log.Warning(
                     "SyncWithTrackers: aborting because {Status} count dropped suspiciously from {Local} to {Incoming}. Likely a partial or stale tracker snapshot.",
