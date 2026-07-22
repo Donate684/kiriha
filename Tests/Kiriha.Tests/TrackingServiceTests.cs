@@ -37,11 +37,11 @@ public class TrackingServiceTests : IDisposable
         _mockUiDispatcher.Setup(x => x.InvokeAsync(It.IsAny<Func<List<AnimeItem>>>()))
             .Returns<Func<List<AnimeItem>>>(f => Task.FromResult(f()));
 
-        _mockMappingService = new Mock<MappingService>(null, new ManualMappingService(_tempMappingPath), null, new RecognitionCache());
+        _mockMappingService = new Mock<MappingService>(null!, new ManualMappingService(_tempMappingPath), null!, new RecognitionCache());
         _mockDiscordService = new Mock<DiscordService>(_settingsService);
-        _mockAnisthesiaService = new Mock<AnisthesiaService>(_settingsService, null, null);
+        _mockAnisthesiaService = new Mock<AnisthesiaService>(_settingsService, null!, null!);
 
-        _animeRepository = new AnimeRepository(null, null, null, _mockUiDispatcher.Object, null);
+        _animeRepository = new AnimeRepository(null!, null!, null!, _mockUiDispatcher.Object, null!);
         // Force the initialization task to complete so we don't wait 5 seconds in tests
         var tcsField = typeof(AnimeRepository).GetField("_initTcs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (tcsField?.GetValue(_animeRepository) is TaskCompletionSource tcs)
