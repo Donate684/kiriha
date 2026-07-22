@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
-using Avalonia.Threading;
+using Kiriha.Models.Messages;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -33,7 +33,11 @@ using Serilog;
 
 namespace Kiriha.ViewModels;
 
-public partial class NowPlayingViewModel : ViewModelBase, IDisposable
+public partial class NowPlayingViewModel : ViewModelBase, IDisposable,
+    IRecipient<MediaChangedMessage>,
+    IRecipient<AnimeMatchedMessage>,
+    IRecipient<TrackingCountdownMessage>,
+    IRecipient<TrackingStatusMessage>
 {
     private readonly TrackingService _trackingService;
     // Tracks the anime id of an in-flight manual selection. Until the background
@@ -159,10 +163,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
         _shikiMetadataService = shikiMetadataService;
         _malApi = malApi;
         
-        _trackingService.MediaChanged += OnMediaChanged;
-        _trackingService.AnimeMatched += OnAnimeMatched;
-        _trackingService.CountdownUpdated += OnCountdownUpdated;
-        _trackingService.StatusUpdated += OnStatusUpdated;
+        WeakReferenceMessenger.Default.RegisterAll(this);
 
         // Sync initial state if any
         CurrentMedia = _trackingService.CurrentMedia;
@@ -297,18 +298,19 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
         IsSearchPanelOpen = false;
     }
 
-    private void OnStatusUpdated(object? sender, string status)
+    public void Receive(TrackingStatusMessage message)
     {
-        Dispatcher.UIThread.Post(() => TrackingStatus = status);
+        TrackingStatus = message.Status;
     }
 
-    private void OnCountdownUpdated(object? sender, string countdown)
+    public void Receive(TrackingCountdownMessage message)
     {
-        Dispatcher.UIThread.Post(() => CountdownStatus = countdown);
+        CountdownStatus = message.Countdown;
     }
 
-    private void OnAnimeMatched(object? sender, AnimeItem? anime)
+    public void Receive(AnimeMatchedMessage message)
     {
+        var anime = message.Anime;
         // Suppress intermediate events while a manual selection is in flight.
         // - null: a transient "clearing previous match" event before MappingService re-resolves
         // - different id: stale background match for a previous media — would clobber UI choice
@@ -320,42 +322,46 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
             _pendingManualMatchId = 0;
         }
 
-        Dispatcher.UIThread.InvokeAsync(async () => {
-            MatchedAnime = anime;
-            OnPropertyChanged(nameof(CurrentMedia));
-            if (anime != null)
-            {
-                IsManuallyMapped = _trackingService.IsManuallyMapped();
-                LogDetection(CurrentMedia ?? new ParsedMedia { AnimeTitle = anime.Title }, UIUtils.GetLoc("scrobbler.status.matched"));
+        MatchedAnime = anime;
+        OnPropertyChanged(nameof(CurrentMedia));
+        if (anime != null)
+        {
+            IsManuallyMapped = _trackingService.IsManuallyMapped();
+            LogDetection(CurrentMedia ?? new ParsedMedia { AnimeTitle = anime.Title }, UIUtils.GetLoc("scrobbler.status.matched"));
 
-                // Force fetch + apply Russian metadata if enabled and missing.
-                // EnsureLocalizedAsync handles the cache-miss → API fetch path
-                // AND copies meta.Russian/Description into the AnimeItem; the
-                // previous code only called RefreshMetadata() which raises
-                // PropertyChanged but never wrote the fetched values, so the
-                // UI stayed empty whenever the DB had no Shiki row yet.
-                try
-                {
-                    await _shikiMetadataService.EnsureLocalizedAsync(anime, _disposeCts.Token);
-                }
-                catch (OperationCanceledException)
-                {
-                    // Ignore
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug(ex, "NowPlaying: EnsureLocalizedAsync failed for {Id}", anime.Id);
-                }
-            }
-            else
-            {
-                IsManuallyMapped = false;
-            }
-        }).SafeFireAndForget("NowPlaying.AnimeMatched");
+            // Force fetch + apply Russian metadata if enabled and missing.
+            // EnsureLocalizedAsync handles the cache-miss → API fetch path
+            // AND copies meta.Russian/Description into the AnimeItem; the
+            // previous code only called RefreshMetadata() which raises
+            // PropertyChanged but never wrote the fetched values, so the
+            // UI stayed empty whenever the DB had no Shiki row yet.
+            EnsureLocalizedSafeAsync(anime).SafeFireAndForget("NowPlaying.AnimeMatched");
+        }
+        else
+        {
+            IsManuallyMapped = false;
+        }
     }
 
-    private void OnMediaChanged(object? sender, ParsedMedia? media)
+    private async Task EnsureLocalizedSafeAsync(AnimeItem anime)
     {
+        try
+        {
+            await _shikiMetadataService.EnsureLocalizedAsync(anime, _disposeCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "NowPlaying: EnsureLocalizedAsync failed for {Id}", anime.Id);
+        }
+    }
+
+    public void Receive(MediaChangedMessage message)
+    {
+        var media = message.Media;
         // Drop the manual-selection guard only when the media actually changes
         // (different file or playback stopped). ManualMapAsync re-runs
         // MatchMediaAsync with the *same* media to force a re-match, which
@@ -366,27 +372,25 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
             && string.Equals(prev.OriginalTitle, media.OriginalTitle, StringComparison.Ordinal);
         if (!sameFile) _pendingManualMatchId = 0;
 
-        Dispatcher.UIThread.Post(() => {
-            CurrentMedia = media;
-            IsMediaDetected = media != null;
-            Suggestions.Clear();
-            ShowSuggestions = false;
-            SearchQuery = string.Empty;
-            IsSearchPanelOpen = false;
-            TrackingStatus = string.Empty;
-            OnPropertyChanged(nameof(HasSuggestions));
-            if (media != null)
-            {
-                IsPaused = !media.IsPlaying;
-                LogDetection(media, UIUtils.GetLoc("scrobbler.status.detected"));
-            }
-            else
-            {
-                MatchedAnime = null;
-                IsManuallyMapped = false;
-                CountdownStatus = string.Empty;
-            }
-        });
+        CurrentMedia = media;
+        IsMediaDetected = media != null;
+        Suggestions.Clear();
+        ShowSuggestions = false;
+        SearchQuery = string.Empty;
+        IsSearchPanelOpen = false;
+        TrackingStatus = string.Empty;
+        OnPropertyChanged(nameof(HasSuggestions));
+        if (media != null)
+        {
+            IsPaused = !media.IsPlaying;
+            LogDetection(media, UIUtils.GetLoc("scrobbler.status.detected"));
+        }
+        else
+        {
+            MatchedAnime = null;
+            IsManuallyMapped = false;
+            CountdownStatus = string.Empty;
+        }
     }
 
     [RelayCommand]
@@ -486,10 +490,7 @@ public partial class NowPlayingViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        _trackingService.MediaChanged -= OnMediaChanged;
-        _trackingService.AnimeMatched -= OnAnimeMatched;
-        _trackingService.CountdownUpdated -= OnCountdownUpdated;
-        _trackingService.StatusUpdated -= OnStatusUpdated;
+        WeakReferenceMessenger.Default.UnregisterAll(this);
 
         try { _searchCts?.Cancel(); } catch (Exception ex) { Log.Debug(ex, "Error canceling search CTS during dispose"); }
         try { _searchCts?.Dispose(); } catch (Exception ex) { Log.Debug(ex, "Error disposing search CTS"); }

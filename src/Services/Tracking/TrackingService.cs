@@ -21,6 +21,8 @@ using Kiriha.Utils.Async;
 using Kiriha.Utils.Graphs;
 using Kiriha.Utils.UI;
 using Serilog;
+using CommunityToolkit.Mvvm.Messaging;
+using Kiriha.Models.Messages;
 
 namespace Kiriha.Services.Tracking;
 
@@ -34,11 +36,6 @@ public class TrackingService : IDisposable
     private readonly IScrobbleService _scrobbleService;
     private readonly IUiDispatcher _uiDispatcher;
     private readonly IEnumerable<ITrackerService> _trackers;
-
-    public event EventHandler<ParsedMedia?>? MediaChanged;
-    public event EventHandler<AnimeItem?>? AnimeMatched;
-    public event EventHandler<string>? CountdownUpdated;
-    public event EventHandler<string>? StatusUpdated;
 
     // _state guards _currentMedia and _matchedAnime which are read/written from the
     // Anisthesia background thread (MediaDetected/MediaCleared) and from UI command handlers.
@@ -76,7 +73,7 @@ public class TrackingService : IDisposable
 
     private void OnScrobbleCountdownUpdated(object? sender, string e)
     {
-        CountdownUpdated?.Invoke(this, e);
+        _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new TrackingCountdownMessage(e)));
     }
 
     public async Task ManualMapAsync(int animeId)
@@ -156,7 +153,7 @@ public class TrackingService : IDisposable
             lock (_state) _currentMedia = media;
             if (changed)
             {
-                MediaChanged?.Invoke(this, media);
+                _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new MediaChangedMessage(media)));
                 _scrobbleService.UpdatePlayingState(media.IsPlaying);
             }
             
@@ -183,8 +180,10 @@ public class TrackingService : IDisposable
             }
             _scrobbleService.CancelScrobble();
             
-            MediaChanged?.Invoke(this, media);
-            AnimeMatched?.Invoke(this, null);
+            _uiDispatcher.Post(() => {
+                WeakReferenceMessenger.Default.Send(new MediaChangedMessage(media));
+                WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(null));
+            });
 
             await Task.WhenAny(_animeService.InitializationTask, Task.Delay(5000));
             
@@ -237,7 +236,7 @@ public class TrackingService : IDisposable
 
                 if (isValid)
                 {
-                    AnimeMatched?.Invoke(this, matched);
+                    _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(matched)));
 
                     UpdateDiscordPresence(media, matched);
                     
@@ -320,8 +319,10 @@ public class TrackingService : IDisposable
         }
         _scrobbleService.CancelScrobble();
         
-        MediaChanged?.Invoke(this, null);
-        AnimeMatched?.Invoke(this, null);
+        _uiDispatcher.Post(() => {
+            WeakReferenceMessenger.Default.Send(new MediaChangedMessage(null));
+            WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(null));
+        });
         _discordService.ClearPresence();
     }
 
@@ -357,7 +358,7 @@ public class TrackingService : IDisposable
             lock (_state) _currentMedia = media;
             if (changed)
             {
-                MediaChanged?.Invoke(this, media);
+                _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new MediaChangedMessage(media)));
                 _scrobbleService.UpdatePlayingState(media.IsPlaying);
             }
             return;
@@ -370,9 +371,11 @@ public class TrackingService : IDisposable
         }
         _scrobbleService.CancelScrobble();
         
-        MediaChanged?.Invoke(this, media);
-        AnimeMatched?.Invoke(this, null); // Clear previous match UI immediately
-        StatusUpdated?.Invoke(this, UIUtils.GetLoc("scrobbler.status.matching"));
+        _uiDispatcher.Post(() => {
+            WeakReferenceMessenger.Default.Send(new MediaChangedMessage(media));
+            WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(null)); // Clear previous match UI immediately
+            WeakReferenceMessenger.Default.Send(new TrackingStatusMessage(UIUtils.GetLoc("scrobbler.status.matching")));
+        });
 
         try
         {
@@ -449,7 +452,7 @@ public class TrackingService : IDisposable
 
                 if (!isValid) return;
 
-                AnimeMatched?.Invoke(this, matched);
+                _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new AnimeMatchedMessage(matched)));
                 
                 if (matched != null)
                 {
@@ -476,7 +479,7 @@ public class TrackingService : IDisposable
             lock (_state) cur = _currentMedia;
             if (IsSameMedia(cur, media))
             {
-                StatusUpdated?.Invoke(this, string.Empty);
+                _uiDispatcher.Post(() => WeakReferenceMessenger.Default.Send(new TrackingStatusMessage(string.Empty)));
             }
         }
     }
