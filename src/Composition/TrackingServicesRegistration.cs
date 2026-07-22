@@ -123,6 +123,14 @@ internal static class TrackingServicesRegistration
         services.AddSingleton<UpdateService>();
         services.AddSingleton<NotificationService>();
         services.AddSingleton<AiringInfoService>();
+
+        // Maintenance tasks
+        services.AddSingleton<Kiriha.Services.Maintenance.IMaintenanceTask, Kiriha.Services.Maintenance.RssMaintenanceTask>();
+        services.AddSingleton<Kiriha.Services.Maintenance.IMaintenanceTask, Kiriha.Services.Maintenance.AiringSyncMaintenanceTask>();
+        services.AddSingleton<Kiriha.Services.Maintenance.IMaintenanceTask, Kiriha.Services.Maintenance.UpdateMaintenanceTask>();
+        services.AddSingleton<Kiriha.Services.Maintenance.IMaintenanceTask, Kiriha.Services.Maintenance.DatabaseMaintenanceTask>();
+        services.AddSingleton<Kiriha.Services.Maintenance.IMaintenanceTask, Kiriha.Services.Maintenance.MetadataFetchMaintenanceTask>();
+        
         services.AddSingleton<MaintenanceService>();
 
         return services;
